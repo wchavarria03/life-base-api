@@ -7,8 +7,8 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"ledger-api/app/internal/databases"
-	"ledger-api/app/internal/models"
+	"life-base-api/app/internal/databases"
+	"life-base-api/app/internal/models"
 )
 
 func NewEnvelopeRepository(client *databases.SupabaseClient) *EnvelopeRepository {

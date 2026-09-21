@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"ledger-api/app/internal/models"
+	"life-base-api/app/internal/models"
 )
 
 func NewClassificationService(rules ClassificationRuleRepository) *ClassificationService {

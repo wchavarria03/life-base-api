@@ -1,4 +1,4 @@
-# ledger-api
+# life-base-api
 
 A Go API that ingests Costa Rican bank statement PDFs, extracts transactions, stores them in Supabase, and serves them via REST API to a frontend.
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math"
 
-	"ledger-api/app/internal/models"
+	"life-base-api/app/internal/models"
 )
 
 // weeksPerMonth is the average number of weeks in a month (52 weeks / 12 months),

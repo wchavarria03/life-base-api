@@ -7,8 +7,8 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"ledger-api/app/internal/auth"
-	"ledger-api/app/internal/models"
+	"life-base-api/app/internal/auth"
+	"life-base-api/app/internal/models"
 )
 
 func NewBudgetService(budgets BudgetRepository, accounts AccountRepository, transactions TransactionRepository) *BudgetService {

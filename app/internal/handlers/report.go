@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"ledger-api/app/internal/models"
+	"life-base-api/app/internal/models"
 )
 
 func NewReportHandler(accounts AccountLister, summarizer ReportSummarizer) *ReportHandler {

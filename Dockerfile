@@ -16,7 +16,7 @@ ARG VERSION=dev
 ARG BUILD_TIME=unknown
 RUN CGO_ENABLED=0 GOOS=linux go build \
     -ldflags="-w -s -X main.version=${VERSION} -X main.buildTime=${BUILD_TIME}" \
-    -o ledger-api .
+    -o life-base-api .
 
 # Final stage
 FROM alpine:3.21
@@ -31,16 +31,16 @@ RUN addgroup -g 10001 appgroup && \
 
 WORKDIR /app
 
-COPY --from=builder /app/ledger-api .
+COPY --from=builder /app/life-base-api .
 
 RUN mkdir -p /app/data/input /app/data/output && \
     chown -R appuser:appgroup /app && \
-    chmod 755 /app/ledger-api
+    chmod 755 /app/life-base-api
 
 USER appuser
 
 ENV PATH="/app:${PATH}" \
     TZ="UTC"
 
-ENTRYPOINT ["ledger-api"]
+ENTRYPOINT ["life-base-api"]
 CMD ["serve"]

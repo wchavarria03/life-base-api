@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"ledger-api/app/internal/models"
+	"life-base-api/app/internal/models"
 )
 
 func WriteTransactions(path string, transactions []models.Transaction) error {

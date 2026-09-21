@@ -1,4 +1,4 @@
-BINARY   := ledger-api
+BINARY   := life-base-api
 INPUT    := data/input
 OUTPUT   := data/output
 

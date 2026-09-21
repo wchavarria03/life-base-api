@@ -8,8 +8,8 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"ledger-api/app/internal/databases"
-	"ledger-api/app/internal/models"
+	"life-base-api/app/internal/databases"
+	"life-base-api/app/internal/models"
 )
 
 // budgetRow is the read shape, including the embedded category join.

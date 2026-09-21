@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"ledger-api/app/internal/models"
+	"life-base-api/app/internal/models"
 )
 
 func NewCategoryService(

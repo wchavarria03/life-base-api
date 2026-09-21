@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"time"
 
-	"ledger-api/app/internal/databases"
-	"ledger-api/app/internal/models"
+	"life-base-api/app/internal/databases"
+	"life-base-api/app/internal/models"
 )
 
 func NewReminderRepository(client *databases.SupabaseClient) *ReminderRepository {

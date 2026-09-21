@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"ledger-api/app/internal/core"
+	"life-base-api/app/internal/core"
 )
 
 type cliConfig struct {
@@ -29,7 +29,7 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "ledger-api",
+	Use:   "life-base-api",
 	Short: "Ingest bank statement PDFs, store transactions, and serve them via HTTP API",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if _, err := os.Stat(cfg.InputDir); os.IsNotExist(err) {

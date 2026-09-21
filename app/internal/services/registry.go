@@ -1,6 +1,6 @@
 package services
 
-import "ledger-api/app/internal/repositories"
+import "life-base-api/app/internal/repositories"
 
 type Registry struct {
 	Account        *AccountService

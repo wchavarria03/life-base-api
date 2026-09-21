@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"ledger-api/app/internal/pdf"
+	"life-base-api/app/internal/pdf"
 )
 
 func NewDumpHandler() *DumpHandler { return &DumpHandler{} }

@@ -13,7 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 
-	"ledger-api/app/internal/auth"
+	"life-base-api/app/internal/auth"
 )
 
 type supabaseClaims struct {

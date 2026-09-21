@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"ledger-api/app/internal/auth"
+	"life-base-api/app/internal/auth"
 )
 
 func NewMeHandler() *MeHandler {

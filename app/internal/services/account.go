@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"ledger-api/app/internal/models"
+	"life-base-api/app/internal/models"
 )
 
 func NewAccountService(accounts AccountRepository, transactions TransactionRepository) *AccountService {

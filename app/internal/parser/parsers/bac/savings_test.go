@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"ledger-api/app/internal/parser"
-	_ "ledger-api/app/internal/parser/parsers/bac"
-	pdfReader "ledger-api/app/internal/pdf"
+	"life-base-api/app/internal/parser"
+	_ "life-base-api/app/internal/parser/parsers/bac"
+	pdfReader "life-base-api/app/internal/pdf"
 )
 
 // sampleSavingsText mirrors the one-cell-per-line output produced by ledongthuc/pdf.

@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/url"
 
-	"ledger-api/app/internal/auth"
-	"ledger-api/app/internal/databases"
-	"ledger-api/app/internal/models"
+	"life-base-api/app/internal/auth"
+	"life-base-api/app/internal/databases"
+	"life-base-api/app/internal/models"
 )
 
 func NewAccountRuleExceptionRepository(client *databases.SupabaseClient) *AccountRuleExceptionRepository {

@@ -1,8 +1,8 @@
 package repositories
 
 import (
-	"ledger-api/app/internal/databases"
-	supabaserepo "ledger-api/app/internal/repositories/supabase"
+	"life-base-api/app/internal/databases"
+	supabaserepo "life-base-api/app/internal/repositories/supabase"
 )
 
 type Registry struct {

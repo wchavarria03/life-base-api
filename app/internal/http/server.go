@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"ledger-api/app/internal/handlers"
+	"life-base-api/app/internal/handlers"
 )
 
 // NewServer creates an HTTP server bound to addr using routes from the handler registry.

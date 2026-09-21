@@ -6,7 +6,7 @@ import (
 	"sort"
 	"time"
 
-	"ledger-api/app/internal/models"
+	"life-base-api/app/internal/models"
 )
 
 // uncategorizedID/uncategorizedColor label the synthetic bucket used for

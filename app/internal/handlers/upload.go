@@ -9,10 +9,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"ledger-api/app/internal/models"
-	"ledger-api/app/internal/parser"
-	_ "ledger-api/app/internal/parser/parsers/bac"
-	"ledger-api/app/internal/pdf"
+	"life-base-api/app/internal/models"
+	"life-base-api/app/internal/parser"
+	_ "life-base-api/app/internal/parser/parsers/bac"
+	"life-base-api/app/internal/pdf"
 )
 
 const maxUploadBytes = 10 << 20 // 10 MB

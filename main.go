@@ -1,7 +1,7 @@
 package main
 
 import (
-	"ledger-api/app/cmd"
+	"life-base-api/app/cmd"
 )
 
 func main() {

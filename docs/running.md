@@ -1,4 +1,4 @@
-# Running ledger-api
+# Running life-base-api
 
 Two ways to run the project: against a **local database** (no internet required) or against a **Supabase production database**.
 

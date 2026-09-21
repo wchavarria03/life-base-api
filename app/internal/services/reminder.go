@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"ledger-api/app/internal/auth"
-	"ledger-api/app/internal/models"
+	"life-base-api/app/internal/auth"
+	"life-base-api/app/internal/models"
 )
 
 func NewReminderService(reminders ReminderRepository) *ReminderService {

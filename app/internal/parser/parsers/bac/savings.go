@@ -9,8 +9,8 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"ledger-api/app/internal/models"
-	"ledger-api/app/internal/parser"
+	"life-base-api/app/internal/models"
+	"life-base-api/app/internal/parser"
 )
 
 // savingsMonths maps Spanish 3-letter month abbreviations used in BAC savings statements.

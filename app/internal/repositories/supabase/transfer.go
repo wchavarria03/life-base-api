@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/url"
 
-	"ledger-api/app/internal/databases"
-	"ledger-api/app/internal/models"
+	"life-base-api/app/internal/databases"
+	"life-base-api/app/internal/models"
 )
 
 // transferRow is the write/read shape for the transfers table.

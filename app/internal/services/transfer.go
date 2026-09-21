@@ -9,7 +9,7 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"ledger-api/app/internal/models"
+	"life-base-api/app/internal/models"
 )
 
 var (

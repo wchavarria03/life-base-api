@@ -3,11 +3,11 @@ package core
 import (
 	"fmt"
 
-	"ledger-api/app/internal/databases"
-	"ledger-api/app/internal/handlers"
-	httpserver "ledger-api/app/internal/http"
-	"ledger-api/app/internal/repositories"
-	"ledger-api/app/internal/services"
+	"life-base-api/app/internal/databases"
+	"life-base-api/app/internal/handlers"
+	httpserver "life-base-api/app/internal/http"
+	"life-base-api/app/internal/repositories"
+	"life-base-api/app/internal/services"
 )
 
 type Config struct {

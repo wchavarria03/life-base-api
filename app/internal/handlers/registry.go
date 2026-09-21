@@ -1,6 +1,6 @@
 package handlers
 
-import "ledger-api/app/internal/services"
+import "life-base-api/app/internal/services"
 
 // Registry holds all HTTP handlers.
 type Registry struct {

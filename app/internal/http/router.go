@@ -3,8 +3,8 @@ package httpserver
 import (
 	"github.com/gin-gonic/gin"
 
-	"ledger-api/app/internal/handlers"
-	"ledger-api/app/internal/http/middleware"
+	"life-base-api/app/internal/handlers"
+	"life-base-api/app/internal/http/middleware"
 )
 
 // NewRouter creates a new Router with all routes configured.

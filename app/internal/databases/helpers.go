@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"ledger-api/app/internal/auth"
+	"life-base-api/app/internal/auth"
 )
 
 type postgrestError struct {

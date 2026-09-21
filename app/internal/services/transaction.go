@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 
-	"ledger-api/app/internal/models"
+	"life-base-api/app/internal/models"
 )
 
 type TransactionService struct {
