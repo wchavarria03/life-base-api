@@ -6,7 +6,7 @@ together at the end rather than one at a time.
 
 ## Social posting (Facebook + Instagram)
 
-- [ ] Set real env vars on deploy (Render): `META_ACCESS_TOKEN`, `META_FACEBOOK_PAGE_ID`,
+- [x] Set real env vars on deploy (Render): `META_ACCESS_TOKEN`, `META_FACEBOOK_PAGE_ID`,
       `META_INSTAGRAM_USER_ID`.
 - [ ] Manual smoke test: `POST /v1/social/posts` with a real image — confirm it actually
       posts to both Facebook and Instagram, not just that the endpoint returns 201.
