@@ -24,11 +24,10 @@ Migration `018_social_posts.sql` — already applied (confirmed earlier this ses
 
 ## Bikes & gear maintenance
 
-- [ ] Apply `app/internal/db/migrations/bikes/001_initial_schema.sql` to Supabase — **not
-      applied yet**.
-- [ ] Supabase dashboard: expose the `bikes` schema under Settings → API → Exposed
-      schemas. Every `/v1/bikes/...`, `/v1/gear`, `/v1/bottles`, `/v1/supplies` endpoint
-      fails until this is done.
+- [x] Apply `app/internal/db/migrations/bikes/001_initial_schema.sql` to Supabase —
+      applied (after the pgcrypto schema-qualification fix, `3b037d5`).
+- [x] Supabase dashboard: expose the `bikes` schema (Project Settings → Data API →
+      Exposed schemas).
 - [ ] *(Skip unless local testing becomes needed — testing is against the live Render
       deploy, not local `docker compose`.)* `docker-compose.yml`'s `rest` service sets
       `PGRST_DB_SCHEMA: public` only — would need `public,bikes,tasks` to test locally.
@@ -51,10 +50,10 @@ Migration `018_social_posts.sql` — already applied (confirmed earlier this ses
 
 ## Household & House tasks
 
-- [ ] Apply `app/internal/db/migrations/tasks/001_initial_schema.sql` to Supabase — **not
-      applied yet**.
-- [ ] Supabase dashboard: expose the `tasks` schema under Settings → API → Exposed
-      schemas. `/v1/tasks` fails until this is done.
+- [x] Apply `app/internal/db/migrations/tasks/001_initial_schema.sql` to Supabase —
+      applied.
+- [x] Supabase dashboard: expose the `tasks` schema (Project Settings → Data API →
+      Exposed schemas).
 - [ ] Smoke test both shapes: create a recurring task (`is_recurring: true,
       interval_days`), confirm `status` starts `overdue` (never completed), call
       `complete`, confirm it flips to `upcoming`. Create a one-off task (`due_date` only),
@@ -67,10 +66,10 @@ Migration `018_social_posts.sql` — already applied (confirmed earlier this ses
 
 ## Notes
 
-- [ ] Apply `app/internal/db/migrations/notes/001_initial_schema.sql` to Supabase — **not
-      applied yet**.
-- [ ] Supabase dashboard: expose the `notes` schema under Settings → API → Exposed
-      schemas. `/v1/notes` fails until this is done.
+- [x] Apply `app/internal/db/migrations/notes/001_initial_schema.sql` to Supabase —
+      applied.
+- [x] Supabase dashboard: expose the `notes` schema (Project Settings → Data API →
+      Exposed schemas).
 - [ ] Smoke test plain CRUD: create, update `content`, delete. No derived logic to check
       here — this one's simple.
 - [ ] `[fe]` Notes pages already shipped in `life-base-fe` — verify against live
@@ -80,8 +79,7 @@ Migration `018_social_posts.sql` — already applied (confirmed earlier this ses
 
 - [ ] `[fe]` Already shipped (`src/pages/Hub.tsx`, replaces the old Finance-only
       dashboard as the home route) — verify each module's summary card against live
-      data once the corresponding schemas are exposed; Bikes/Household/House/TODO/Notes
-      cards will show nothing/errors until then, Finance's should already work.
+      data now that all schemas are exposed.
 
 ## General
 
