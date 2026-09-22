@@ -15,9 +15,10 @@ type Registry struct {
 	Transaction    *TransactionService
 	Transfer       *TransferService
 	SalaryProfile  *SalaryProfileService
+	Social         *SocialService
 }
 
-func NewRegistry(repos *repositories.Registry, userID string) *Registry {
+func NewRegistry(repos *repositories.Registry, userID string, social SocialConfig) *Registry {
 	classifier := NewClassificationService(repos.Classifications)
 	transfer := NewTransferService(repos.Accounts, repos.Transactions, repos.Transfers)
 	reminder := NewReminderService(repos.Reminders)
@@ -34,5 +35,6 @@ func NewRegistry(repos *repositories.Registry, userID string) *Registry {
 		Transaction:    NewTransactionService(repos.Transactions),
 		Transfer:       transfer,
 		SalaryProfile:  NewSalaryProfileService(repos.SalaryProfiles),
+		Social:         NewSocialService(repos.SocialPosts, social),
 	}
 }

@@ -25,6 +25,7 @@ func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL string) {
 	v1.Use(middleware.Auth(jwksURL))
 
 	v1.GET("/me", hdlrs.Me.GetMe)
+	setupSocialRoutes(v1, hdlrs)
 	setupAccountRoutes(v1, hdlrs)
 	setupBudgetRoutes(v1, hdlrs)
 	setupEnvelopeRoutes(v1, hdlrs)
@@ -39,6 +40,14 @@ func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL string) {
 	v1.GET("/transfers/matches", hdlrs.Transfer.GetMatches)
 	v1.PATCH("/transactions/:id/type", hdlrs.Transfer.UpdateTransactionType)
 	v1.PATCH("/transactions/:id/note", hdlrs.Transaction.UpdateNote)
+}
+
+func setupSocialRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
+	social := rg.Group("/social/posts")
+	social.POST("", hdlrs.Social.Create)
+	social.GET("", hdlrs.Social.List)
+	social.DELETE("/:id", hdlrs.Social.Delete)
+	social.POST("/:id/retry-instagram", hdlrs.Social.RetryInstagram)
 }
 
 func setupEnvelopeRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {

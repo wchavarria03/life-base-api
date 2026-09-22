@@ -11,12 +11,15 @@ import (
 )
 
 type Config struct {
-	SupabaseURL    string
-	SupabaseKey    string
-	SupabaseAnonKey string
-	ServerAddr     string
-	UserID         string
-	AllowedOrigins []string
+	SupabaseURL         string
+	SupabaseKey         string
+	SupabaseAnonKey     string
+	ServerAddr          string
+	UserID              string
+	AllowedOrigins      []string
+	MetaAccessToken     string
+	MetaFacebookPageID  string
+	MetaInstagramUserID string
 }
 
 // Dependencies is a collection of all application dependencies.
@@ -45,7 +48,11 @@ func NewDependencies(cfg Config) (*Dependencies, error) {
 
 	deps.Repositories = repositories.NewRegistry(deps.Databases)
 
-	deps.Services = services.NewRegistry(deps.Repositories, cfg.UserID)
+	deps.Services = services.NewRegistry(deps.Repositories, cfg.UserID, services.SocialConfig{
+		AccessToken:   cfg.MetaAccessToken,
+		FacebookPage:  cfg.MetaFacebookPageID,
+		InstagramUser: cfg.MetaInstagramUserID,
+	})
 
 	deps.Handlers, err = handlers.NewRegistry(deps.Services)
 	if err != nil {

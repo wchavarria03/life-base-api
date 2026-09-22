@@ -54,3 +54,7 @@ type ReminderHandler struct {
 type SalaryProfileHandler struct {
 	svc SalaryProfileManager
 }
+
+type SocialHandler struct {
+	svc SocialPoster
+}

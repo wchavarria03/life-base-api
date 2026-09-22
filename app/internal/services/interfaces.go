@@ -110,3 +110,12 @@ type SalaryProfileRepository interface {
 	FindByUserID(ctx context.Context, userID string) (*models.SalaryProfile, error)
 	Upsert(ctx context.Context, p *models.SalaryProfile) (*models.SalaryProfile, error)
 }
+
+type SocialPostRepository interface {
+	List(ctx context.Context, limit, offset int, status *models.SocialPostStatus) ([]*models.SocialPost, error)
+	FindByID(ctx context.Context, id string) (*models.SocialPost, error)
+	FindRecentByFilename(ctx context.Context, filename string, since time.Time) ([]*models.SocialPost, error)
+	Create(ctx context.Context, input models.SocialPostInput) (*models.SocialPost, error)
+	Update(ctx context.Context, id string, fields map[string]any) (*models.SocialPost, error)
+	Delete(ctx context.Context, id string) error
+}

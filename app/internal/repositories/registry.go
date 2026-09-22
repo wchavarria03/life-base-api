@@ -18,6 +18,7 @@ type Registry struct {
 	Envelopes             *supabaserepo.EnvelopeRepository
 	Reminders             *supabaserepo.ReminderRepository
 	SalaryProfiles        *supabaserepo.SalaryProfileRepository
+	SocialPosts           *supabaserepo.SocialPostRepository
 }
 
 func NewRegistry(dbs *databases.Registry) *Registry {
@@ -34,5 +35,6 @@ func NewRegistry(dbs *databases.Registry) *Registry {
 		Envelopes:             supabaserepo.NewEnvelopeRepository(dbs.Supabase),
 		Reminders:             supabaserepo.NewReminderRepository(dbs.Supabase),
 		SalaryProfiles:        supabaserepo.NewSalaryProfileRepository(dbs.Supabase),
+		SocialPosts:           supabaserepo.NewSocialPostRepository(dbs.Supabase),
 	}
 }

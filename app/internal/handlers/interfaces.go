@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -94,4 +95,11 @@ type SalaryProfileManager interface {
 	Get(ctx context.Context, userID string) (*models.SalaryProfile, error)
 	Save(ctx context.Context, p *models.SalaryProfile) (*models.SalaryProfile, error)
 	CheckPurchase(ctx context.Context, p *models.SalaryProfile, price float64) (*models.PurchaseCheck, error)
+}
+
+type SocialPoster interface {
+	PostImage(ctx context.Context, file io.Reader, filename string, caption *string, force bool) (*models.SocialPost, error)
+	List(ctx context.Context, limit, offset int, status *models.SocialPostStatus) ([]*models.SocialPost, error)
+	RetryInstagram(ctx context.Context, id string) (*models.SocialPost, error)
+	Delete(ctx context.Context, id string) error
 }

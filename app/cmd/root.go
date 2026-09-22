@@ -11,16 +11,19 @@ import (
 )
 
 type cliConfig struct {
-	Verbose        bool
-	OutputDir      string
-	InputDir       string
-	DryRun         bool
-	SupabaseURL    string
-	SupabaseKey    string
-	SupabaseAnonKey string
-	ServerAddr     string
-	UserID         string
-	AllowedOrigins string
+	Verbose             bool
+	OutputDir           string
+	InputDir            string
+	DryRun              bool
+	SupabaseURL         string
+	SupabaseKey         string
+	SupabaseAnonKey     string
+	ServerAddr          string
+	UserID              string
+	AllowedOrigins      string
+	MetaAccessToken     string
+	MetaFacebookPageID  string
+	MetaInstagramUserID string
 }
 
 var (
@@ -46,12 +49,15 @@ var rootCmd = &cobra.Command{
 
 		var err error
 		deps, err = core.NewDependencies(core.Config{
-			SupabaseURL:     cfg.SupabaseURL,
-			SupabaseKey:     cfg.SupabaseKey,
-			SupabaseAnonKey: cfg.SupabaseAnonKey,
-			ServerAddr:      cfg.ServerAddr,
-			UserID:          cfg.UserID,
-			AllowedOrigins:  origins,
+			SupabaseURL:         cfg.SupabaseURL,
+			SupabaseKey:         cfg.SupabaseKey,
+			SupabaseAnonKey:     cfg.SupabaseAnonKey,
+			ServerAddr:          cfg.ServerAddr,
+			UserID:              cfg.UserID,
+			AllowedOrigins:      origins,
+			MetaAccessToken:     cfg.MetaAccessToken,
+			MetaFacebookPageID:  cfg.MetaFacebookPageID,
+			MetaInstagramUserID: cfg.MetaInstagramUserID,
 		})
 		if err != nil {
 			return fmt.Errorf("initialising dependencies: %w", err)
@@ -82,4 +88,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfg.ServerAddr, "addr", defaultAddr, "HTTP server listen address")
 	rootCmd.PersistentFlags().StringVar(&cfg.UserID, "user-id", os.Getenv("LEDGER_USER_ID"), "Supabase user ID to associate imported data with")
 	rootCmd.PersistentFlags().StringVar(&cfg.AllowedOrigins, "cors-origins", os.Getenv("ALLOWED_ORIGINS"), "Comma-separated allowed CORS origins (default: *)")
+	rootCmd.PersistentFlags().StringVar(&cfg.MetaAccessToken, "meta-access-token", os.Getenv("META_ACCESS_TOKEN"), "Meta (Facebook/Instagram) page access token")
+	rootCmd.PersistentFlags().StringVar(&cfg.MetaFacebookPageID, "meta-facebook-page-id", os.Getenv("META_FACEBOOK_PAGE_ID"), "Facebook page ID to post to")
+	rootCmd.PersistentFlags().StringVar(&cfg.MetaInstagramUserID, "meta-instagram-user-id", os.Getenv("META_INSTAGRAM_USER_ID"), "Instagram business user ID to post to")
 }

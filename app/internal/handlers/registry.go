@@ -18,6 +18,7 @@ type Registry struct {
 	Transfer      *TransferHandler
 	Upload        *UploadHandler
 	SalaryProfile *SalaryProfileHandler
+	Social        *SocialHandler
 }
 
 func NewRegistry(svc *services.Registry) (*Registry, error) {
@@ -36,6 +37,7 @@ func NewRegistry(svc *services.Registry) (*Registry, error) {
 		Transfer:      NewTransferHandler(svc.Transfer),
 		Upload:        NewUploadHandler(svc.Import),
 		SalaryProfile: NewSalaryProfileHandler(svc.SalaryProfile),
+		Social:        NewSocialHandler(svc.Social),
 	}, nil
 }
 
