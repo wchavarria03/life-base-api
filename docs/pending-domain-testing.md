@@ -31,10 +31,11 @@ Migration `018_social_posts.sql` — already applied (confirmed earlier this ses
 - [ ] *(Skip unless local testing becomes needed — testing is against the live Render
       deploy, not local `docker compose`.)* `docker-compose.yml`'s `rest` service sets
       `PGRST_DB_SCHEMA: public` only — would need `public,bikes,tasks` to test locally.
-- [ ] Register a real Strava API app (developers.strava.com) — the old track-life-v2 one
-      may be tied to its old Supabase project/redirect URI, don't assume it's reusable as-is.
-- [ ] Set env vars: `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, and a strong random
-      `STRAVA_TOKEN_ENCRYPTION_KEY` (this one you generate yourself, not from Strava).
+- [x] Register a real Strava API app (developers.strava.com) — new app registered
+      (Authorization Callback Domain set to `localhost` for now, update once the
+      frontend's deployed somewhere real).
+- [x] Set env vars: `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, and a strong random
+      `STRAVA_TOKEN_ENCRYPTION_KEY` on Render.
 - [ ] Smoke test plain CRUD first (no Strava needed): create a bike, add a component with
       `replacement_interval_km`, log an activity against the bike, confirm
       `GET .../components` shows `wear_percentage`/`is_due` updated and the bike's
