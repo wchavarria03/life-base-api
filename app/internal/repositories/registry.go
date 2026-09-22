@@ -19,6 +19,19 @@ type Registry struct {
 	Reminders             *supabaserepo.ReminderRepository
 	SalaryProfiles        *supabaserepo.SalaryProfileRepository
 	SocialPosts           *supabaserepo.SocialPostRepository
+
+	Bikes            *supabaserepo.BikeRepository
+	BikeFitHistory   *supabaserepo.BikeFitHistoryRepository
+	Components       *supabaserepo.ComponentRepository
+	ComponentHistory *supabaserepo.ComponentHistoryRepository
+	ServiceLogs      *supabaserepo.ServiceLogRepository
+	MaintenanceTasks *supabaserepo.MaintenanceTaskRepository
+	Gear             *supabaserepo.GearRepository
+	Bottles          *supabaserepo.BottleRepository
+	Supplies         *supabaserepo.SupplyRepository
+	SupplyHistory    *supabaserepo.SupplyHistoryRepository
+	Activities       *supabaserepo.ActivityRepository
+	Strava           *supabaserepo.StravaRepository
 }
 
 func NewRegistry(dbs *databases.Registry) *Registry {
@@ -36,5 +49,18 @@ func NewRegistry(dbs *databases.Registry) *Registry {
 		Reminders:             supabaserepo.NewReminderRepository(dbs.Supabase),
 		SalaryProfiles:        supabaserepo.NewSalaryProfileRepository(dbs.Supabase),
 		SocialPosts:           supabaserepo.NewSocialPostRepository(dbs.Supabase),
+
+		Bikes:            supabaserepo.NewBikeRepository(dbs.Supabase),
+		BikeFitHistory:   supabaserepo.NewBikeFitHistoryRepository(dbs.Supabase),
+		Components:       supabaserepo.NewComponentRepository(dbs.Supabase),
+		ComponentHistory: supabaserepo.NewComponentHistoryRepository(dbs.Supabase),
+		ServiceLogs:      supabaserepo.NewServiceLogRepository(dbs.Supabase),
+		MaintenanceTasks: supabaserepo.NewMaintenanceTaskRepository(dbs.Supabase),
+		Gear:             supabaserepo.NewGearRepository(dbs.Supabase),
+		Bottles:          supabaserepo.NewBottleRepository(dbs.Supabase),
+		Supplies:         supabaserepo.NewSupplyRepository(dbs.Supabase),
+		SupplyHistory:    supabaserepo.NewSupplyHistoryRepository(dbs.Supabase),
+		Activities:       supabaserepo.NewActivityRepository(dbs.Supabase),
+		Strava:           supabaserepo.NewStravaRepository(dbs.Supabase),
 	}
 }

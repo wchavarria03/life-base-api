@@ -21,13 +21,20 @@ func (e *postgrestError) Error() string {
 	return fmt.Sprintf("postgrest %s: %s", e.Code, e.Message)
 }
 
-func addHeaders(req *http.Request, apiKey, bearer, prefer string) {
+func addHeaders(req *http.Request, apiKey, bearer, prefer string, schema ...string) {
 	req.Header.Set("apikey", apiKey)
 	req.Header.Set("Authorization", "Bearer "+bearer)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	if prefer != "" {
 		req.Header.Set("Prefer", prefer)
+	}
+	// PostgREST only serves schemas explicitly exposed in the project's API
+	// settings; Accept-Profile/Content-Profile pick which one a request
+	// targets. Omitted (the common case) means the default "public" schema.
+	if len(schema) > 0 && schema[0] != "" {
+		req.Header.Set("Accept-Profile", schema[0])
+		req.Header.Set("Content-Profile", schema[0])
 	}
 }
 
@@ -41,8 +48,9 @@ func resolveKeys(ctx context.Context, c *SupabaseClient) (apiKey, bearer string)
 	return c.APIKey, c.APIKey
 }
 
-// Get sends an authenticated GET request to path with query params and decodes the JSON response into T.
-func Get[T any](ctx context.Context, c *SupabaseClient, path string, params url.Values) (T, error) {
+// Get sends an authenticated GET request to path with query params and decodes the JSON
+// response into T. An optional schema targets a non-public PostgREST-exposed schema.
+func Get[T any](ctx context.Context, c *SupabaseClient, path string, params url.Values, schema ...string) (T, error) {
 	var zero T
 
 	rawURL := c.BaseURL + path
@@ -55,13 +63,14 @@ func Get[T any](ctx context.Context, c *SupabaseClient, path string, params url.
 		return zero, fmt.Errorf("build request: %w", err)
 	}
 	apiKey, bearer := resolveKeys(ctx, c)
-	addHeaders(req, apiKey, bearer, "")
+	addHeaders(req, apiKey, bearer, "", schema...)
 
 	return decode[T](c.HTTPClient.Do(req))
 }
 
-// Post sends an authenticated POST to path with body marshaled as JSON and decodes the response into T.
-func Post[T any](ctx context.Context, c *SupabaseClient, path string, body any, prefer string) (T, error) {
+// Post sends an authenticated POST to path with body marshaled as JSON and decodes the
+// response into T. An optional schema targets a non-public PostgREST-exposed schema.
+func Post[T any](ctx context.Context, c *SupabaseClient, path string, body any, prefer string, schema ...string) (T, error) {
 	var zero T
 
 	data, err := json.Marshal(body)
@@ -74,13 +83,14 @@ func Post[T any](ctx context.Context, c *SupabaseClient, path string, body any, 
 		return zero, fmt.Errorf("build request: %w", err)
 	}
 	apiKey, bearer := resolveKeys(ctx, c)
-	addHeaders(req, apiKey, bearer, prefer)
+	addHeaders(req, apiKey, bearer, prefer, schema...)
 
 	return decode[T](c.HTTPClient.Do(req))
 }
 
-// Patch sends an authenticated PATCH to path with body marshaled as JSON and decodes the response into T.
-func Patch[T any](ctx context.Context, c *SupabaseClient, path string, body any, prefer string) (T, error) {
+// Patch sends an authenticated PATCH to path with body marshaled as JSON and decodes the
+// response into T. An optional schema targets a non-public PostgREST-exposed schema.
+func Patch[T any](ctx context.Context, c *SupabaseClient, path string, body any, prefer string, schema ...string) (T, error) {
 	var zero T
 
 	data, err := json.Marshal(body)
@@ -93,19 +103,20 @@ func Patch[T any](ctx context.Context, c *SupabaseClient, path string, body any,
 		return zero, fmt.Errorf("build request: %w", err)
 	}
 	apiKey, bearer := resolveKeys(ctx, c)
-	addHeaders(req, apiKey, bearer, prefer)
+	addHeaders(req, apiKey, bearer, prefer, schema...)
 
 	return decode[T](c.HTTPClient.Do(req))
 }
 
-// Delete sends an authenticated DELETE to path and discards the response body.
-func Delete(ctx context.Context, c *SupabaseClient, path string) error {
+// Delete sends an authenticated DELETE to path and discards the response body. An
+// optional schema targets a non-public PostgREST-exposed schema.
+func Delete(ctx context.Context, c *SupabaseClient, path string, schema ...string) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.BaseURL+path, nil)
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)
 	}
 	apiKey, bearer := resolveKeys(ctx, c)
-	addHeaders(req, apiKey, bearer, "")
+	addHeaders(req, apiKey, bearer, "", schema...)
 	_, err = decode[struct{}](c.HTTPClient.Do(req))
 	return err
 }

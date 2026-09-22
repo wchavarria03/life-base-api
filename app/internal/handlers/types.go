@@ -58,3 +58,43 @@ type SalaryProfileHandler struct {
 type SocialHandler struct {
 	svc SocialPoster
 }
+
+type BikeHandler struct {
+	svc BikeManager
+}
+
+type BikeFitHistoryHandler struct {
+	svc BikeFitHistoryManager
+}
+
+type ComponentHandler struct {
+	svc ComponentManager
+}
+
+type ServiceLogHandler struct {
+	svc ServiceLogManager
+}
+
+type MaintenanceTaskHandler struct {
+	svc MaintenanceTaskManager
+}
+
+type GearHandler struct {
+	svc GearManager
+}
+
+type BottleHandler struct {
+	svc BottleManager
+}
+
+type SupplyHandler struct {
+	svc SupplyManager
+}
+
+type ActivityHandler struct {
+	svc ActivityManager
+}
+
+type StravaHandler struct {
+	svc StravaManager
+}

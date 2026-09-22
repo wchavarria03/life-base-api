@@ -19,6 +19,17 @@ type Registry struct {
 	Upload        *UploadHandler
 	SalaryProfile *SalaryProfileHandler
 	Social        *SocialHandler
+
+	Bike            *BikeHandler
+	BikeFitHistory  *BikeFitHistoryHandler
+	Component       *ComponentHandler
+	ServiceLog      *ServiceLogHandler
+	MaintenanceTask *MaintenanceTaskHandler
+	Gear            *GearHandler
+	Bottle          *BottleHandler
+	Supply          *SupplyHandler
+	Activity        *ActivityHandler
+	Strava          *StravaHandler
 }
 
 func NewRegistry(svc *services.Registry) (*Registry, error) {
@@ -38,6 +49,17 @@ func NewRegistry(svc *services.Registry) (*Registry, error) {
 		Upload:        NewUploadHandler(svc.Import),
 		SalaryProfile: NewSalaryProfileHandler(svc.SalaryProfile),
 		Social:        NewSocialHandler(svc.Social),
+
+		Bike:            NewBikeHandler(svc.Bike),
+		BikeFitHistory:  NewBikeFitHistoryHandler(svc.BikeFitHistory),
+		Component:       NewComponentHandler(svc.Component),
+		ServiceLog:      NewServiceLogHandler(svc.ServiceLog),
+		MaintenanceTask: NewMaintenanceTaskHandler(svc.MaintenanceTask),
+		Gear:            NewGearHandler(svc.Gear),
+		Bottle:          NewBottleHandler(svc.Bottle),
+		Supply:          NewSupplyHandler(svc.Supply),
+		Activity:        NewActivityHandler(svc.Activity),
+		Strava:          NewStravaHandler(svc.Strava),
 	}, nil
 }
 

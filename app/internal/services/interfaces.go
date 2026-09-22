@@ -119,3 +119,92 @@ type SocialPostRepository interface {
 	Update(ctx context.Context, id string, fields map[string]any) (*models.SocialPost, error)
 	Delete(ctx context.Context, id string) error
 }
+
+type BikeRepository interface {
+	List(ctx context.Context) ([]*models.Bike, error)
+	FindByID(ctx context.Context, id string) (*models.Bike, error)
+	Create(ctx context.Context, input models.BikeInput) (*models.Bike, error)
+	Update(ctx context.Context, id string, fields map[string]any) (*models.Bike, error)
+	Delete(ctx context.Context, id string) error
+	IncrementMileage(ctx context.Context, id string, distanceKm float64) error
+}
+
+type BikeFitHistoryRepository interface {
+	ListByBikeID(ctx context.Context, bikeID string) ([]*models.BikeFitHistory, error)
+	Create(ctx context.Context, input models.BikeFitHistoryInput) (*models.BikeFitHistory, error)
+	Delete(ctx context.Context, id string) error
+}
+
+type ComponentRepository interface {
+	ListByBikeID(ctx context.Context, bikeID string) ([]*models.Component, error)
+	FindByID(ctx context.Context, id string) (*models.Component, error)
+	ListActiveByBikeID(ctx context.Context, bikeID string) ([]*models.Component, error)
+	Create(ctx context.Context, input models.ComponentInput) (*models.Component, error)
+	Update(ctx context.Context, id string, fields map[string]any) (*models.Component, error)
+	Delete(ctx context.Context, id string) error
+}
+
+type ComponentHistoryRepository interface {
+	ListByComponentID(ctx context.Context, componentID string) ([]*models.ComponentHistory, error)
+	Create(ctx context.Context, input models.ComponentHistoryInput) (*models.ComponentHistory, error)
+}
+
+type ServiceLogRepository interface {
+	ListByBikeID(ctx context.Context, bikeID string) ([]*models.ServiceLog, error)
+	Create(ctx context.Context, input models.ServiceLogInput) (*models.ServiceLog, error)
+	Delete(ctx context.Context, id string) error
+}
+
+type MaintenanceTaskRepository interface {
+	ListByBikeID(ctx context.Context, bikeID string) ([]*models.MaintenanceTask, error)
+	Create(ctx context.Context, input models.MaintenanceTaskInput) (*models.MaintenanceTask, error)
+	Update(ctx context.Context, id string, fields map[string]any) (*models.MaintenanceTask, error)
+	Delete(ctx context.Context, id string) error
+}
+
+type GearRepository interface {
+	List(ctx context.Context) ([]*models.Gear, error)
+	FindByID(ctx context.Context, id string) (*models.Gear, error)
+	ListActiveByBikeID(ctx context.Context, bikeID string) ([]*models.Gear, error)
+	Create(ctx context.Context, input models.GearInput) (*models.Gear, error)
+	Update(ctx context.Context, id string, fields map[string]any) (*models.Gear, error)
+	Delete(ctx context.Context, id string) error
+}
+
+type BottleRepository interface {
+	List(ctx context.Context) ([]*models.Bottle, error)
+	Create(ctx context.Context, input models.BottleInput) (*models.Bottle, error)
+	Update(ctx context.Context, id string, fields map[string]any) (*models.Bottle, error)
+	Delete(ctx context.Context, id string) error
+}
+
+type SupplyRepository interface {
+	List(ctx context.Context) ([]*models.Supply, error)
+	FindByID(ctx context.Context, id string) (*models.Supply, error)
+	Create(ctx context.Context, input models.SupplyInput) (*models.Supply, error)
+	Update(ctx context.Context, id string, fields map[string]any) (*models.Supply, error)
+	Delete(ctx context.Context, id string) error
+}
+
+type SupplyHistoryRepository interface {
+	List(ctx context.Context) ([]*models.SupplyHistory, error)
+	Create(ctx context.Context, input models.SupplyHistoryInput) (*models.SupplyHistory, error)
+}
+
+type ActivityRepository interface {
+	ListByBikeID(ctx context.Context, bikeID string) ([]*models.Activity, error)
+	Create(ctx context.Context, input models.ActivityInput) (*models.Activity, error)
+	Delete(ctx context.Context, id string) error
+}
+
+type StravaRepository interface {
+	EncryptToken(ctx context.Context, token, encryptionKey string) (string, error)
+	DecryptToken(ctx context.Context, encryptedToken, encryptionKey string) (string, error)
+	FindConnectionByUserID(ctx context.Context, userID string) (*models.StravaConnection, error)
+	UpsertConnection(ctx context.Context, input models.StravaConnectionInput) (*models.StravaConnection, error)
+	UpdateConnection(ctx context.Context, id string, fields map[string]any) (*models.StravaConnection, error)
+	DeleteConnection(ctx context.Context, userID string) error
+	CreateOAuthState(ctx context.Context, input models.OAuthStateInput) (*models.OAuthState, error)
+	FindOAuthState(ctx context.Context, state, userID string) (*models.OAuthState, error)
+	DeleteOAuthState(ctx context.Context, id string) error
+}

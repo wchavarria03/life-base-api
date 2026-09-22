@@ -16,9 +16,20 @@ type Registry struct {
 	Transfer       *TransferService
 	SalaryProfile  *SalaryProfileService
 	Social         *SocialService
+
+	Bike            *BikeService
+	BikeFitHistory  *BikeFitHistoryService
+	Component       *ComponentService
+	ServiceLog      *ServiceLogService
+	MaintenanceTask *MaintenanceTaskService
+	Gear            *GearService
+	Bottle          *BottleService
+	Supply          *SupplyService
+	Activity        *ActivityService
+	Strava          *StravaService
 }
 
-func NewRegistry(repos *repositories.Registry, userID string, social SocialConfig) *Registry {
+func NewRegistry(repos *repositories.Registry, userID string, social SocialConfig, strava StravaConfig) *Registry {
 	classifier := NewClassificationService(repos.Classifications)
 	transfer := NewTransferService(repos.Accounts, repos.Transactions, repos.Transfers)
 	reminder := NewReminderService(repos.Reminders)
@@ -36,5 +47,16 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 		Transfer:       transfer,
 		SalaryProfile:  NewSalaryProfileService(repos.SalaryProfiles),
 		Social:         NewSocialService(repos.SocialPosts, social),
+
+		Bike:            NewBikeService(repos.Bikes),
+		BikeFitHistory:  NewBikeFitHistoryService(repos.BikeFitHistory),
+		Component:       NewComponentService(repos.Components, repos.ComponentHistory),
+		ServiceLog:      NewServiceLogService(repos.ServiceLogs),
+		MaintenanceTask: NewMaintenanceTaskService(repos.MaintenanceTasks, repos.Bikes),
+		Gear:            NewGearService(repos.Gear),
+		Bottle:          NewBottleService(repos.Bottles),
+		Supply:          NewSupplyService(repos.Supplies, repos.SupplyHistory),
+		Activity:        NewActivityService(repos.Activities, repos.Bikes, repos.Components, repos.Gear),
+		Strava:          NewStravaService(repos.Strava, strava),
 	}
 }

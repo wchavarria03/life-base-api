@@ -103,3 +103,78 @@ type SocialPoster interface {
 	RetryInstagram(ctx context.Context, id string) (*models.SocialPost, error)
 	Delete(ctx context.Context, id string) error
 }
+
+type BikeManager interface {
+	List(ctx context.Context) ([]*models.Bike, error)
+	FindByID(ctx context.Context, id string) (*models.Bike, error)
+	Create(ctx context.Context, input models.BikeInput) (*models.Bike, error)
+	Update(ctx context.Context, id string, fields map[string]any) (*models.Bike, error)
+	Delete(ctx context.Context, id string) error
+}
+
+type BikeFitHistoryManager interface {
+	ListByBikeID(ctx context.Context, bikeID string) ([]*models.BikeFitHistory, error)
+	Create(ctx context.Context, input models.BikeFitHistoryInput) (*models.BikeFitHistory, error)
+	Delete(ctx context.Context, id string) error
+}
+
+type ComponentManager interface {
+	ListByBikeID(ctx context.Context, bikeID string) ([]models.ComponentWithStatus, error)
+	Create(ctx context.Context, input models.ComponentInput) (*models.Component, error)
+	Update(ctx context.Context, id string, fields map[string]any) (*models.Component, error)
+	Delete(ctx context.Context, id string) error
+	Replace(ctx context.Context, componentID, replacedDate string, mileageAtReplacement *float64, notes *string) (*models.Component, error)
+	ListHistory(ctx context.Context, componentID string) ([]*models.ComponentHistory, error)
+}
+
+type ServiceLogManager interface {
+	ListByBikeID(ctx context.Context, bikeID string) ([]*models.ServiceLog, error)
+	Create(ctx context.Context, input models.ServiceLogInput) (*models.ServiceLog, error)
+	Delete(ctx context.Context, id string) error
+}
+
+type MaintenanceTaskManager interface {
+	ListByBikeID(ctx context.Context, bikeID string) ([]models.MaintenanceTaskWithStatus, error)
+	Create(ctx context.Context, input models.MaintenanceTaskInput) (*models.MaintenanceTask, error)
+	Update(ctx context.Context, id string, fields map[string]any) (*models.MaintenanceTask, error)
+	Delete(ctx context.Context, id string) error
+	Complete(ctx context.Context, id, bikeID string) (*models.MaintenanceTask, error)
+}
+
+type GearManager interface {
+	List(ctx context.Context) ([]*models.Gear, error)
+	Create(ctx context.Context, input models.GearInput) (*models.Gear, error)
+	Update(ctx context.Context, id string, fields map[string]any) (*models.Gear, error)
+	Delete(ctx context.Context, id string) error
+}
+
+type BottleManager interface {
+	List(ctx context.Context) ([]models.BottleWithStatus, error)
+	Create(ctx context.Context, input models.BottleInput) (*models.Bottle, error)
+	Update(ctx context.Context, id string, fields map[string]any) (*models.Bottle, error)
+	MarkCleaned(ctx context.Context, id string) (*models.Bottle, error)
+	Delete(ctx context.Context, id string) error
+}
+
+type SupplyManager interface {
+	List(ctx context.Context) ([]*models.Supply, error)
+	Create(ctx context.Context, input models.SupplyInput) (*models.Supply, error)
+	Update(ctx context.Context, id string, fields map[string]any) (*models.Supply, error)
+	Delete(ctx context.Context, id string) error
+	Deplete(ctx context.Context, id string) (*models.SupplyHistory, error)
+	ListHistory(ctx context.Context) ([]*models.SupplyHistory, error)
+}
+
+type ActivityManager interface {
+	ListByBikeID(ctx context.Context, bikeID string) ([]*models.Activity, error)
+	Create(ctx context.Context, input models.ActivityInput) (*models.Activity, error)
+	Delete(ctx context.Context, id string) error
+}
+
+type StravaManager interface {
+	Authorize(ctx context.Context, redirectURI string) (string, error)
+	Callback(ctx context.Context, code, state string) (*models.StravaConnection, error)
+	Status(ctx context.Context) (*models.StravaConnection, error)
+	Disconnect(ctx context.Context) error
+	FetchActivities(ctx context.Context, after, before *time.Time, page, perPage int) ([]models.StravaActivityPreview, error)
+}

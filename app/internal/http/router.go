@@ -26,6 +26,7 @@ func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL string) {
 
 	v1.GET("/me", hdlrs.Me.GetMe)
 	setupSocialRoutes(v1, hdlrs)
+	setupBikeRoutes(v1, hdlrs)
 	setupAccountRoutes(v1, hdlrs)
 	setupBudgetRoutes(v1, hdlrs)
 	setupEnvelopeRoutes(v1, hdlrs)
@@ -48,6 +49,67 @@ func setupSocialRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	social.GET("", hdlrs.Social.List)
 	social.DELETE("/:id", hdlrs.Social.Delete)
 	social.POST("/:id/retry-instagram", hdlrs.Social.RetryInstagram)
+}
+
+func setupBikeRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
+	bikes := rg.Group("/bikes")
+	bikes.GET("", hdlrs.Bike.List)
+	bikes.POST("", hdlrs.Bike.Create)
+	bikes.GET("/:id", hdlrs.Bike.Get)
+	bikes.PATCH("/:id", hdlrs.Bike.Update)
+	bikes.DELETE("/:id", hdlrs.Bike.Delete)
+
+	bikes.GET("/:id/fit-history", hdlrs.BikeFitHistory.ListByBike)
+	bikes.POST("/:id/fit-history", hdlrs.BikeFitHistory.Create)
+	bikes.DELETE("/:id/fit-history/:fitId", hdlrs.BikeFitHistory.Delete)
+
+	bikes.GET("/:id/components", hdlrs.Component.ListByBike)
+	bikes.POST("/:id/components", hdlrs.Component.Create)
+	bikes.PATCH("/:id/components/:componentId", hdlrs.Component.Update)
+	bikes.DELETE("/:id/components/:componentId", hdlrs.Component.Delete)
+	bikes.POST("/:id/components/:componentId/replace", hdlrs.Component.Replace)
+	bikes.GET("/:id/components/:componentId/history", hdlrs.Component.ListHistory)
+
+	bikes.GET("/:id/service-logs", hdlrs.ServiceLog.ListByBike)
+	bikes.POST("/:id/service-logs", hdlrs.ServiceLog.Create)
+	bikes.DELETE("/:id/service-logs/:logId", hdlrs.ServiceLog.Delete)
+
+	bikes.GET("/:id/maintenance-tasks", hdlrs.MaintenanceTask.ListByBike)
+	bikes.POST("/:id/maintenance-tasks", hdlrs.MaintenanceTask.Create)
+	bikes.PATCH("/:id/maintenance-tasks/:taskId", hdlrs.MaintenanceTask.Update)
+	bikes.DELETE("/:id/maintenance-tasks/:taskId", hdlrs.MaintenanceTask.Delete)
+	bikes.POST("/:id/maintenance-tasks/:taskId/complete", hdlrs.MaintenanceTask.Complete)
+
+	bikes.GET("/:id/activities", hdlrs.Activity.ListByBike)
+	bikes.POST("/:id/activities", hdlrs.Activity.Create)
+	bikes.DELETE("/:id/activities/:activityId", hdlrs.Activity.Delete)
+
+	bikes.GET("/strava/authorize", hdlrs.Strava.Authorize)
+	bikes.GET("/strava/callback", hdlrs.Strava.Callback)
+	bikes.GET("/strava/status", hdlrs.Strava.Status)
+	bikes.DELETE("/strava", hdlrs.Strava.Disconnect)
+	bikes.GET("/strava/activities", hdlrs.Strava.Activities)
+
+	gear := rg.Group("/gear")
+	gear.GET("", hdlrs.Gear.List)
+	gear.POST("", hdlrs.Gear.Create)
+	gear.PATCH("/:id", hdlrs.Gear.Update)
+	gear.DELETE("/:id", hdlrs.Gear.Delete)
+
+	bottles := rg.Group("/bottles")
+	bottles.GET("", hdlrs.Bottle.List)
+	bottles.POST("", hdlrs.Bottle.Create)
+	bottles.PATCH("/:id", hdlrs.Bottle.Update)
+	bottles.POST("/:id/clean", hdlrs.Bottle.MarkCleaned)
+	bottles.DELETE("/:id", hdlrs.Bottle.Delete)
+
+	supplies := rg.Group("/supplies")
+	supplies.GET("", hdlrs.Supply.List)
+	supplies.POST("", hdlrs.Supply.Create)
+	supplies.PATCH("/:id", hdlrs.Supply.Update)
+	supplies.POST("/:id/deplete", hdlrs.Supply.Deplete)
+	supplies.DELETE("/:id", hdlrs.Supply.Delete)
+	rg.GET("/supply-history", hdlrs.Supply.ListHistory)
 }
 
 func setupEnvelopeRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
