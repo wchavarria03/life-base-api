@@ -60,10 +60,22 @@ Migration `018_social_posts.sql` — already applied (confirmed earlier this ses
       `complete`, confirm it flips to `upcoming`. Create a one-off task (`due_date` only),
       confirm `status` tracks overdue/due_today/upcoming correctly, call `complete`,
       confirm `status` becomes `completed`.
-- [ ] Confirm `?category=household` / `?category=house` filtering actually filters.
-- [ ] `[fe]` Household + House pages don't exist yet in `life-base-fe` — spec is
-      `docs/tasks-frontend-handoff.md`. Nothing to test on the frontend side until those
+- [ ] Confirm `?category=household` / `?category=house` / `?category=todo` filtering
+      actually filters.
+- [ ] `[fe]` Household + House + TODO pages don't exist yet in `life-base-fe` — spec is
+      `docs/phase3-tasks-frontend-handoff.md`. Nothing to test on the frontend side until those
       are built.
+
+## Notes
+
+- [ ] Apply `app/internal/db/migrations/notes/001_initial_schema.sql` to Supabase — **not
+      applied yet**.
+- [ ] Supabase dashboard: expose the `notes` schema under Settings → API → Exposed
+      schemas. `/v1/notes` fails until this is done.
+- [ ] Smoke test plain CRUD: create, update `content`, delete. No derived logic to check
+      here — this one's simple.
+- [ ] `[fe]` Notes pages don't exist yet in `life-base-fe` — spec is
+      `docs/phase4-notes-frontend-handoff.md`.
 
 ## General
 

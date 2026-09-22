@@ -28,6 +28,7 @@ func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL string) {
 	setupSocialRoutes(v1, hdlrs)
 	setupBikeRoutes(v1, hdlrs)
 	setupTaskRoutes(v1, hdlrs)
+	setupNoteRoutes(v1, hdlrs)
 	setupAccountRoutes(v1, hdlrs)
 	setupBudgetRoutes(v1, hdlrs)
 	setupEnvelopeRoutes(v1, hdlrs)
@@ -120,6 +121,15 @@ func setupTaskRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	tasks.PATCH("/:id", hdlrs.Task.Update)
 	tasks.DELETE("/:id", hdlrs.Task.Delete)
 	tasks.POST("/:id/complete", hdlrs.Task.Complete)
+}
+
+func setupNoteRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
+	notes := rg.Group("/notes")
+	notes.GET("", hdlrs.Note.List)
+	notes.POST("", hdlrs.Note.Create)
+	notes.GET("/:id", hdlrs.Note.Get)
+	notes.PATCH("/:id", hdlrs.Note.Update)
+	notes.DELETE("/:id", hdlrs.Note.Delete)
 }
 
 func setupEnvelopeRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
