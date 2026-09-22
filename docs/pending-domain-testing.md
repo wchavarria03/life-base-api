@@ -84,8 +84,7 @@ Migration `018_social_posts.sql` — already applied (confirmed earlier this ses
 
 ## General
 
-- [ ] Both domains' new env vars need to land in whatever secrets store the Render
-      deploy actually reads from, not just `.env.example`/local `.env`.
+- [x] Both domains' new env vars landed on Render (Meta + Strava).
 - [ ] After both are verified, decommission steps from `ledger-api-fe/docs/HUB_PRD.md`
       §6 apply to `track-life-v2` (archive repo + Supabase project, reconsider the Strava
       app registration tied to it) — only once Bikes is confirmed live and working here.
