@@ -32,6 +32,8 @@ type Registry struct {
 	SupplyHistory    *supabaserepo.SupplyHistoryRepository
 	Activities       *supabaserepo.ActivityRepository
 	Strava           *supabaserepo.StravaRepository
+
+	Tasks *supabaserepo.TaskRepository
 }
 
 func NewRegistry(dbs *databases.Registry) *Registry {
@@ -62,5 +64,7 @@ func NewRegistry(dbs *databases.Registry) *Registry {
 		SupplyHistory:    supabaserepo.NewSupplyHistoryRepository(dbs.Supabase),
 		Activities:       supabaserepo.NewActivityRepository(dbs.Supabase),
 		Strava:           supabaserepo.NewStravaRepository(dbs.Supabase),
+
+		Tasks: supabaserepo.NewTaskRepository(dbs.Supabase),
 	}
 }

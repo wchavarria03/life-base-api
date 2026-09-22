@@ -29,10 +29,9 @@ Migration `018_social_posts.sql` — already applied (confirmed earlier this ses
 - [ ] Supabase dashboard: expose the `bikes` schema under Settings → API → Exposed
       schemas. Every `/v1/bikes/...`, `/v1/gear`, `/v1/bottles`, `/v1/supplies` endpoint
       fails until this is done.
-- [ ] Local dev via `docker compose up`: `docker-compose.yml`'s `rest` service currently
-      sets `PGRST_DB_SCHEMA: public` only — needs `public,bikes` (or however PostgREST's
-      multi-schema env var is comma-separated in the version pinned) to test Bikes against
-      the local stack at all.
+- [ ] *(Skip unless local testing becomes needed — testing is against the live Render
+      deploy, not local `docker compose`.)* `docker-compose.yml`'s `rest` service sets
+      `PGRST_DB_SCHEMA: public` only — would need `public,bikes,tasks` to test locally.
 - [ ] Register a real Strava API app (developers.strava.com) — the old track-life-v2 one
       may be tied to its old Supabase project/redirect URI, don't assume it's reusable as-is.
 - [ ] Set env vars: `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, and a strong random
@@ -47,8 +46,23 @@ Migration `018_social_posts.sql` — already applied (confirmed earlier this ses
       login/consent → `callback` → `status` shows connected → `activities` preview
       returns real rides → confirming one via `POST .../activities` accumulates wear
       correctly.
-- [ ] `[fe]` Bikes pages don't exist yet in `life-base-fe` — spec is
-      `docs/bikes-frontend-handoff.md`. Nothing to test on the frontend side until those
+- [ ] `[fe]` Bikes pages already shipped in `life-base-fe` — verify against live
+      endpoints once the schema is exposed, not just that they render.
+
+## Household & House tasks
+
+- [ ] Apply `app/internal/db/migrations/tasks/001_initial_schema.sql` to Supabase — **not
+      applied yet**.
+- [ ] Supabase dashboard: expose the `tasks` schema under Settings → API → Exposed
+      schemas. `/v1/tasks` fails until this is done.
+- [ ] Smoke test both shapes: create a recurring task (`is_recurring: true,
+      interval_days`), confirm `status` starts `overdue` (never completed), call
+      `complete`, confirm it flips to `upcoming`. Create a one-off task (`due_date` only),
+      confirm `status` tracks overdue/due_today/upcoming correctly, call `complete`,
+      confirm `status` becomes `completed`.
+- [ ] Confirm `?category=household` / `?category=house` filtering actually filters.
+- [ ] `[fe]` Household + House pages don't exist yet in `life-base-fe` — spec is
+      `docs/tasks-frontend-handoff.md`. Nothing to test on the frontend side until those
       are built.
 
 ## General

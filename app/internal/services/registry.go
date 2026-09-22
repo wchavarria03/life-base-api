@@ -27,6 +27,8 @@ type Registry struct {
 	Supply          *SupplyService
 	Activity        *ActivityService
 	Strava          *StravaService
+
+	Task *TaskService
 }
 
 func NewRegistry(repos *repositories.Registry, userID string, social SocialConfig, strava StravaConfig) *Registry {
@@ -58,5 +60,7 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 		Supply:          NewSupplyService(repos.Supplies, repos.SupplyHistory),
 		Activity:        NewActivityService(repos.Activities, repos.Bikes, repos.Components, repos.Gear),
 		Strava:          NewStravaService(repos.Strava, strava),
+
+		Task: NewTaskService(repos.Tasks),
 	}
 }

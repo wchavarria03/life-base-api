@@ -30,6 +30,8 @@ type Registry struct {
 	Supply          *SupplyHandler
 	Activity        *ActivityHandler
 	Strava          *StravaHandler
+
+	Task *TaskHandler
 }
 
 func NewRegistry(svc *services.Registry) (*Registry, error) {
@@ -60,6 +62,8 @@ func NewRegistry(svc *services.Registry) (*Registry, error) {
 		Supply:          NewSupplyHandler(svc.Supply),
 		Activity:        NewActivityHandler(svc.Activity),
 		Strava:          NewStravaHandler(svc.Strava),
+
+		Task: NewTaskHandler(svc.Task),
 	}, nil
 }
 
