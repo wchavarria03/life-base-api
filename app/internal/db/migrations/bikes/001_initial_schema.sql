@@ -5,7 +5,8 @@
 
 create schema if not exists bikes;
 
-create extension if not exists pgcrypto;
+-- Supabase installs pgcrypto into the "extensions" schema, not "public".
+create extension if not exists pgcrypto with schema extensions;
 
 -- ============================================================
 -- Tables
@@ -213,18 +214,18 @@ create or replace function bikes.encrypt_token_pgp(token text, encryption_key te
 returns bytea
 language sql
 security definer
-set search_path = public, pg_temp
+set search_path = public, extensions, pg_temp
 as $$
-  select pgp_sym_encrypt(token, encryption_key);
+  select extensions.pgp_sym_encrypt(token, encryption_key);
 $$;
 
 create or replace function bikes.decrypt_token_pgp(encrypted_token bytea, encryption_key text)
 returns text
 language sql
 security definer
-set search_path = public, pg_temp
+set search_path = public, extensions, pg_temp
 as $$
-  select pgp_sym_decrypt(encrypted_token, encryption_key);
+  select extensions.pgp_sym_decrypt(encrypted_token, encryption_key);
 $$;
 
 grant execute on function bikes.encrypt_token_pgp(text, text) to anon, authenticated, service_role;
