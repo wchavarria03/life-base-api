@@ -4,20 +4,21 @@ Concrete, scoped improvements to the existing Bikes/gear maintenance feature —
 we know how to build, just haven't yet. Speculative/exploratory stuff belongs in
 `ideas.md` instead.
 
-## Deleting an activity doesn't reverse its accumulated wear
+## ~~Deleting an activity doesn't reverse its accumulated wear~~ — fixed
 
-`ActivityService.Delete` removes the row but never undoes what `Create` did — the
-bike's `mileage` and every active component's/gear item's `accumulated_km` stay
-inflated by that activity's `distance_km` forever. Correcting a bad activity entry
-(wrong distance, duplicate import) currently requires manually adjusting the bike and
-every affected component/gear afterward. Delete should subtract the same amounts it
-added.
+`Delete` now reverses the same `mileage`/`accumulated_km`/`distance_km` deltas `Create`
+applied, via a shared `applyWear(bikeID, deltaKm)` helper. Caveat noted in code:
+reversal applies to whichever components/gear are active *now*, so if one was
+deactivated/replaced between creating and deleting the activity, its share isn't
+perfectly undone — same limitation as the original accumulation had no per-item audit
+trail to begin with.
 
-## No duplicate guard on Strava-imported activities
+## ~~No duplicate guard on Strava-imported activities~~ — fixed
 
-`GET /v1/bikes/strava/activities` returns a preview; nothing stops the same Strava ride
-from being confirmed and `POST`ed twice, double-counting its distance onto mileage and
-wear. Check `strava_activity_id` for an existing match on that bike before creating.
+`Create` now checks `strava_activity_id` against existing activities on that bike
+before inserting, via `ActivityRepository.FindByStravaActivityID` — a second import
+attempt of the same Strava ride returns an error naming the existing activity instead
+of double-counting distance.
 
 ## No aggregate "what needs attention" endpoint across bikes
 

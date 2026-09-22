@@ -193,6 +193,8 @@ type SupplyHistoryRepository interface {
 
 type ActivityRepository interface {
 	ListByBikeID(ctx context.Context, bikeID string) ([]*models.Activity, error)
+	FindByID(ctx context.Context, id string) (*models.Activity, error)
+	FindByStravaActivityID(ctx context.Context, bikeID string, stravaActivityID int64) (*models.Activity, error)
 	Create(ctx context.Context, input models.ActivityInput) (*models.Activity, error)
 	Delete(ctx context.Context, id string) error
 }
