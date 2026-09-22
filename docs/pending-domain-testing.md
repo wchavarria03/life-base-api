@@ -62,9 +62,8 @@ Migration `018_social_posts.sql` — already applied (confirmed earlier this ses
       confirm `status` becomes `completed`.
 - [ ] Confirm `?category=household` / `?category=house` / `?category=todo` filtering
       actually filters.
-- [ ] `[fe]` Household + House + TODO pages don't exist yet in `life-base-fe` — spec is
-      `docs/phase3-tasks-frontend-handoff.md`. Nothing to test on the frontend side until those
-      are built.
+- [ ] `[fe]` Household + House + TODO pages already shipped in `life-base-fe` — verify
+      against live endpoints once the schema is exposed, not just that they render.
 
 ## Notes
 
@@ -74,8 +73,15 @@ Migration `018_social_posts.sql` — already applied (confirmed earlier this ses
       schemas. `/v1/notes` fails until this is done.
 - [ ] Smoke test plain CRUD: create, update `content`, delete. No derived logic to check
       here — this one's simple.
-- [ ] `[fe]` Notes pages don't exist yet in `life-base-fe` — spec is
-      `docs/phase4-notes-frontend-handoff.md`.
+- [ ] `[fe]` Notes pages already shipped in `life-base-fe` — verify against live
+      endpoints once the schema is exposed, not just that they render.
+
+## Hub shell (module switcher + unified dashboard)
+
+- [ ] `[fe]` Already shipped (`src/pages/Hub.tsx`, replaces the old Finance-only
+      dashboard as the home route) — verify each module's summary card against live
+      data once the corresponding schemas are exposed; Bikes/Household/House/TODO/Notes
+      cards will show nothing/errors until then, Finance's should already work.
 
 ## General
 
