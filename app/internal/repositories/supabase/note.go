@@ -19,13 +19,13 @@ func NewNoteRepository(client *databases.SupabaseClient) *NoteRepository {
 }
 
 func (r *NoteRepository) List(ctx context.Context) ([]*models.Note, error) {
-	return databases.Get[[]*models.Note](ctx, r.client, "/notes", url.Values{
+	return databases.Get[[]*models.Note](ctx, r.client, "/rest/v1/notes", url.Values{
 		"order": []string{"updated_at.desc"},
 	}, notesSchema)
 }
 
 func (r *NoteRepository) FindByID(ctx context.Context, id string) (*models.Note, error) {
-	rows, err := databases.Get[[]*models.Note](ctx, r.client, "/notes", url.Values{
+	rows, err := databases.Get[[]*models.Note](ctx, r.client, "/rest/v1/notes", url.Values{
 		"id":    []string{"eq." + id},
 		"limit": []string{"1"},
 	}, notesSchema)
@@ -39,7 +39,7 @@ func (r *NoteRepository) FindByID(ctx context.Context, id string) (*models.Note,
 }
 
 func (r *NoteRepository) Create(ctx context.Context, input models.NoteInput) (*models.Note, error) {
-	rows, err := databases.Post[[]*models.Note](ctx, r.client, "/notes", input, "return=representation", notesSchema)
+	rows, err := databases.Post[[]*models.Note](ctx, r.client, "/rest/v1/notes", input, "return=representation", notesSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (r *NoteRepository) Create(ctx context.Context, input models.NoteInput) (*m
 }
 
 func (r *NoteRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.Note, error) {
-	rows, err := databases.Patch[[]*models.Note](ctx, r.client, "/notes?id=eq."+id, fields, "return=representation", notesSchema)
+	rows, err := databases.Patch[[]*models.Note](ctx, r.client, "/rest/v1/notes?id=eq."+id, fields, "return=representation", notesSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -61,5 +61,5 @@ func (r *NoteRepository) Update(ctx context.Context, id string, fields map[strin
 }
 
 func (r *NoteRepository) Delete(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/notes?id=eq."+id, notesSchema)
+	return databases.Delete(ctx, r.client, "/rest/v1/notes?id=eq."+id, notesSchema)
 }

@@ -21,13 +21,13 @@ func NewBikeRepository(client *databases.SupabaseClient) *BikeRepository {
 }
 
 func (r *BikeRepository) List(ctx context.Context) ([]*models.Bike, error) {
-	return databases.Get[[]*models.Bike](ctx, r.client, "/bikes", url.Values{
+	return databases.Get[[]*models.Bike](ctx, r.client, "/rest/v1/bikes", url.Values{
 		"order": []string{"created_at.asc"},
 	}, bikesSchema)
 }
 
 func (r *BikeRepository) FindByID(ctx context.Context, id string) (*models.Bike, error) {
-	rows, err := databases.Get[[]*models.Bike](ctx, r.client, "/bikes", url.Values{
+	rows, err := databases.Get[[]*models.Bike](ctx, r.client, "/rest/v1/bikes", url.Values{
 		"id":    []string{"eq." + id},
 		"limit": []string{"1"},
 	}, bikesSchema)
@@ -41,7 +41,7 @@ func (r *BikeRepository) FindByID(ctx context.Context, id string) (*models.Bike,
 }
 
 func (r *BikeRepository) Create(ctx context.Context, input models.BikeInput) (*models.Bike, error) {
-	rows, err := databases.Post[[]*models.Bike](ctx, r.client, "/bikes", input, "return=representation", bikesSchema)
+	rows, err := databases.Post[[]*models.Bike](ctx, r.client, "/rest/v1/bikes", input, "return=representation", bikesSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (r *BikeRepository) Create(ctx context.Context, input models.BikeInput) (*m
 }
 
 func (r *BikeRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.Bike, error) {
-	rows, err := databases.Patch[[]*models.Bike](ctx, r.client, "/bikes?id=eq."+id, fields, "return=representation", bikesSchema)
+	rows, err := databases.Patch[[]*models.Bike](ctx, r.client, "/rest/v1/bikes?id=eq."+id, fields, "return=representation", bikesSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func (r *BikeRepository) Update(ctx context.Context, id string, fields map[strin
 }
 
 func (r *BikeRepository) Delete(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/bikes?id=eq."+id, bikesSchema)
+	return databases.Delete(ctx, r.client, "/rest/v1/bikes?id=eq."+id, bikesSchema)
 }
 
 // IncrementMileage adds distanceKm to the bike's mileage (called when an
@@ -76,7 +76,7 @@ func (r *BikeRepository) IncrementMileage(ctx context.Context, id string, distan
 	if bike == nil {
 		return nil
 	}
-	_, err = databases.Patch[[]*models.Bike](ctx, r.client, "/bikes?id=eq."+id,
+	_, err = databases.Patch[[]*models.Bike](ctx, r.client, "/rest/v1/bikes?id=eq."+id,
 		map[string]any{"mileage": bike.Mileage + distanceKm}, "return=minimal", bikesSchema)
 	return err
 }
@@ -90,14 +90,14 @@ func NewBikeFitHistoryRepository(client *databases.SupabaseClient) *BikeFitHisto
 }
 
 func (r *BikeFitHistoryRepository) ListByBikeID(ctx context.Context, bikeID string) ([]*models.BikeFitHistory, error) {
-	return databases.Get[[]*models.BikeFitHistory](ctx, r.client, "/bike_fit_history", url.Values{
+	return databases.Get[[]*models.BikeFitHistory](ctx, r.client, "/rest/v1/bike_fit_history", url.Values{
 		"bike_id": []string{"eq." + bikeID},
 		"order":   []string{"date.desc"},
 	}, bikesSchema)
 }
 
 func (r *BikeFitHistoryRepository) Create(ctx context.Context, input models.BikeFitHistoryInput) (*models.BikeFitHistory, error) {
-	rows, err := databases.Post[[]*models.BikeFitHistory](ctx, r.client, "/bike_fit_history", input, "return=representation", bikesSchema)
+	rows, err := databases.Post[[]*models.BikeFitHistory](ctx, r.client, "/rest/v1/bike_fit_history", input, "return=representation", bikesSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -108,5 +108,5 @@ func (r *BikeFitHistoryRepository) Create(ctx context.Context, input models.Bike
 }
 
 func (r *BikeFitHistoryRepository) Delete(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/bike_fit_history?id=eq."+id, bikesSchema)
+	return databases.Delete(ctx, r.client, "/rest/v1/bike_fit_history?id=eq."+id, bikesSchema)
 }
