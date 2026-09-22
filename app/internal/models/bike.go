@@ -4,16 +4,20 @@ import "time"
 
 // Bike is the stored shape from bikes.bikes.
 type Bike struct {
-	ID               string    `json:"id"`
-	UserID           string    `json:"user_id,omitempty"`
-	Name             string    `json:"name"`
-	Type             string    `json:"type"`
-	Model            string    `json:"model"`
-	Mileage          float64   `json:"mileage"`
-	PurchaseDate     *string   `json:"purchase_date,omitempty"`
-	PurchaseLocation *string   `json:"purchase_location,omitempty"`
-	CreatedAt        time.Time `json:"created_at,omitempty"`
-	UpdatedAt        time.Time `json:"updated_at,omitempty"`
+	ID               string  `json:"id"`
+	UserID           string  `json:"user_id,omitempty"`
+	Name             string  `json:"name"`
+	Type             string  `json:"type"`
+	Model            string  `json:"model"`
+	SerialNumber     *string `json:"serial_number,omitempty"`
+	Mileage          float64 `json:"mileage"`
+	PurchaseDate     *string `json:"purchase_date,omitempty"`
+	PurchaseLocation *string `json:"purchase_location,omitempty"`
+	// Notes is freeform — also where maintenance schedule / owner's manual
+	// links for this bike's model live, no structured link list.
+	Notes     *string   `json:"notes,omitempty"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 }
 
 // BikeInput is the write shape for create/update.
@@ -22,8 +26,10 @@ type BikeInput struct {
 	Name             string  `json:"name,omitempty"`
 	Type             string  `json:"type,omitempty"`
 	Model            string  `json:"model,omitempty"`
+	SerialNumber     *string `json:"serial_number,omitempty"`
 	PurchaseDate     *string `json:"purchase_date,omitempty"`
 	PurchaseLocation *string `json:"purchase_location,omitempty"`
+	Notes            *string `json:"notes,omitempty"`
 }
 
 // BikeFitHistory is the stored shape from bikes.bike_fit_history — an
