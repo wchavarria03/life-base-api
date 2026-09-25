@@ -7,6 +7,13 @@
 -- setting instead, so the key only ever lives in Postgres config — it never
 -- transits the PostgREST HTTP boundary.
 --
+-- SUPERSEDED by migration 004: `alter database ... set app.settings.*`
+-- below requires real superuser, which Supabase's SQL editor role doesn't
+-- have ("ERROR: 42501: permission denied to set parameter"). Migration 004
+-- redefines these same functions again to read the key from a locked-down
+-- table instead — that's the one that actually works on Supabase. This
+-- file is kept for history; don't follow the manual step below.
+--
 -- REQUIRED MANUAL STEP (run once per environment, not part of this file —
 -- the key itself must not be committed to the repo):
 --   alter database postgres set app.settings.strava_encryption_key = '<the STRAVA_TOKEN_ENCRYPTION_KEY value>';
