@@ -313,6 +313,58 @@ func (s *ImportService) autoCategorize(ctx context.Context, accountID string, st
 	}
 }
 
+// PreviewCategories predicts each transaction's category using the same
+// rules that apply after a real import (see autoCategorize) — without
+// inserting anything, for the dry-run preview. Keyed by index into
+// stmt.Transactions. Best-effort: returns nil on any lookup failure, since
+// this only affects a UI hint the user can still override before
+// confirming.
+func (s *ImportService) PreviewCategories(ctx context.Context, stmt *models.Statement) map[int]string {
+	if s.categoryRules == nil || len(stmt.Transactions) == 0 {
+		return nil
+	}
+
+	var accountID string
+	if acc, err := s.accounts.FindByAccountNumber(ctx, stmt.AccountNumber); err == nil && acc != nil {
+		accountID = acc.ID
+	}
+
+	allRules, err := s.categoryRules.FindAll(ctx)
+	if err != nil || len(allRules) == 0 {
+		return nil
+	}
+
+	// Only rules that apply to this account: global rules (no AccountID)
+	// always apply; account-specific rules only apply to their own account.
+	// A brand-new account (accountID == "") only ever matches global rules.
+	rules := make([]*models.CategoryRule, 0, len(allRules))
+	for _, r := range allRules {
+		if r.AccountID == "" || r.AccountID == accountID {
+			rules = append(rules, r)
+		}
+	}
+	if len(rules) == 0 {
+		return nil
+	}
+
+	disabledIDs := map[string]bool{}
+	if accountID != "" && s.ruleExceptions != nil {
+		if ids, err := s.ruleExceptions.FindByAccount(ctx, accountID); err == nil {
+			for _, id := range ids {
+				disabledIDs[id] = true
+			}
+		}
+	}
+
+	result := make(map[int]string)
+	for i, tx := range stmt.Transactions {
+		if catID := matchCategoryRule(&tx, rules, disabledIDs); catID != "" {
+			result[i] = catID
+		}
+	}
+	return result
+}
+
 // categoryOverride pairs a parsed transaction (as it appeared in the source
 // statement) with the category IDs the user assigned it during import review.
 type categoryOverride struct {

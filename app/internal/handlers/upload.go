@@ -79,6 +79,13 @@ func (h *UploadHandler) Import(c *gin.Context) {
 		if count, err := h.importer.CheckOverlap(c.Request.Context(), stmt); err == nil {
 			preview.ExistingCount = count
 		}
+		if catIDs := h.importer.PreviewCategories(c.Request.Context(), stmt); catIDs != nil {
+			for idx, catID := range catIDs {
+				if idx >= 0 && idx < len(preview.Transactions) {
+					preview.Transactions[idx].Categories = []*models.Category{{ID: catID}}
+				}
+			}
+		}
 		c.JSON(http.StatusOK, preview)
 		return
 	}
