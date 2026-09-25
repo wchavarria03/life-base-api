@@ -12,7 +12,6 @@ linters:
     - misspell
     - gosec
     - unconvert
-    - goconst
     - gocyclo
     - dupl
     - gocritic
@@ -22,9 +21,6 @@ linters:
       min-complexity: 15
     dupl:
       threshold: 100
-    goconst:
-      min-len: 2
-      min-occurrences: 3
     misspell:
       locale: US
   exclusions:

@@ -1,3 +1,5 @@
+// Package middleware provides the Gin HTTP middleware chain the API server
+// applies to incoming requests (auth, rate limiting, CORS, and so on).
 package middleware
 
 import (
