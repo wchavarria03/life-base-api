@@ -30,6 +30,7 @@ func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL, issuer s
 	v1 := engine.Group("/v1")
 	v1.Use(middleware.Auth(jwksURL, issuer))
 	v1.Use(middleware.RateLimit())
+	v1.Use(middleware.AuditLog())
 
 	v1.GET("/me", hdlrs.Me.GetMe)
 	setupSocialRoutes(v1, hdlrs)
