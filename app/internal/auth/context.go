@@ -5,7 +5,7 @@ import "context"
 type contextKey string
 
 const (
-	userTokenKey contextKey = "supabase_user_token"
+	userTokenKey contextKey = "supabase_user_token" //nolint:gosec // context key name, not a credential value
 	userIDKey    contextKey = "supabase_user_id"
 )
 

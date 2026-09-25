@@ -1,13 +1,10 @@
-version:
-  value: "2"
+version: "2"
 
-formatters:
-  enable:
-    - gofmt
+run:
+  timeout: 5m
 
 linters:
   enable:
-    - govet
     - errcheck
     - staticcheck
     - ineffassign
@@ -20,38 +17,40 @@ linters:
     - dupl
     - gocritic
     - revive
+  settings:
+    gocyclo:
+      min-complexity: 15
+    dupl:
+      threshold: 100
+    goconst:
+      min-len: 2
+      min-occurrences: 3
+    misspell:
+      locale: US
+  exclusions:
+    paths:
+      - app/internal/parser/parsers/bac/testdata
+    rules:
+      - path: _test\.go
+        linters:
+          - gosec
+          - dupl
+          - gocyclo
 
-linters-settings:
-  gocyclo:
-    min-complexity: 15
-  dupl:
-    threshold: 100
-  goconst:
-    min-len: 2
-    min-occurrences: 3
-  misspell:
-    locale: US
-
-run:
-  timeout: 5m
-  exclude-dirs:
-    - vendor
-    - app/internal/parser/parsers/bac/testdata
+formatters:
+  enable:
+    - gofmt
+  exclusions:
+    paths:
+      - app/internal/parser/parsers/bac/testdata
 
 issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - gosec
-        - dupl
-        - gocyclo
   max-issues-per-linter: 0
   max-same-issues: 0
-  new: false
 
 output:
   formats:
-    - format: colored-line-number
-  print-issued-lines: true
-  print-linter-name: true
-  uniq-by-line: false
+    text:
+      path: stdout
+      print-linter-name: true
+      print-issued-lines: true

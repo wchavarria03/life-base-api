@@ -217,7 +217,7 @@ func buildCaption(custom *string) string {
 	for _, c := range seed {
 		n = n*10 + int64(c-'0')
 	}
-	body := weeklyCaptions[rand.New(rand.NewSource(n)).Intn(len(weeklyCaptions))]
+	body := weeklyCaptions[rand.New(rand.NewSource(n)).Intn(len(weeklyCaptions))] //nolint:gosec // deterministic by design (seeded from today's date), not a security context
 	return fmt.Sprintf("%s\n\n\U0001F3A5 Live on YouTube: youtube.com/@wallyrides_cr\n\n%s", body, socialHashtags)
 }
 

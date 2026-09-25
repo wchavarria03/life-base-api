@@ -17,7 +17,7 @@ import (
 	"life-base-api/app/internal/models"
 )
 
-const stravaTokenURL = "https://www.strava.com/oauth/token"
+const stravaTokenURL = "https://www.strava.com/oauth/token" //nolint:gosec // API endpoint URL, not a credential value
 const stravaAuthorizeURL = "https://www.strava.com/oauth/authorize"
 const stravaActivitiesURL = "https://www.strava.com/api/v3/athlete/activities"
 

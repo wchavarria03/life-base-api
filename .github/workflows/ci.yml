@@ -42,3 +42,24 @@ jobs:
 
       - name: Run govulncheck
         run: govulncheck ./...
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: golangci-lint (new issues only)
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: latest
+          # The repo has a large pre-existing lint backlog (mostly missing
+          # doc comments on exported symbols). Scoping to new-from-rev keeps
+          # CI green on that debt while still catching new issues —
+          # including gosec/staticcheck — on every PR.
+          only-new-issues: true

@@ -20,7 +20,7 @@ func NewReader(pdfPath string) (*Reader, error) {
 		return nil, fmt.Errorf("PDF file does not exist: %w", err)
 	}
 
-	f, err := os.Open(pdfPath)
+	f, err := os.Open(pdfPath) //nolint:gosec // pdfPath is CLI-supplied (--input-dir flag), not HTTP-reachable
 	if err != nil {
 		return nil, fmt.Errorf("failed to open PDF file: %w", err)
 	}

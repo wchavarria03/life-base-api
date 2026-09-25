@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"net/http"
 	"strings"
 	"sync"
@@ -17,6 +16,11 @@ import (
 
 	"life-base-api/app/internal/auth"
 )
+
+// p256CoordSize is the byte length of a P-256 field element (256 bits),
+// used to left-pad JWKS x/y coordinates to the fixed width
+// ecdsa.ParseUncompressedPublicKey requires.
+const p256CoordSize = 32
 
 // jwksRefreshInterval bounds how long a rotated Supabase signing key can be
 // unrecognized for. Verification falls back to an on-demand refetch on
@@ -45,7 +49,7 @@ type jwk struct {
 }
 
 func fetchECPublicKey(jwksURL string) (*ecdsa.PublicKey, error) {
-	resp, err := http.Get(jwksURL) //nolint:noctx
+	resp, err := http.Get(jwksURL) //nolint:noctx,gosec // jwksURL is server config (built from SUPABASE_URL), not per-request user input
 	if err != nil {
 		return nil, fmt.Errorf("fetch JWKS: %w", err)
 	}
@@ -66,11 +70,23 @@ func fetchECPublicKey(jwksURL string) (*ecdsa.PublicKey, error) {
 			if err != nil {
 				return nil, fmt.Errorf("decode y: %w", err)
 			}
-			return &ecdsa.PublicKey{
-				Curve: elliptic.P256(),
-				X:     new(big.Int).SetBytes(xBytes),
-				Y:     new(big.Int).SetBytes(yBytes),
-			}, nil
+			if len(xBytes) > p256CoordSize || len(yBytes) > p256CoordSize {
+				return nil, fmt.Errorf("invalid P-256 coordinate length")
+			}
+
+			// Uncompressed SEC1 point: 0x04 || X || Y, each coordinate
+			// left-padded to p256CoordSize (base64 decoding can drop
+			// leading zero bytes).
+			point := make([]byte, 1+2*p256CoordSize)
+			point[0] = 0x04
+			copy(point[1+p256CoordSize-len(xBytes):1+p256CoordSize], xBytes)
+			copy(point[1+2*p256CoordSize-len(yBytes):], yBytes)
+
+			key, err := ecdsa.ParseUncompressedPublicKey(elliptic.P256(), point)
+			if err != nil {
+				return nil, fmt.Errorf("parse EC public key: %w", err)
+			}
+			return key, nil
 		}
 	}
 

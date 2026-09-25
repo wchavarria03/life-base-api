@@ -12,7 +12,7 @@ import (
 func NewDumpHandler() *DumpHandler { return &DumpHandler{} }
 
 func (h *DumpHandler) Handle(inputDir, outputDir string, verbose bool) error {
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
+	if err := os.MkdirAll(outputDir, 0750); err != nil {
 		return fmt.Errorf("create output dir: %w", err)
 	}
 

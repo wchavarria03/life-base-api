@@ -8,7 +8,7 @@ import (
 )
 
 func ProcessPDFs(inputDir, outputDir string, verbose bool) error {
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
+	if err := os.MkdirAll(outputDir, 0750); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
@@ -82,7 +82,7 @@ func ExtractText(inputPath, outputPath string, verbose bool) error {
 	}
 	defer reader.Close()
 
-	outFile, err := os.Create(outputPath)
+	outFile, err := os.Create(outputPath) //nolint:gosec // outputPath is CLI-supplied (--output flag), not HTTP-reachable
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %w", err)
 	}

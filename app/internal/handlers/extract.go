@@ -31,7 +31,7 @@ func (h *ExtractHandler) Handle(ctx context.Context, inputDir, outputDir string,
 		return fmt.Errorf("extract PDFs: %w", err)
 	}
 
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
+	if err := os.MkdirAll(outputDir, 0750); err != nil {
 		return fmt.Errorf("create output dir: %w", err)
 	}
 
@@ -46,7 +46,7 @@ func (h *ExtractHandler) Handle(ctx context.Context, inputDir, outputDir string,
 		}
 
 		baseName := strings.TrimSuffix(file.Name(), ".txt")
-		raw, err := os.ReadFile(filepath.Join(tempDir, file.Name()))
+		raw, err := os.ReadFile(filepath.Join(tempDir, file.Name())) //nolint:gosec // tempDir is process-owned (os.MkdirTemp), file.Name() enumerated from it; CLI-only, not HTTP-reachable
 		if err != nil {
 			return err
 		}

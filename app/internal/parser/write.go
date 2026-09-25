@@ -9,7 +9,7 @@ import (
 )
 
 func WriteTransactions(path string, transactions []models.Transaction) error {
-	f, err := os.Create(path)
+	f, err := os.Create(path) //nolint:gosec // path is CLI-supplied (--output flag), not HTTP-reachable
 	if err != nil {
 		return err
 	}
