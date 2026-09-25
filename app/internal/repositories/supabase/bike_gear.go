@@ -57,7 +57,7 @@ func (r *GearRepository) Create(ctx context.Context, input models.GearInput) (*m
 }
 
 func (r *GearRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.Gear, error) {
-	rows, err := databases.Patch[[]*models.Gear](ctx, r.client, "/rest/v1/gear?id=eq."+id, fields, "return=representation", bikesSchema)
+	rows, err := databases.Patch[[]*models.Gear](ctx, r.client, "/rest/v1/gear", databases.EqID(id), fields, "return=representation", bikesSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (r *GearRepository) Update(ctx context.Context, id string, fields map[strin
 }
 
 func (r *GearRepository) Delete(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/rest/v1/gear?id=eq."+id, bikesSchema)
+	return databases.Delete(ctx, r.client, "/rest/v1/gear", databases.EqID(id), bikesSchema)
 }
 
 type BottleRepository struct {
@@ -97,7 +97,7 @@ func (r *BottleRepository) Create(ctx context.Context, input models.BottleInput)
 }
 
 func (r *BottleRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.Bottle, error) {
-	rows, err := databases.Patch[[]*models.Bottle](ctx, r.client, "/rest/v1/bottles?id=eq."+id, fields, "return=representation", bikesSchema)
+	rows, err := databases.Patch[[]*models.Bottle](ctx, r.client, "/rest/v1/bottles", databases.EqID(id), fields, "return=representation", bikesSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (r *BottleRepository) Update(ctx context.Context, id string, fields map[str
 }
 
 func (r *BottleRepository) Delete(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/rest/v1/bottles?id=eq."+id, bikesSchema)
+	return databases.Delete(ctx, r.client, "/rest/v1/bottles", databases.EqID(id), bikesSchema)
 }
 
 type SupplyRepository struct {
@@ -151,7 +151,7 @@ func (r *SupplyRepository) Create(ctx context.Context, input models.SupplyInput)
 }
 
 func (r *SupplyRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.Supply, error) {
-	rows, err := databases.Patch[[]*models.Supply](ctx, r.client, "/rest/v1/supplies?id=eq."+id, fields, "return=representation", bikesSchema)
+	rows, err := databases.Patch[[]*models.Supply](ctx, r.client, "/rest/v1/supplies", databases.EqID(id), fields, "return=representation", bikesSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func (r *SupplyRepository) Update(ctx context.Context, id string, fields map[str
 }
 
 func (r *SupplyRepository) Delete(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/rest/v1/supplies?id=eq."+id, bikesSchema)
+	return databases.Delete(ctx, r.client, "/rest/v1/supplies", databases.EqID(id), bikesSchema)
 }
 
 type SupplyHistoryRepository struct {

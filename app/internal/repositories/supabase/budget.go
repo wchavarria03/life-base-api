@@ -91,8 +91,11 @@ func (r *BudgetRepository) FindByID(ctx context.Context, id string) (*models.Bud
 }
 
 func (r *BudgetRepository) Update(ctx context.Context, id string, amount decimal.Decimal) (*models.Budget, error) {
+	params := databases.EqID(id)
+	params.Set("select", "*,categories(name,color)")
 	rows, err := databases.Patch[[]*budgetRow](ctx, r.client,
-		"/rest/v1/budgets?id=eq."+id+"&select=*,categories(name,color)",
+		"/rest/v1/budgets",
+		params,
 		map[string]any{"amount": amount},
 		"return=representation")
 	if err != nil {
@@ -105,7 +108,7 @@ func (r *BudgetRepository) Update(ctx context.Context, id string, amount decimal
 }
 
 func (r *BudgetRepository) Delete(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/rest/v1/budgets?id=eq."+id)
+	return databases.Delete(ctx, r.client, "/rest/v1/budgets", databases.EqID(id))
 }
 
 func (r *BudgetRepository) Acknowledge(ctx context.Context, budgetID, month, action string, transferID *string) (*models.BudgetAcknowledgment, error) {

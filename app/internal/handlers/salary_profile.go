@@ -17,7 +17,7 @@ func (h *SalaryProfileHandler) Get(c *gin.Context) {
 	userID := auth.UserIDFromContext(c.Request.Context())
 	profile, err := h.svc.Get(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	if profile == nil {
@@ -41,7 +41,7 @@ func (h *SalaryProfileHandler) Save(c *gin.Context) {
 		HoursPerWeek: req.HoursPerWeek,
 	})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, profile)
@@ -56,7 +56,7 @@ func (h *SalaryProfileHandler) CheckPurchase(c *gin.Context) {
 	userID := auth.UserIDFromContext(c.Request.Context())
 	profile, err := h.svc.Get(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	if profile == nil {

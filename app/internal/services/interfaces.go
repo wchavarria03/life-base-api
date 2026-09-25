@@ -200,8 +200,8 @@ type ActivityRepository interface {
 }
 
 type StravaRepository interface {
-	EncryptToken(ctx context.Context, token, encryptionKey string) (string, error)
-	DecryptToken(ctx context.Context, encryptedToken, encryptionKey string) (string, error)
+	EncryptToken(ctx context.Context, token string) (string, error)
+	DecryptToken(ctx context.Context, encryptedToken string) (string, error)
 	FindConnectionByUserID(ctx context.Context, userID string) (*models.StravaConnection, error)
 	UpsertConnection(ctx context.Context, input models.StravaConnectionInput) (*models.StravaConnection, error)
 	UpdateConnection(ctx context.Context, id string, fields map[string]any) (*models.StravaConnection, error)

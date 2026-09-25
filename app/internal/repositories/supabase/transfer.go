@@ -74,5 +74,5 @@ func (r *TransferRepository) GetByID(ctx context.Context, id string) (*models.Tr
 // Delete removes a transfer link row, e.g. when a linked transaction is
 // corrected to no longer be a transfer.
 func (r *TransferRepository) Delete(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/rest/v1/transfers?id=eq."+id)
+	return databases.Delete(ctx, r.client, "/rest/v1/transfers", databases.EqID(id))
 }

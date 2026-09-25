@@ -15,7 +15,7 @@ func (h *RuleExceptionHandler) ListByAccount(c *gin.Context) {
 	accountID := c.Param("id")
 	ids, err := h.exceptions.FindByAccount(c.Request.Context(), accountID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	if ids == nil {
@@ -35,7 +35,7 @@ func (h *RuleExceptionHandler) Disable(c *gin.Context) {
 		return
 	}
 	if err := h.exceptions.Create(c.Request.Context(), accountID, body.RuleID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -46,7 +46,7 @@ func (h *RuleExceptionHandler) Enable(c *gin.Context) {
 	accountID := c.Param("id")
 	ruleID := c.Param("rule_id")
 	if err := h.exceptions.Delete(c.Request.Context(), accountID, ruleID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusNoContent)

@@ -15,7 +15,7 @@ func NewServiceLogHandler(svc ServiceLogManager) *ServiceLogHandler {
 func (h *ServiceLogHandler) ListByBike(c *gin.Context) {
 	logs, err := h.svc.ListByBikeID(c.Request.Context(), c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, logs)
@@ -38,7 +38,7 @@ func (h *ServiceLogHandler) Create(c *gin.Context) {
 
 func (h *ServiceLogHandler) Delete(c *gin.Context) {
 	if err := h.svc.Delete(c.Request.Context(), c.Param("logId")); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -51,7 +51,7 @@ func NewMaintenanceTaskHandler(svc MaintenanceTaskManager) *MaintenanceTaskHandl
 func (h *MaintenanceTaskHandler) ListByBike(c *gin.Context) {
 	tasks, err := h.svc.ListByBikeID(c.Request.Context(), c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, tasks)
@@ -97,7 +97,7 @@ func (h *MaintenanceTaskHandler) Complete(c *gin.Context) {
 
 func (h *MaintenanceTaskHandler) Delete(c *gin.Context) {
 	if err := h.svc.Delete(c.Request.Context(), c.Param("taskId")); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusNoContent)

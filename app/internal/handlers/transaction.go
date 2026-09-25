@@ -94,7 +94,7 @@ func (h *TransactionHandler) ListByAccount(c *gin.Context) {
 
 	txs, total, err := h.svc.ListFiltered(c.Request.Context(), accountID, filter)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 

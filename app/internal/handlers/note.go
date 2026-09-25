@@ -28,7 +28,7 @@ func NewNoteHandler(svc NoteManager) *NoteHandler {
 func (h *NoteHandler) List(c *gin.Context) {
 	notes, err := h.svc.List(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, notes)
@@ -37,7 +37,7 @@ func (h *NoteHandler) List(c *gin.Context) {
 func (h *NoteHandler) Get(c *gin.Context) {
 	note, err := h.svc.FindByID(c.Request.Context(), c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	if note == nil {
@@ -77,7 +77,7 @@ func (h *NoteHandler) Update(c *gin.Context) {
 
 func (h *NoteHandler) Delete(c *gin.Context) {
 	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusNoContent)

@@ -48,7 +48,8 @@ func (r *AccountRepository) FindByAccountNumber(ctx context.Context, number stri
 
 func (r *AccountRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.Account, error) {
 	results, err := databases.Patch[[]*models.Account](ctx, r.client,
-		"/rest/v1/accounts?id=eq."+id,
+		"/rest/v1/accounts",
+		databases.EqID(id),
 		fields,
 		"return=representation")
 	if err != nil {
@@ -64,7 +65,7 @@ func (r *AccountRepository) Update(ctx context.Context, id string, fields map[st
 // there's no transaction history on it — the API layer blocks deletes on
 // accounts with transactions rather than cascading.
 func (r *AccountRepository) Delete(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/rest/v1/accounts?id=eq."+id)
+	return databases.Delete(ctx, r.client, "/rest/v1/accounts", databases.EqID(id))
 }
 
 func (r *AccountRepository) Upsert(ctx context.Context, a *models.Account) (*models.Account, error) {

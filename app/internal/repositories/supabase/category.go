@@ -46,7 +46,8 @@ func (r *CategoryRepository) Create(ctx context.Context, c *models.Category) (*m
 
 func (r *CategoryRepository) Update(ctx context.Context, id string, fields map[string]string) (*models.Category, error) {
 	results, err := databases.Patch[[]*models.Category](ctx, r.client,
-		"/rest/v1/categories?id=eq."+id,
+		"/rest/v1/categories",
+		databases.EqID(id),
 		fields, "return=representation")
 	if err != nil {
 		return nil, err
@@ -59,7 +60,8 @@ func (r *CategoryRepository) Update(ctx context.Context, id string, fields map[s
 
 func (r *CategoryRepository) SoftDelete(ctx context.Context, id string) error {
 	_, err := databases.Patch[[]*models.Category](ctx, r.client,
-		"/rest/v1/categories?id=eq."+id,
+		"/rest/v1/categories",
+		databases.EqID(id),
 		map[string]string{"deleted_at": time.Now().UTC().Format(time.RFC3339)},
 		"")
 	return err
@@ -110,7 +112,7 @@ func (r *CategoryRuleRepository) Create(ctx context.Context, rule *models.Catego
 }
 
 func (r *CategoryRuleRepository) Delete(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/rest/v1/category_rules?id=eq."+id)
+	return databases.Delete(ctx, r.client, "/rest/v1/category_rules", databases.EqID(id))
 }
 
 // ── TransactionCategoryRepository ────────────────────────────────────────────
@@ -120,7 +122,7 @@ func NewTransactionCategoryRepository(client *databases.SupabaseClient) *Transac
 }
 
 func (r *TransactionCategoryRepository) SetCategories(ctx context.Context, transactionID string, categoryIDs []string) error {
-	if err := databases.Delete(ctx, r.client, "/rest/v1/transaction_categories?transaction_id=eq."+transactionID); err != nil {
+	if err := databases.Delete(ctx, r.client, "/rest/v1/transaction_categories", url.Values{"transaction_id": []string{"eq." + transactionID}}); err != nil {
 		return err
 	}
 	if len(categoryIDs) == 0 {

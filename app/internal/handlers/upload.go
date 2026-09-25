@@ -98,7 +98,7 @@ func (h *UploadHandler) Import(c *gin.Context) {
 
 	summary, err := h.importer.ImportWithSummary(c.Request.Context(), stmt, p.Name(), catOverrides)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "import failed: " + err.Error()})
+		internalError(c, err)
 		return
 	}
 

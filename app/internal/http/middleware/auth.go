@@ -9,12 +9,24 @@ import (
 	"math/big"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 
 	"life-base-api/app/internal/auth"
 )
+
+// jwksRefreshInterval bounds how long a rotated Supabase signing key can be
+// unrecognized for. Verification falls back to an on-demand refetch on
+// failure regardless, so this is a ceiling, not the only recovery path.
+const jwksRefreshInterval = 10 * time.Minute
+
+// jwksMinRefetchInterval throttles the on-demand refetch triggered by a
+// verification failure, so a flood of invalid tokens can't be used to spam
+// the JWKS endpoint.
+const jwksMinRefetchInterval = 10 * time.Second
 
 type supabaseClaims struct {
 	Role string `json:"role"`
@@ -65,13 +77,93 @@ func fetchECPublicKey(jwksURL string) (*ecdsa.PublicKey, error) {
 	return nil, fmt.Errorf("no ES256 key found in JWKS")
 }
 
-// Auth validates Supabase JWTs using ES256 (asymmetric, verified via JWKS).
-func Auth(jwksURL string) gin.HandlerFunc {
-	var ecKey *ecdsa.PublicKey
-	if jwksURL != "" {
-		if key, err := fetchECPublicKey(jwksURL); err == nil {
-			ecKey = key
+// jwksKeyStore holds the current JWKS-fetched ES256 key and refreshes it
+// periodically plus on-demand when a verification fails, so a rotated
+// Supabase signing key recovers without a process restart.
+type jwksKeyStore struct {
+	jwksURL string
+
+	mu          sync.RWMutex
+	key         *ecdsa.PublicKey
+	lastRefetch time.Time
+}
+
+func newJWKSKeyStore(jwksURL string) *jwksKeyStore {
+	s := &jwksKeyStore{jwksURL: jwksURL}
+	if jwksURL == "" {
+		return s
+	}
+
+	s.refresh()
+
+	go func() {
+		ticker := time.NewTicker(jwksRefreshInterval)
+		defer ticker.Stop()
+		for range ticker.C {
+			s.refresh()
 		}
+	}()
+
+	return s
+}
+
+func (s *jwksKeyStore) refresh() {
+	key, err := fetchECPublicKey(s.jwksURL)
+	s.mu.Lock()
+	s.lastRefetch = time.Now()
+	if err == nil {
+		s.key = key
+	}
+	s.mu.Unlock()
+}
+
+// refetchOnFailure is the debounced counterpart to refresh, called from the
+// request path after a verification failure. It skips the fetch if one
+// already happened recently, so a flood of invalid tokens can't be used to
+// spam the JWKS endpoint.
+func (s *jwksKeyStore) refetchOnFailure() {
+	s.mu.RLock()
+	tooSoon := time.Since(s.lastRefetch) < jwksMinRefetchInterval
+	s.mu.RUnlock()
+	if tooSoon {
+		return
+	}
+	s.refresh()
+}
+
+func (s *jwksKeyStore) get() *ecdsa.PublicKey {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.key
+}
+
+// Auth validates Supabase JWTs using ES256 (asymmetric, verified via JWKS).
+// issuer, when non-empty, is required to match the token's "iss" claim
+// (Supabase's GoTrue issuer, typically "<SUPABASE_URL>/auth/v1"); the
+// token's audience must be "authenticated", matching every Supabase-issued
+// user access token.
+func Auth(jwksURL, issuer string) gin.HandlerFunc {
+	store := newJWKSKeyStore(jwksURL)
+
+	parserOpts := []jwt.ParserOption{jwt.WithAudience("authenticated")}
+	if issuer != "" {
+		parserOpts = append(parserOpts, jwt.WithIssuer(issuer))
+	}
+
+	verify := func(tokenStr string) (*supabaseClaims, error) {
+		claims := &supabaseClaims{}
+		_, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (any, error) {
+			switch t.Method.(type) {
+			case *jwt.SigningMethodECDSA:
+				if key := store.get(); key != nil {
+					return key, nil
+				}
+				return nil, fmt.Errorf("no EC key available for ES256")
+			default:
+				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+			}
+		}, parserOpts...)
+		return claims, err
 	}
 
 	return func(c *gin.Context) {
@@ -82,22 +174,17 @@ func Auth(jwksURL string) gin.HandlerFunc {
 		}
 
 		tokenStr := strings.TrimPrefix(header, "Bearer ")
-		claims := &supabaseClaims{}
 
-		_, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (any, error) {
-			switch t.Method.(type) {
-			case *jwt.SigningMethodECDSA:
-				if ecKey == nil {
-					return nil, fmt.Errorf("no EC key available for ES256")
-				}
-				return ecKey, nil
-			default:
-				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
-			}
-		})
+		claims, err := verify(tokenStr)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
-			return
+			// The stored key may be stale (e.g. Supabase rotated it since our
+			// last periodic refresh) — refetch once and retry before failing.
+			store.refetchOnFailure()
+			claims, err = verify(tokenStr)
+			if err != nil {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+				return
+			}
 		}
 
 		userID, err := claims.GetSubject()

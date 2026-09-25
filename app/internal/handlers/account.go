@@ -16,7 +16,7 @@ func NewAccountHandler(svc AccountLister) *AccountHandler {
 func (h *AccountHandler) List(c *gin.Context) {
 	accounts, err := h.svc.List(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -51,7 +51,7 @@ func (h *AccountHandler) Create(c *gin.Context) {
 		External:      req.External,
 	})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusCreated, account)
@@ -82,7 +82,7 @@ func (h *AccountHandler) Update(c *gin.Context) {
 	}
 	account, err := h.svc.Update(c.Request.Context(), c.Param("id"), fields)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	if account == nil {
@@ -103,7 +103,7 @@ func (h *AccountHandler) Delete(c *gin.Context) {
 func (h *AccountHandler) Get(c *gin.Context) {
 	account, err := h.svc.GetByID(c.Request.Context(), c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	if account == nil {

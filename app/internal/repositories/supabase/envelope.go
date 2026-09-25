@@ -58,7 +58,8 @@ func (r *EnvelopeRepository) Create(ctx context.Context, input models.EnvelopeIn
 
 func (r *EnvelopeRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.Envelope, error) {
 	rows, err := databases.Patch[[]*models.Envelope](ctx, r.client,
-		"/rest/v1/envelopes?id=eq."+id,
+		"/rest/v1/envelopes",
+		databases.EqID(id),
 		fields,
 		"return=representation")
 	if err != nil {
@@ -71,7 +72,7 @@ func (r *EnvelopeRepository) Update(ctx context.Context, id string, fields map[s
 }
 
 func (r *EnvelopeRepository) Delete(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/rest/v1/envelopes?id=eq."+id)
+	return databases.Delete(ctx, r.client, "/rest/v1/envelopes", databases.EqID(id))
 }
 
 func (r *EnvelopeRepository) Contribute(ctx context.Context, envelopeID string, input models.ContributionInput) (*models.EnvelopeContribution, error) {
@@ -130,7 +131,8 @@ func (r *EnvelopeRepository) GetBalances(ctx context.Context, envelopeIDs []stri
 // SetNextContributionDate advances the schedule after a recurring contribution is applied.
 func (r *EnvelopeRepository) SetNextContributionDate(ctx context.Context, id, date string) error {
 	_, err := databases.Patch[struct{}](ctx, r.client,
-		"/rest/v1/envelopes?id=eq."+id,
+		"/rest/v1/envelopes",
+		databases.EqID(id),
 		map[string]any{"next_contribution_date": date},
 		"return=minimal")
 	return err

@@ -36,7 +36,7 @@ func (h *StravaHandler) Callback(c *gin.Context) {
 func (h *StravaHandler) Status(c *gin.Context) {
 	conn, err := h.svc.Status(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	if conn == nil {
@@ -49,7 +49,7 @@ func (h *StravaHandler) Status(c *gin.Context) {
 // Disconnect handles DELETE /v1/bikes/strava.
 func (h *StravaHandler) Disconnect(c *gin.Context) {
 	if err := h.svc.Disconnect(c.Request.Context()); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusNoContent)

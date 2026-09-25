@@ -15,7 +15,7 @@ func NewComponentHandler(svc ComponentManager) *ComponentHandler {
 func (h *ComponentHandler) ListByBike(c *gin.Context) {
 	components, err := h.svc.ListByBikeID(c.Request.Context(), c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, components)
@@ -52,7 +52,7 @@ func (h *ComponentHandler) Update(c *gin.Context) {
 
 func (h *ComponentHandler) Delete(c *gin.Context) {
 	if err := h.svc.Delete(c.Request.Context(), c.Param("componentId")); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -81,7 +81,7 @@ func (h *ComponentHandler) Replace(c *gin.Context) {
 func (h *ComponentHandler) ListHistory(c *gin.Context) {
 	history, err := h.svc.ListHistory(c.Request.Context(), c.Param("componentId"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, history)

@@ -28,9 +28,8 @@ const oauthStateTTL = 5 * time.Minute
 const tokenRefreshMargin = 5 * time.Minute
 
 type StravaConfig struct {
-	ClientID      string
-	ClientSecret  string
-	EncryptionKey string
+	ClientID     string
+	ClientSecret string
 }
 
 type StravaService struct {
@@ -126,11 +125,11 @@ func (s *StravaService) Callback(ctx context.Context, code, state string) (*mode
 		return nil, fmt.Errorf("token exchange: %w", err)
 	}
 
-	encryptedAccess, err := s.repo.EncryptToken(ctx, tokenData.AccessToken, s.cfg.EncryptionKey)
+	encryptedAccess, err := s.repo.EncryptToken(ctx, tokenData.AccessToken)
 	if err != nil {
 		return nil, fmt.Errorf("encrypt access token: %w", err)
 	}
-	encryptedRefresh, err := s.repo.EncryptToken(ctx, tokenData.RefreshToken, s.cfg.EncryptionKey)
+	encryptedRefresh, err := s.repo.EncryptToken(ctx, tokenData.RefreshToken)
 	if err != nil {
 		return nil, fmt.Errorf("encrypt refresh token: %w", err)
 	}
@@ -260,10 +259,10 @@ func (s *StravaService) validAccessToken(ctx context.Context, userID string) (st
 	}
 
 	if time.Now().Add(tokenRefreshMargin).Before(conn.ExpiresAt) {
-		return s.repo.DecryptToken(ctx, conn.AccessTokenEncrypted, s.cfg.EncryptionKey)
+		return s.repo.DecryptToken(ctx, conn.AccessTokenEncrypted)
 	}
 
-	refreshToken, err := s.repo.DecryptToken(ctx, conn.RefreshTokenEncrypted, s.cfg.EncryptionKey)
+	refreshToken, err := s.repo.DecryptToken(ctx, conn.RefreshTokenEncrypted)
 	if err != nil {
 		return "", fmt.Errorf("decrypt refresh token: %w", err)
 	}
@@ -282,11 +281,11 @@ func (s *StravaService) validAccessToken(ctx context.Context, userID string) (st
 		return "", fmt.Errorf("refresh token: %w", err)
 	}
 
-	encryptedAccess, err := s.repo.EncryptToken(ctx, tokenData.AccessToken, s.cfg.EncryptionKey)
+	encryptedAccess, err := s.repo.EncryptToken(ctx, tokenData.AccessToken)
 	if err != nil {
 		return "", fmt.Errorf("encrypt refreshed access token: %w", err)
 	}
-	encryptedRefresh, err := s.repo.EncryptToken(ctx, tokenData.RefreshToken, s.cfg.EncryptionKey)
+	encryptedRefresh, err := s.repo.EncryptToken(ctx, tokenData.RefreshToken)
 	if err != nil {
 		return "", fmt.Errorf("encrypt refreshed refresh token: %w", err)
 	}

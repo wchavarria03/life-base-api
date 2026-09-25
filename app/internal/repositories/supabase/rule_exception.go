@@ -48,5 +48,6 @@ func (r *AccountRuleExceptionRepository) Create(ctx context.Context, accountID, 
 
 func (r *AccountRuleExceptionRepository) Delete(ctx context.Context, accountID, ruleID string) error {
 	return databases.Delete(ctx, r.client,
-		"/rest/v1/account_rule_exceptions?account_id=eq."+accountID+"&rule_id=eq."+ruleID)
+		"/rest/v1/account_rule_exceptions",
+		url.Values{"account_id": []string{"eq." + accountID}, "rule_id": []string{"eq." + ruleID}})
 }

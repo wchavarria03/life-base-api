@@ -16,7 +16,7 @@ func NewCategoryHandler(svc CategoryManager) *CategoryHandler {
 func (h *CategoryHandler) List(c *gin.Context) {
 	cats, err := h.svc.List(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, cats)
@@ -36,7 +36,7 @@ func (h *CategoryHandler) Create(c *gin.Context) {
 		UserID:   userID,
 	})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusCreated, cat)
@@ -61,7 +61,7 @@ func (h *CategoryHandler) Update(c *gin.Context) {
 	}
 	cat, err := h.svc.Update(c.Request.Context(), c.Param("id"), fields)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	if cat == nil {
@@ -73,7 +73,7 @@ func (h *CategoryHandler) Update(c *gin.Context) {
 
 func (h *CategoryHandler) Delete(c *gin.Context) {
 	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -82,7 +82,7 @@ func (h *CategoryHandler) Delete(c *gin.Context) {
 func (h *CategoryHandler) ListRules(c *gin.Context) {
 	rules, err := h.svc.ListRules(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, rules)
@@ -103,7 +103,7 @@ func (h *CategoryHandler) CreateRule(c *gin.Context) {
 		Priority:   req.Priority,
 	})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusCreated, rule)
@@ -111,7 +111,7 @@ func (h *CategoryHandler) CreateRule(c *gin.Context) {
 
 func (h *CategoryHandler) DeleteRule(c *gin.Context) {
 	if err := h.svc.DeleteRule(c.Request.Context(), c.Param("id")); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -120,7 +120,7 @@ func (h *CategoryHandler) DeleteRule(c *gin.Context) {
 func (h *CategoryHandler) PreviewRule(c *gin.Context) {
 	txs, err := h.svc.PreviewRule(c.Request.Context(), c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	if txs == nil {
@@ -133,7 +133,7 @@ func (h *CategoryHandler) PreviewRule(c *gin.Context) {
 func (h *CategoryHandler) ApplyRule(c *gin.Context) {
 	count, err := h.svc.ApplyRule(c.Request.Context(), c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"updated": count})
@@ -146,7 +146,7 @@ func (h *CategoryHandler) SetTransactionCategories(c *gin.Context) {
 		return
 	}
 	if err := h.svc.SetTransactionCategories(c.Request.Context(), c.Param("id"), req.CategoryIDs); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusNoContent)

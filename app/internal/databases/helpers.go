@@ -38,6 +38,12 @@ func addHeaders(req *http.Request, apiKey, bearer, prefer string, schema ...stri
 	}
 }
 
+// EqID builds the common `?id=eq.<id>` filter as properly-encoded url.Values,
+// for Patch/Delete callers that only filter by a single id.
+func EqID(id string) url.Values {
+	return url.Values{"id": []string{"eq." + id}}
+}
+
 // resolveKeys returns the apiKey and bearer token to use for a request.
 // If a user JWT is in context (web request), use anon key + user JWT so RLS applies.
 // Otherwise fall back to service key (CLI import, bypasses RLS).
@@ -88,9 +94,12 @@ func Post[T any](ctx context.Context, c *SupabaseClient, path string, body any, 
 	return decode[T](c.HTTPClient.Do(req))
 }
 
-// Patch sends an authenticated PATCH to path with body marshaled as JSON and decodes the
-// response into T. An optional schema targets a non-public PostgREST-exposed schema.
-func Patch[T any](ctx context.Context, c *SupabaseClient, path string, body any, prefer string, schema ...string) (T, error) {
+// Patch sends an authenticated PATCH to path with query params and a body marshaled as
+// JSON, and decodes the response into T. Params are properly URL-encoded — callers must
+// not hand-concatenate filter values (e.g. an id) into path, since PostgREST filter
+// syntax in an unescaped value can inject extra query parameters. An optional schema
+// targets a non-public PostgREST-exposed schema.
+func Patch[T any](ctx context.Context, c *SupabaseClient, path string, params url.Values, body any, prefer string, schema ...string) (T, error) {
 	var zero T
 
 	data, err := json.Marshal(body)
@@ -98,7 +107,12 @@ func Patch[T any](ctx context.Context, c *SupabaseClient, path string, body any,
 		return zero, fmt.Errorf("marshal body: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, c.BaseURL+path, bytes.NewReader(data))
+	rawURL := c.BaseURL + path
+	if len(params) > 0 {
+		rawURL += "?" + params.Encode()
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, rawURL, bytes.NewReader(data))
 	if err != nil {
 		return zero, fmt.Errorf("build request: %w", err)
 	}
@@ -108,10 +122,17 @@ func Patch[T any](ctx context.Context, c *SupabaseClient, path string, body any,
 	return decode[T](c.HTTPClient.Do(req))
 }
 
-// Delete sends an authenticated DELETE to path and discards the response body. An
-// optional schema targets a non-public PostgREST-exposed schema.
-func Delete(ctx context.Context, c *SupabaseClient, path string, schema ...string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.BaseURL+path, nil)
+// Delete sends an authenticated DELETE to path with query params and discards the
+// response body. See Patch's doc comment for why params must be passed as url.Values
+// rather than concatenated into path. An optional schema targets a non-public
+// PostgREST-exposed schema.
+func Delete(ctx context.Context, c *SupabaseClient, path string, params url.Values, schema ...string) error {
+	rawURL := c.BaseURL + path
+	if len(params) > 0 {
+		rawURL += "?" + params.Encode()
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, rawURL, nil)
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)
 	}

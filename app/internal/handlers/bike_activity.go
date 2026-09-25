@@ -15,7 +15,7 @@ func NewActivityHandler(svc ActivityManager) *ActivityHandler {
 func (h *ActivityHandler) ListByBike(c *gin.Context) {
 	activities, err := h.svc.ListByBikeID(c.Request.Context(), c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, activities)
@@ -38,7 +38,7 @@ func (h *ActivityHandler) Create(c *gin.Context) {
 
 func (h *ActivityHandler) Delete(c *gin.Context) {
 	if err := h.svc.Delete(c.Request.Context(), c.Param("activityId")); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusNoContent)

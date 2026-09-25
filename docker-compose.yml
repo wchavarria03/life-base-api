@@ -31,6 +31,17 @@ services:
     environment:
       PGRST_DB_URI: postgres://postgres:postgres@db:5432/bank_transactions
       PGRST_DB_SCHEMA: public
+      # Intentionally the superuser role, not a restricted "anon" role:
+      # RLS policies here call auth.uid()/reference auth.users, which only
+      # exist on Supabase's own Postgres image, not plain postgres:16-alpine.
+      # A real anon role would fail every RLS-gated query with
+      # "function auth.uid() does not exist" instead of running it.
+      # This stack is local-dev-only; production runs on Supabase cloud,
+      # which provides real anon/authenticated roles and enforces RLS for
+      # real (see app/internal/db/migrations/003_user_isolation.sql etc).
+      # Do not reuse this docker-compose setup for staging/shared hosting —
+      # it has no RLS enforcement. For real local RLS parity, use the
+      # Supabase CLI (`supabase start`) instead of this file.
       PGRST_DB_ANON_ROLE: postgres
     ports:
       - "3000:3000"

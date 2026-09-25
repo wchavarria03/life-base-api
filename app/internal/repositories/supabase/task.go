@@ -52,7 +52,7 @@ func (r *TaskRepository) Create(ctx context.Context, input models.TaskInput) (*m
 }
 
 func (r *TaskRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.Task, error) {
-	rows, err := databases.Patch[[]*models.Task](ctx, r.client, "/rest/v1/tasks?id=eq."+id, fields, "return=representation", tasksSchema)
+	rows, err := databases.Patch[[]*models.Task](ctx, r.client, "/rest/v1/tasks", databases.EqID(id), fields, "return=representation", tasksSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -63,5 +63,5 @@ func (r *TaskRepository) Update(ctx context.Context, id string, fields map[strin
 }
 
 func (r *TaskRepository) Delete(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/rest/v1/tasks?id=eq."+id, tasksSchema)
+	return databases.Delete(ctx, r.client, "/rest/v1/tasks", databases.EqID(id), tasksSchema)
 }

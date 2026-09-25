@@ -15,7 +15,7 @@ func NewGearHandler(svc GearManager) *GearHandler {
 func (h *GearHandler) List(c *gin.Context) {
 	gear, err := h.svc.List(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gear)
@@ -51,7 +51,7 @@ func (h *GearHandler) Update(c *gin.Context) {
 
 func (h *GearHandler) Delete(c *gin.Context) {
 	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -64,7 +64,7 @@ func NewBottleHandler(svc BottleManager) *BottleHandler {
 func (h *BottleHandler) List(c *gin.Context) {
 	bottles, err := h.svc.List(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, bottles)
@@ -109,7 +109,7 @@ func (h *BottleHandler) MarkCleaned(c *gin.Context) {
 
 func (h *BottleHandler) Delete(c *gin.Context) {
 	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -122,7 +122,7 @@ func NewSupplyHandler(svc SupplyManager) *SupplyHandler {
 func (h *SupplyHandler) List(c *gin.Context) {
 	supplies, err := h.svc.List(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, supplies)
@@ -167,7 +167,7 @@ func (h *SupplyHandler) Deplete(c *gin.Context) {
 
 func (h *SupplyHandler) Delete(c *gin.Context) {
 	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -176,7 +176,7 @@ func (h *SupplyHandler) Delete(c *gin.Context) {
 func (h *SupplyHandler) ListHistory(c *gin.Context) {
 	history, err := h.svc.ListHistory(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, history)

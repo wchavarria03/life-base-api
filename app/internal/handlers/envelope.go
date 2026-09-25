@@ -16,7 +16,7 @@ func NewEnvelopeHandler(svc EnvelopeManager) *EnvelopeHandler {
 func (h *EnvelopeHandler) List(c *gin.Context) {
 	statuses, err := h.svc.List(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, statuses)
@@ -26,7 +26,7 @@ func (h *EnvelopeHandler) ListByAccount(c *gin.Context) {
 	accountID := c.Param("id")
 	statuses, err := h.svc.ListByAccountID(c.Request.Context(), accountID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, statuses)

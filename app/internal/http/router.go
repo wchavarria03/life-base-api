@@ -8,21 +8,28 @@ import (
 )
 
 // NewRouter creates a new Router with all routes configured.
-func NewRouter(hdlrs *handlers.Registry, jwksURL string, allowedOrigins []string) *Router {
+func NewRouter(hdlrs *handlers.Registry, jwksURL, issuer string, allowedOrigins []string) *Router {
 	engine := gin.New()
+	// No trusted proxies: the app sits behind its hosting platform's own
+	// proxy, and nothing here relies on ClientIP(), so don't trust a
+	// client-supplied X-Forwarded-For.
+	_ = engine.SetTrustedProxies(nil)
 	engine.Use(gin.Recovery())
 	engine.Use(gin.Logger())
+	engine.Use(middleware.SecurityHeaders())
+	engine.Use(middleware.BodyLimit())
 	engine.Use(middleware.CORS(allowedOrigins))
 
-	setupRoutes(engine, hdlrs, jwksURL)
+	setupRoutes(engine, hdlrs, jwksURL, issuer)
 
 	return &Router{engine: engine}
 }
 
 // setupRoutes configures all versioned routes for the application.
-func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL string) {
+func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL, issuer string) {
 	v1 := engine.Group("/v1")
-	v1.Use(middleware.Auth(jwksURL))
+	v1.Use(middleware.Auth(jwksURL, issuer))
+	v1.Use(middleware.RateLimit())
 
 	v1.GET("/me", hdlrs.Me.GetMe)
 	setupSocialRoutes(v1, hdlrs)

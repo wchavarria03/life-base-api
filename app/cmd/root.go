@@ -26,7 +26,6 @@ type cliConfig struct {
 	MetaInstagramUserID string
 	StravaClientID      string
 	StravaClientSecret  string
-	StravaEncryptionKey string
 }
 
 var (
@@ -63,7 +62,6 @@ var rootCmd = &cobra.Command{
 			MetaInstagramUserID: cfg.MetaInstagramUserID,
 			StravaClientID:      cfg.StravaClientID,
 			StravaClientSecret:  cfg.StravaClientSecret,
-			StravaEncryptionKey: cfg.StravaEncryptionKey,
 		})
 		if err != nil {
 			return fmt.Errorf("initialising dependencies: %w", err)
@@ -99,5 +97,4 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfg.MetaInstagramUserID, "meta-instagram-user-id", os.Getenv("META_INSTAGRAM_USER_ID"), "Instagram business user ID to post to")
 	rootCmd.PersistentFlags().StringVar(&cfg.StravaClientID, "strava-client-id", os.Getenv("STRAVA_CLIENT_ID"), "Strava API client ID")
 	rootCmd.PersistentFlags().StringVar(&cfg.StravaClientSecret, "strava-client-secret", os.Getenv("STRAVA_CLIENT_SECRET"), "Strava API client secret")
-	rootCmd.PersistentFlags().StringVar(&cfg.StravaEncryptionKey, "strava-encryption-key", os.Getenv("STRAVA_TOKEN_ENCRYPTION_KEY"), "Symmetric key used to encrypt/decrypt stored Strava tokens (pgcrypto pgp_sym_encrypt)")
 }

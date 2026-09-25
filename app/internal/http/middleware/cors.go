@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,6 +13,9 @@ func CORS(allowedOrigins []string) gin.HandlerFunc {
 	allowed := make(map[string]bool, len(allowedOrigins))
 	for _, o := range allowedOrigins {
 		allowed[o] = true
+	}
+	if allowed["*"] {
+		log.Println("WARNING: ALLOWED_ORIGINS is \"*\" — any site can call this API from a browser. Fine for local dev; set a specific origin in production.")
 	}
 
 	return func(c *gin.Context) {

@@ -19,20 +19,19 @@ func NewStravaRepository(client *databases.SupabaseClient) *StravaRepository {
 // EncryptToken calls the bikes.encrypt_token_pgp RPC (pgp_sym_encrypt under
 // the hood) and returns the encrypted value as PostgREST's bytea-hex text
 // representation — opaque, only meant to be stored and later passed back to
-// DecryptToken.
-func (r *StravaRepository) EncryptToken(ctx context.Context, token, encryptionKey string) (string, error) {
+// DecryptToken. The encryption key itself lives only in Postgres config
+// (app.settings.strava_encryption_key) and never transits this call.
+func (r *StravaRepository) EncryptToken(ctx context.Context, token string) (string, error) {
 	return databases.Post[string](ctx, r.client, "/rest/v1/rpc/encrypt_token_pgp", map[string]string{
-		"token":          token,
-		"encryption_key": encryptionKey,
+		"token": token,
 	}, "", bikesSchema)
 }
 
 // DecryptToken calls the bikes.decrypt_token_pgp RPC to recover the
 // plaintext token from the bytea-hex text EncryptToken returned.
-func (r *StravaRepository) DecryptToken(ctx context.Context, encryptedToken, encryptionKey string) (string, error) {
+func (r *StravaRepository) DecryptToken(ctx context.Context, encryptedToken string) (string, error) {
 	return databases.Post[string](ctx, r.client, "/rest/v1/rpc/decrypt_token_pgp", map[string]string{
 		"encrypted_token": encryptedToken,
-		"encryption_key":  encryptionKey,
 	}, "", bikesSchema)
 }
 
@@ -68,7 +67,7 @@ func (r *StravaRepository) UpsertConnection(ctx context.Context, input models.St
 
 func (r *StravaRepository) UpdateConnection(ctx context.Context, id string, fields map[string]any) (*models.StravaConnection, error) {
 	rows, err := databases.Patch[[]*models.StravaConnection](ctx, r.client,
-		"/rest/v1/strava_connections?id=eq."+id, fields, "return=representation", bikesSchema)
+		"/rest/v1/strava_connections", databases.EqID(id), fields, "return=representation", bikesSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +78,7 @@ func (r *StravaRepository) UpdateConnection(ctx context.Context, id string, fiel
 }
 
 func (r *StravaRepository) DeleteConnection(ctx context.Context, userID string) error {
-	return databases.Delete(ctx, r.client, "/rest/v1/strava_connections?user_id=eq."+userID, bikesSchema)
+	return databases.Delete(ctx, r.client, "/rest/v1/strava_connections", url.Values{"user_id": []string{"eq." + userID}}, bikesSchema)
 }
 
 func (r *StravaRepository) CreateOAuthState(ctx context.Context, input models.OAuthStateInput) (*models.OAuthState, error) {
@@ -109,5 +108,5 @@ func (r *StravaRepository) FindOAuthState(ctx context.Context, state, userID str
 }
 
 func (r *StravaRepository) DeleteOAuthState(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/rest/v1/oauth_states?id=eq."+id, bikesSchema)
+	return databases.Delete(ctx, r.client, "/rest/v1/oauth_states", databases.EqID(id), bikesSchema)
 }

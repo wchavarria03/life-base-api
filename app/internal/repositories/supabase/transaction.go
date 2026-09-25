@@ -463,14 +463,15 @@ func (r *TransactionRepository) GetLastBalancePerAccount(ctx context.Context, ac
 // Delete removes a transaction by ID. Used to compensate for a partially
 // failed transfer (the counterpart leg couldn't be written).
 func (r *TransactionRepository) Delete(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/rest/v1/transactions?id=eq."+id)
+	return databases.Delete(ctx, r.client, "/rest/v1/transactions", databases.EqID(id))
 }
 
 // SetTransferID stamps a transaction with the transfer row that links it
 // to its counterpart leg.
 func (r *TransactionRepository) SetTransferID(ctx context.Context, txID, transferID string) error {
 	_, err := databases.Patch[struct{}](ctx, r.client,
-		"/rest/v1/transactions?id=eq."+txID,
+		"/rest/v1/transactions",
+		databases.EqID(txID),
 		map[string]any{"transfer_id": transferID},
 		"return=minimal")
 	return err
@@ -480,7 +481,8 @@ func (r *TransactionRepository) SetTransferID(ctx context.Context, txID, transfe
 // user corrects a misclassified transaction that isn't actually a transfer.
 func (r *TransactionRepository) ClearTransferID(ctx context.Context, txID string) error {
 	_, err := databases.Patch[struct{}](ctx, r.client,
-		"/rest/v1/transactions?id=eq."+txID,
+		"/rest/v1/transactions",
+		databases.EqID(txID),
 		map[string]any{"transfer_id": nil},
 		"return=minimal")
 	return err
@@ -490,7 +492,8 @@ func (r *TransactionRepository) ClearTransferID(ctx context.Context, txID string
 // to fix a misclassification found after import.
 func (r *TransactionRepository) UpdateType(ctx context.Context, txID string, txType models.TransactionType) error {
 	_, err := databases.Patch[struct{}](ctx, r.client,
-		"/rest/v1/transactions?id=eq."+txID,
+		"/rest/v1/transactions",
+		databases.EqID(txID),
 		map[string]any{"type": string(txType)},
 		"return=minimal")
 	return err
@@ -503,7 +506,8 @@ func (r *TransactionRepository) UpdateNote(ctx context.Context, txID string, not
 		value = nil
 	}
 	_, err := databases.Patch[struct{}](ctx, r.client,
-		"/rest/v1/transactions?id=eq."+txID,
+		"/rest/v1/transactions",
+		databases.EqID(txID),
 		map[string]any{"note": value},
 		"return=minimal")
 	return err

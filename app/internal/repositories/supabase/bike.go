@@ -52,7 +52,7 @@ func (r *BikeRepository) Create(ctx context.Context, input models.BikeInput) (*m
 }
 
 func (r *BikeRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.Bike, error) {
-	rows, err := databases.Patch[[]*models.Bike](ctx, r.client, "/rest/v1/bikes?id=eq."+id, fields, "return=representation", bikesSchema)
+	rows, err := databases.Patch[[]*models.Bike](ctx, r.client, "/rest/v1/bikes", databases.EqID(id), fields, "return=representation", bikesSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func (r *BikeRepository) Update(ctx context.Context, id string, fields map[strin
 }
 
 func (r *BikeRepository) Delete(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/rest/v1/bikes?id=eq."+id, bikesSchema)
+	return databases.Delete(ctx, r.client, "/rest/v1/bikes", databases.EqID(id), bikesSchema)
 }
 
 // IncrementMileage adds distanceKm to the bike's mileage (called when an
@@ -76,7 +76,7 @@ func (r *BikeRepository) IncrementMileage(ctx context.Context, id string, distan
 	if bike == nil {
 		return nil
 	}
-	_, err = databases.Patch[[]*models.Bike](ctx, r.client, "/rest/v1/bikes?id=eq."+id,
+	_, err = databases.Patch[[]*models.Bike](ctx, r.client, "/rest/v1/bikes", databases.EqID(id),
 		map[string]any{"mileage": bike.Mileage + distanceKm}, "return=minimal", bikesSchema)
 	return err
 }
@@ -108,5 +108,5 @@ func (r *BikeFitHistoryRepository) Create(ctx context.Context, input models.Bike
 }
 
 func (r *BikeFitHistoryRepository) Delete(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/rest/v1/bike_fit_history?id=eq."+id, bikesSchema)
+	return databases.Delete(ctx, r.client, "/rest/v1/bike_fit_history", databases.EqID(id), bikesSchema)
 }

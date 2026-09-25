@@ -58,7 +58,7 @@ func (r *ComponentRepository) Create(ctx context.Context, input models.Component
 }
 
 func (r *ComponentRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.Component, error) {
-	rows, err := databases.Patch[[]*models.Component](ctx, r.client, "/rest/v1/components?id=eq."+id, fields, "return=representation", bikesSchema)
+	rows, err := databases.Patch[[]*models.Component](ctx, r.client, "/rest/v1/components", databases.EqID(id), fields, "return=representation", bikesSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (r *ComponentRepository) Update(ctx context.Context, id string, fields map[
 }
 
 func (r *ComponentRepository) Delete(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/rest/v1/components?id=eq."+id, bikesSchema)
+	return databases.Delete(ctx, r.client, "/rest/v1/components", databases.EqID(id), bikesSchema)
 }
 
 type ComponentHistoryRepository struct {

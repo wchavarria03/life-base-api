@@ -15,7 +15,7 @@ func NewBikeHandler(svc BikeManager) *BikeHandler {
 func (h *BikeHandler) List(c *gin.Context) {
 	bikes, err := h.svc.List(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, bikes)
@@ -24,7 +24,7 @@ func (h *BikeHandler) List(c *gin.Context) {
 func (h *BikeHandler) Get(c *gin.Context) {
 	bike, err := h.svc.FindByID(c.Request.Context(), c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	if bike == nil {
@@ -64,7 +64,7 @@ func (h *BikeHandler) Update(c *gin.Context) {
 
 func (h *BikeHandler) Delete(c *gin.Context) {
 	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -77,7 +77,7 @@ func NewBikeFitHistoryHandler(svc BikeFitHistoryManager) *BikeFitHistoryHandler 
 func (h *BikeFitHistoryHandler) ListByBike(c *gin.Context) {
 	history, err := h.svc.ListByBikeID(c.Request.Context(), c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, history)
@@ -100,7 +100,7 @@ func (h *BikeFitHistoryHandler) Create(c *gin.Context) {
 
 func (h *BikeFitHistoryHandler) Delete(c *gin.Context) {
 	if err := h.svc.Delete(c.Request.Context(), c.Param("fitId")); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusNoContent)

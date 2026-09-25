@@ -79,7 +79,7 @@ func (h *SocialHandler) List(c *gin.Context) {
 
 	posts, err := h.svc.List(c.Request.Context(), limit, offset, status)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, posts)
@@ -103,7 +103,7 @@ func (h *SocialHandler) RetryInstagram(c *gin.Context) {
 // does not touch the live Facebook/Instagram post.
 func (h *SocialHandler) Delete(c *gin.Context) {
 	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusNoContent)

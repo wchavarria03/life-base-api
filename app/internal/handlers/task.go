@@ -33,7 +33,7 @@ func (h *TaskHandler) List(c *gin.Context) {
 	}
 	tasks, err := h.svc.List(c.Request.Context(), category)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, tasks)
@@ -78,7 +78,7 @@ func (h *TaskHandler) Complete(c *gin.Context) {
 
 func (h *TaskHandler) Delete(c *gin.Context) {
 	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	c.Status(http.StatusNoContent)

@@ -67,5 +67,5 @@ func (r *ActivityRepository) Create(ctx context.Context, input models.ActivityIn
 }
 
 func (r *ActivityRepository) Delete(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/rest/v1/activities?id=eq."+id, bikesSchema)
+	return databases.Delete(ctx, r.client, "/rest/v1/activities", databases.EqID(id), bikesSchema)
 }

@@ -60,7 +60,8 @@ func (r *ReminderRepository) Create(ctx context.Context, input models.ReminderIn
 
 func (r *ReminderRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.Reminder, error) {
 	rows, err := databases.Patch[[]*models.Reminder](ctx, r.client,
-		"/rest/v1/payment_reminders?id=eq."+id,
+		"/rest/v1/payment_reminders",
+		databases.EqID(id),
 		fields,
 		"return=representation")
 	if err != nil {
@@ -73,12 +74,13 @@ func (r *ReminderRepository) Update(ctx context.Context, id string, fields map[s
 }
 
 func (r *ReminderRepository) Delete(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/rest/v1/payment_reminders?id=eq."+id)
+	return databases.Delete(ctx, r.client, "/rest/v1/payment_reminders", databases.EqID(id))
 }
 
 func (r *ReminderRepository) MarkCompleted(ctx context.Context, id string) error {
 	_, err := databases.Patch[struct{}](ctx, r.client,
-		"/rest/v1/payment_reminders?id=eq."+id,
+		"/rest/v1/payment_reminders",
+		databases.EqID(id),
 		map[string]any{"completed_at": time.Now().UTC().Format(time.RFC3339)},
 		"return=minimal")
 	return err

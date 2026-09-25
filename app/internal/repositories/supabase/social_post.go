@@ -76,7 +76,8 @@ func (r *SocialPostRepository) Create(ctx context.Context, input models.SocialPo
 
 func (r *SocialPostRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.SocialPost, error) {
 	rows, err := databases.Patch[[]*models.SocialPost](ctx, r.client,
-		"/rest/v1/social_posts?id=eq."+id,
+		"/rest/v1/social_posts",
+		databases.EqID(id),
 		fields,
 		"return=representation")
 	if err != nil {
@@ -89,5 +90,5 @@ func (r *SocialPostRepository) Update(ctx context.Context, id string, fields map
 }
 
 func (r *SocialPostRepository) Delete(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/rest/v1/social_posts?id=eq."+id)
+	return databases.Delete(ctx, r.client, "/rest/v1/social_posts", databases.EqID(id))
 }

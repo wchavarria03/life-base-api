@@ -35,7 +35,7 @@ func (r *ServiceLogRepository) Create(ctx context.Context, input models.ServiceL
 }
 
 func (r *ServiceLogRepository) Delete(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/rest/v1/service_logs?id=eq."+id, bikesSchema)
+	return databases.Delete(ctx, r.client, "/rest/v1/service_logs", databases.EqID(id), bikesSchema)
 }
 
 type MaintenanceTaskRepository struct {
@@ -65,7 +65,7 @@ func (r *MaintenanceTaskRepository) Create(ctx context.Context, input models.Mai
 }
 
 func (r *MaintenanceTaskRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.MaintenanceTask, error) {
-	rows, err := databases.Patch[[]*models.MaintenanceTask](ctx, r.client, "/rest/v1/maintenance_tasks?id=eq."+id, fields, "return=representation", bikesSchema)
+	rows, err := databases.Patch[[]*models.MaintenanceTask](ctx, r.client, "/rest/v1/maintenance_tasks", databases.EqID(id), fields, "return=representation", bikesSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -76,5 +76,5 @@ func (r *MaintenanceTaskRepository) Update(ctx context.Context, id string, field
 }
 
 func (r *MaintenanceTaskRepository) Delete(ctx context.Context, id string) error {
-	return databases.Delete(ctx, r.client, "/rest/v1/maintenance_tasks?id=eq."+id, bikesSchema)
+	return databases.Delete(ctx, r.client, "/rest/v1/maintenance_tasks", databases.EqID(id), bikesSchema)
 }

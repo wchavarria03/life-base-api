@@ -22,7 +22,6 @@ type Config struct {
 	MetaInstagramUserID string
 	StravaClientID      string
 	StravaClientSecret  string
-	StravaEncryptionKey string
 }
 
 // Dependencies is a collection of all application dependencies.
@@ -56,9 +55,8 @@ func NewDependencies(cfg Config) (*Dependencies, error) {
 		FacebookPage:  cfg.MetaFacebookPageID,
 		InstagramUser: cfg.MetaInstagramUserID,
 	}, services.StravaConfig{
-		ClientID:      cfg.StravaClientID,
-		ClientSecret:  cfg.StravaClientSecret,
-		EncryptionKey: cfg.StravaEncryptionKey,
+		ClientID:     cfg.StravaClientID,
+		ClientSecret: cfg.StravaClientSecret,
 	})
 
 	deps.Handlers, err = handlers.NewRegistry(deps.Services)
@@ -66,8 +64,9 @@ func NewDependencies(cfg Config) (*Dependencies, error) {
 		return nil, fmt.Errorf("creating handler registry: %w", err)
 	}
 
-	jwksURL := cfg.SupabaseURL + "/auth/v1/.well-known/jwks.json"
-	deps.Server = httpserver.NewServer(cfg.ServerAddr, jwksURL, cfg.AllowedOrigins, deps.Handlers)
+	issuer := cfg.SupabaseURL + "/auth/v1"
+	jwksURL := issuer + "/.well-known/jwks.json"
+	deps.Server = httpserver.NewServer(cfg.ServerAddr, jwksURL, issuer, cfg.AllowedOrigins, deps.Handlers)
 
 	return &deps, nil
 }
