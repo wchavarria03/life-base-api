@@ -402,9 +402,13 @@ func (s *TransferService) MatchForPeriod(ctx context.Context, from, to time.Time
 	return matches, nil
 }
 
-// ReconcileForPeriod finds unlinked transfer-typed transactions across all
-// accounts in [from, to], matches them, and persists links for high-confidence
-// pairs (tier 1: same reference, tier 2: short-number cross-reference).
+// ReconcileForPeriod finds unlinked transactions across all accounts in
+// [from, to] — regardless of their current type, since a transfer between
+// your own accounts is usually imported as a plain expense/income on each
+// side until it's identified as such — and persists links for
+// high-confidence pairs (tier 1: same reference, tier 2: short-number
+// cross-reference), flipping both legs to type transfer so they stop
+// counting as real spending/income.
 // Tier-3-only pairs (same date + amount, no corroborating evidence) are
 // skipped and left for manual review.
 // Returns the number of transfer pairs successfully linked.
@@ -432,10 +436,11 @@ func (s *TransferService) ReconcileForPeriod(ctx context.Context, from, to time.
 		acctNumByID[acc.ID] = acc.AccountNumber
 	}
 
-	// Group only unlinked, transfer-typed transactions by account.
+	// Group unlinked transactions by account — any type is a candidate; see
+	// the doc comment above for why type isn't filtered here.
 	txsByAccount := make(map[string][]*models.Transaction, len(accounts))
 	for _, tx := range allTxs {
-		if tx.Type != models.TypeTransfer || tx.TransferID != "" {
+		if tx.TransferID != "" {
 			continue
 		}
 		txsByAccount[tx.AccountID] = append(txsByAccount[tx.AccountID], tx)
@@ -490,6 +495,15 @@ func (s *TransferService) ReconcileForPeriod(ctx context.Context, from, to time.
 		}
 		_ = s.transactions.SetTransferID(ctx, fromTx.ID, transfer.ID)
 		_ = s.transactions.SetTransferID(ctx, toTx.ID, transfer.ID)
+		// Both legs likely arrived as plain expense/income (see doc comment) —
+		// reclassify so they stop counting as real spending/income now that
+		// they're confirmed to be the two sides of one internal transfer.
+		if fromTx.Type != models.TypeTransfer {
+			_ = s.transactions.UpdateType(ctx, fromTx.ID, models.TypeTransfer)
+		}
+		if toTx.Type != models.TypeTransfer {
+			_ = s.transactions.UpdateType(ctx, toTx.ID, models.TypeTransfer)
+		}
 		linked++
 	}
 
