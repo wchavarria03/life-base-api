@@ -12,11 +12,21 @@ var digestCmd = &cobra.Command{
 	Short: "Send push/email notifications to users with overdue reminders (run on a schedule, e.g. a Render Cron Job)",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
-		sent, err := deps.Services.Digest.RunPush(ctx)
+
+		pushSent, err := deps.Services.Digest.RunPush(ctx)
 		if err != nil {
-			return err
+			fmt.Printf("send-digest: push skipped: %v\n", err)
+		} else {
+			fmt.Printf("send-digest: sent %d push notification(s)\n", pushSent)
 		}
-		fmt.Printf("send-digest: sent %d push notification(s)\n", sent)
+
+		emailSent, err := deps.Services.Digest.RunEmail(ctx)
+		if err != nil {
+			fmt.Printf("send-digest: email skipped: %v\n", err)
+		} else {
+			fmt.Printf("send-digest: sent %d email(s)\n", emailSent)
+		}
+
 		return nil
 	},
 }

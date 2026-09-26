@@ -25,6 +25,8 @@ type Config struct {
 	VAPIDPublicKey      string
 	VAPIDPrivateKey     string
 	VAPIDSubject        string
+	ResendAPIKey        string
+	ResendFrom          string
 }
 
 // Dependencies is a collection of all application dependencies.
@@ -64,6 +66,8 @@ func NewDependencies(cfg Config) (*Dependencies, error) {
 		VAPIDPublicKey:  cfg.VAPIDPublicKey,
 		VAPIDPrivateKey: cfg.VAPIDPrivateKey,
 		VAPIDSubject:    cfg.VAPIDSubject,
+		ResendAPIKey:    cfg.ResendAPIKey,
+		ResendFrom:      cfg.ResendFrom,
 	})
 
 	deps.Handlers, err = handlers.NewRegistry(deps.Services)

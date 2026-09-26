@@ -61,7 +61,7 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 		Caption:        NewCaptionService(repos.Caption),
 		Preferences:    preferences,
 		Push:           push,
-		Digest:         NewDigestService(repos.Reminders, preferences, push, digest),
+		Digest:         NewDigestService(repos.Reminders, preferences, push, repos.Admin, digest),
 
 		Bike:            NewBikeService(repos.Bikes),
 		BikeFitHistory:  NewBikeFitHistoryService(repos.BikeFitHistory),

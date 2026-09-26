@@ -29,6 +29,8 @@ type cliConfig struct {
 	VAPIDPublicKey      string
 	VAPIDPrivateKey     string
 	VAPIDSubject        string
+	ResendAPIKey        string
+	ResendFrom          string
 }
 
 var (
@@ -68,6 +70,8 @@ var rootCmd = &cobra.Command{
 			VAPIDPublicKey:      cfg.VAPIDPublicKey,
 			VAPIDPrivateKey:     cfg.VAPIDPrivateKey,
 			VAPIDSubject:        cfg.VAPIDSubject,
+			ResendAPIKey:        cfg.ResendAPIKey,
+			ResendFrom:          cfg.ResendFrom,
 		})
 		if err != nil {
 			return fmt.Errorf("initialising dependencies: %w", err)
@@ -106,4 +110,6 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfg.VAPIDPublicKey, "vapid-public-key", os.Getenv("VAPID_PUBLIC_KEY"), "VAPID public key for web push")
 	rootCmd.PersistentFlags().StringVar(&cfg.VAPIDPrivateKey, "vapid-private-key", os.Getenv("VAPID_PRIVATE_KEY"), "VAPID private key for web push")
 	rootCmd.PersistentFlags().StringVar(&cfg.VAPIDSubject, "vapid-subject", os.Getenv("VAPID_SUBJECT"), "VAPID subject (mailto: contact) for web push")
+	rootCmd.PersistentFlags().StringVar(&cfg.ResendAPIKey, "resend-api-key", os.Getenv("RESEND_API_KEY"), "Resend API key for the email digest")
+	rootCmd.PersistentFlags().StringVar(&cfg.ResendFrom, "resend-from", os.Getenv("RESEND_FROM"), "From address for the email digest, e.g. \"Life-Base <notifications@yourdomain.com>\"")
 }
