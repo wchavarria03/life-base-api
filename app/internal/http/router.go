@@ -8,7 +8,7 @@ import (
 )
 
 // NewRouter creates a new Router with all routes configured.
-func NewRouter(hdlrs *handlers.Registry, jwksURL, issuer string, allowedOrigins []string) *Router {
+func NewRouter(hdlrs *handlers.Registry, jwksURL, issuer string, allowedOrigins []string, auditWriter middleware.AuditWriter) *Router {
 	engine := gin.New()
 	// No trusted proxies: the app sits behind its hosting platform's own
 	// proxy, and nothing here relies on ClientIP(), so don't trust a
@@ -20,17 +20,17 @@ func NewRouter(hdlrs *handlers.Registry, jwksURL, issuer string, allowedOrigins 
 	engine.Use(middleware.BodyLimit())
 	engine.Use(middleware.CORS(allowedOrigins))
 
-	setupRoutes(engine, hdlrs, jwksURL, issuer)
+	setupRoutes(engine, hdlrs, jwksURL, issuer, auditWriter)
 
 	return &Router{engine: engine}
 }
 
 // setupRoutes configures all versioned routes for the application.
-func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL, issuer string) {
+func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL, issuer string, auditWriter middleware.AuditWriter) {
 	v1 := engine.Group("/v1")
 	v1.Use(middleware.Auth(jwksURL, issuer))
 	v1.Use(middleware.RateLimit())
-	v1.Use(middleware.AuditLog())
+	v1.Use(middleware.AuditLog(auditWriter))
 
 	v1.GET("/me", hdlrs.Me.GetMe)
 	v1.GET("/preferences", hdlrs.Preferences.Get)
@@ -67,6 +67,7 @@ func setupAdminRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	admin.PATCH("/users/:id/role", hdlrs.Admin.SetMemberRole)
 	admin.GET("/page-access", hdlrs.Admin.ListPageAccess)
 	admin.PUT("/page-access", hdlrs.Admin.SetPageAccess)
+	admin.GET("/audit-log", hdlrs.AuditLog.List)
 }
 
 func setupCaptionRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {

@@ -99,6 +99,10 @@ type SalaryProfileManager interface {
 	CheckPurchase(ctx context.Context, p *models.SalaryProfile, price float64) (*models.PurchaseCheck, error)
 }
 
+type AuditLogManager interface {
+	List(ctx context.Context, limit, offset int) ([]*models.AuditLogEntry, error)
+}
+
 type PushManager interface {
 	Subscribe(ctx context.Context, userID, endpoint, p256dh, authKey string) error
 	Unsubscribe(ctx context.Context, endpoint string) error

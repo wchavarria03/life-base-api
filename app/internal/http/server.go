@@ -6,11 +6,12 @@ import (
 	"time"
 
 	"life-base-api/app/internal/handlers"
+	"life-base-api/app/internal/http/middleware"
 )
 
 // NewServer creates an HTTP server bound to addr using routes from the handler registry.
-func NewServer(addr, jwksURL, issuer string, allowedOrigins []string, hdlrs *handlers.Registry) *Server {
-	router := NewRouter(hdlrs, jwksURL, issuer, allowedOrigins)
+func NewServer(addr, jwksURL, issuer string, allowedOrigins []string, hdlrs *handlers.Registry, auditWriter middleware.AuditWriter) *Server {
+	router := NewRouter(hdlrs, jwksURL, issuer, allowedOrigins, auditWriter)
 
 	return &Server{
 		httpServer: &http.Server{

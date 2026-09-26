@@ -21,6 +21,7 @@ type Registry struct {
 	Preferences    *PreferencesService
 	Push           *PushService
 	Digest         *DigestService
+	AuditLog       *AuditLogService
 
 	Bike            *BikeService
 	BikeFitHistory  *BikeFitHistoryService
@@ -62,6 +63,7 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 		Preferences:    preferences,
 		Push:           push,
 		Digest:         NewDigestService(repos.Reminders, preferences, push, repos.Admin, digest),
+		AuditLog:       NewAuditLogService(repos.AuditLog),
 
 		Bike:            NewBikeService(repos.Bikes),
 		BikeFitHistory:  NewBikeFitHistoryService(repos.BikeFitHistory),

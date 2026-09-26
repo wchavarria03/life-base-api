@@ -77,7 +77,7 @@ func NewDependencies(cfg Config) (*Dependencies, error) {
 
 	issuer := cfg.SupabaseURL + "/auth/v1"
 	jwksURL := issuer + "/.well-known/jwks.json"
-	deps.Server = httpserver.NewServer(cfg.ServerAddr, jwksURL, issuer, cfg.AllowedOrigins, deps.Handlers)
+	deps.Server = httpserver.NewServer(cfg.ServerAddr, jwksURL, issuer, cfg.AllowedOrigins, deps.Handlers, deps.Services.AuditLog)
 
 	return &deps, nil
 }

@@ -78,6 +78,10 @@ type PushHandler struct {
 	svc PushManager
 }
 
+type AuditLogHandler struct {
+	svc AuditLogManager
+}
+
 type BikeHandler struct {
 	svc BikeManager
 }
