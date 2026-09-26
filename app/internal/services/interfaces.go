@@ -98,6 +98,9 @@ type EnvelopeRepository interface {
 
 type ReminderRepository interface {
 	List(ctx context.Context) ([]*models.Reminder, error)
+	// ListByUserID bypasses the usual RLS-via-context scoping (used by the
+	// service-role digest cron, which has no per-request user JWT).
+	ListByUserID(ctx context.Context, userID string) ([]*models.Reminder, error)
 	ListByAccountID(ctx context.Context, accountID string) ([]*models.Reminder, error)
 	FindByID(ctx context.Context, id string) (*models.Reminder, error)
 	Create(ctx context.Context, input models.ReminderInput) (*models.Reminder, error)

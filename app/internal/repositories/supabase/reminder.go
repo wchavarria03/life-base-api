@@ -21,6 +21,16 @@ func (r *ReminderRepository) List(ctx context.Context) ([]*models.Reminder, erro
 	})
 }
 
+// ListByUserID bypasses RLS-via-context scoping entirely (explicit filter),
+// for the service-role digest cron which has no per-request user JWT.
+func (r *ReminderRepository) ListByUserID(ctx context.Context, userID string) ([]*models.Reminder, error) {
+	return databases.Get[[]*models.Reminder](ctx, r.client, "/rest/v1/payment_reminders", url.Values{
+		"user_id":      []string{"eq." + userID},
+		"completed_at": []string{"is.null"},
+		"order":        []string{"due_date.asc"},
+	})
+}
+
 func (r *ReminderRepository) ListByAccountID(ctx context.Context, accountID string) ([]*models.Reminder, error) {
 	thirtyDaysAgo := time.Now().UTC().AddDate(0, 0, -30).Format("2006-01-02")
 	return databases.Get[[]*models.Reminder](ctx, r.client, "/rest/v1/payment_reminders", url.Values{

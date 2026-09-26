@@ -99,6 +99,11 @@ type SalaryProfileManager interface {
 	CheckPurchase(ctx context.Context, p *models.SalaryProfile, price float64) (*models.PurchaseCheck, error)
 }
 
+type PushManager interface {
+	Subscribe(ctx context.Context, userID, endpoint, p256dh, authKey string) error
+	Unsubscribe(ctx context.Context, endpoint string) error
+}
+
 type PreferenceManager interface {
 	Get(ctx context.Context, userID string) (*models.UserPreferences, error)
 	Set(ctx context.Context, userID string, pushEnabled, emailDigestEnabled bool) (*models.UserPreferences, error)

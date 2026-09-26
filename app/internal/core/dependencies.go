@@ -22,6 +22,9 @@ type Config struct {
 	MetaInstagramUserID string
 	StravaClientID      string
 	StravaClientSecret  string
+	VAPIDPublicKey      string
+	VAPIDPrivateKey     string
+	VAPIDSubject        string
 }
 
 // Dependencies is a collection of all application dependencies.
@@ -57,6 +60,10 @@ func NewDependencies(cfg Config) (*Dependencies, error) {
 	}, services.StravaConfig{
 		ClientID:     cfg.StravaClientID,
 		ClientSecret: cfg.StravaClientSecret,
+	}, services.DigestConfig{
+		VAPIDPublicKey:  cfg.VAPIDPublicKey,
+		VAPIDPrivateKey: cfg.VAPIDPrivateKey,
+		VAPIDSubject:    cfg.VAPIDSubject,
 	})
 
 	deps.Handlers, err = handlers.NewRegistry(deps.Services)

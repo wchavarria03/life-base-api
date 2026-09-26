@@ -26,6 +26,9 @@ type cliConfig struct {
 	MetaInstagramUserID string
 	StravaClientID      string
 	StravaClientSecret  string
+	VAPIDPublicKey      string
+	VAPIDPrivateKey     string
+	VAPIDSubject        string
 }
 
 var (
@@ -62,6 +65,9 @@ var rootCmd = &cobra.Command{
 			MetaInstagramUserID: cfg.MetaInstagramUserID,
 			StravaClientID:      cfg.StravaClientID,
 			StravaClientSecret:  cfg.StravaClientSecret,
+			VAPIDPublicKey:      cfg.VAPIDPublicKey,
+			VAPIDPrivateKey:     cfg.VAPIDPrivateKey,
+			VAPIDSubject:        cfg.VAPIDSubject,
 		})
 		if err != nil {
 			return fmt.Errorf("initialising dependencies: %w", err)
@@ -97,4 +103,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfg.MetaInstagramUserID, "meta-instagram-user-id", os.Getenv("META_INSTAGRAM_USER_ID"), "Instagram business user ID to post to")
 	rootCmd.PersistentFlags().StringVar(&cfg.StravaClientID, "strava-client-id", os.Getenv("STRAVA_CLIENT_ID"), "Strava API client ID")
 	rootCmd.PersistentFlags().StringVar(&cfg.StravaClientSecret, "strava-client-secret", os.Getenv("STRAVA_CLIENT_SECRET"), "Strava API client secret")
+	rootCmd.PersistentFlags().StringVar(&cfg.VAPIDPublicKey, "vapid-public-key", os.Getenv("VAPID_PUBLIC_KEY"), "VAPID public key for web push")
+	rootCmd.PersistentFlags().StringVar(&cfg.VAPIDPrivateKey, "vapid-private-key", os.Getenv("VAPID_PRIVATE_KEY"), "VAPID private key for web push")
+	rootCmd.PersistentFlags().StringVar(&cfg.VAPIDSubject, "vapid-subject", os.Getenv("VAPID_SUBJECT"), "VAPID subject (mailto: contact) for web push")
 }

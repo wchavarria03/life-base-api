@@ -22,6 +22,7 @@ type Registry struct {
 	Admin         *AdminHandler
 	Caption       *CaptionHandler
 	Preferences   *PreferencesHandler
+	Push          *PushHandler
 
 	Bike            *BikeHandler
 	BikeFitHistory  *BikeFitHistoryHandler
@@ -58,6 +59,7 @@ func NewRegistry(svc *services.Registry) (*Registry, error) {
 		Admin:         NewAdminHandler(svc.Admin),
 		Caption:       NewCaptionHandler(svc.Caption),
 		Preferences:   NewPreferencesHandler(svc.Preferences),
+		Push:          NewPushHandler(svc.Push),
 
 		Bike:            NewBikeHandler(svc.Bike),
 		BikeFitHistory:  NewBikeFitHistoryHandler(svc.BikeFitHistory),

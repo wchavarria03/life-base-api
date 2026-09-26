@@ -74,6 +74,10 @@ type PreferencesHandler struct {
 	svc PreferenceManager
 }
 
+type PushHandler struct {
+	svc PushManager
+}
+
 type BikeHandler struct {
 	svc BikeManager
 }

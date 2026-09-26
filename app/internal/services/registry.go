@@ -19,6 +19,8 @@ type Registry struct {
 	Admin          *AdminService
 	Caption        *CaptionService
 	Preferences    *PreferencesService
+	Push           *PushService
+	Digest         *DigestService
 
 	Bike            *BikeService
 	BikeFitHistory  *BikeFitHistoryService
@@ -35,10 +37,12 @@ type Registry struct {
 	Note *NoteService
 }
 
-func NewRegistry(repos *repositories.Registry, userID string, social SocialConfig, strava StravaConfig) *Registry {
+func NewRegistry(repos *repositories.Registry, userID string, social SocialConfig, strava StravaConfig, digest DigestConfig) *Registry {
 	classifier := NewClassificationService(repos.Classifications)
 	transfer := NewTransferService(repos.Accounts, repos.Transactions, repos.Transfers)
 	reminder := NewReminderService(repos.Reminders, repos.TransactionCategories)
+	preferences := NewPreferencesService(repos.Preferences)
+	push := NewPushService(repos.PushSubscriptions)
 	return &Registry{
 		Account:        NewAccountService(repos.Accounts, repos.Transactions),
 		Budget:         NewBudgetService(repos.Budgets, repos.Accounts, repos.Transactions),
@@ -55,7 +59,9 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 		Social:         NewSocialService(repos.SocialPosts, social),
 		Admin:          NewAdminService(repos.Admin),
 		Caption:        NewCaptionService(repos.Caption),
-		Preferences:    NewPreferencesService(repos.Preferences),
+		Preferences:    preferences,
+		Push:           push,
+		Digest:         NewDigestService(repos.Reminders, preferences, push, digest),
 
 		Bike:            NewBikeService(repos.Bikes),
 		BikeFitHistory:  NewBikeFitHistoryService(repos.BikeFitHistory),
