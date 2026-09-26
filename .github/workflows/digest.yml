@@ -1,0 +1,37 @@
+name: Send Digest
+
+# Free alternative to a Render Cron Job: builds and runs the same
+# `send-digest` CLI subcommand (app/cmd/digest.go) on a schedule, connecting
+# directly to Supabase with the service-role key. Runs well within GitHub
+# Actions' free minutes for a once-a-day job.
+
+on:
+  schedule:
+    - cron: "0 13 * * *" # 13:00 UTC daily — adjust to taste
+  workflow_dispatch: {} # lets you trigger a run manually from the Actions tab
+
+permissions:
+  contents: read
+
+jobs:
+  send-digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - run: go build -o life-base-api .
+
+      - run: ./life-base-api send-digest
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_FROM: ${{ secrets.RESEND_FROM }}
