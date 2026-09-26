@@ -10,7 +10,7 @@ import (
 var digestCmd = &cobra.Command{
 	Use:   "send-digest",
 	Short: "Send push/email notifications to users with overdue reminders (run on a schedule, e.g. a Render Cron Job)",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		ctx := context.Background()
 
 		pushSent, err := deps.Services.Digest.RunPush(ctx)

@@ -66,22 +66,27 @@ type AdminHandler struct {
 	svc AdminManager
 }
 
+// CaptionHandler serves the caption template library endpoints.
 type CaptionHandler struct {
 	svc CaptionManager
 }
 
+// PreferencesHandler serves the notification preferences endpoints.
 type PreferencesHandler struct {
 	svc PreferenceManager
 }
 
+// PushHandler serves the push subscription endpoints.
 type PushHandler struct {
 	svc PushManager
 }
 
+// AuditLogHandler serves the admin audit log endpoint.
 type AuditLogHandler struct {
 	svc AuditLogManager
 }
 
+// ExportHandler serves a single JSON dump of everything the caller owns.
 type ExportHandler struct {
 	accounts     AccountLister
 	transactions TransactionLister

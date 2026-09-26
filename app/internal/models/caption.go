@@ -2,6 +2,7 @@ package models
 
 import "time"
 
+// CaptionCategory is a user-managed tag for caption templates and posts.
 type CaptionCategory struct {
 	ID     string `json:"id"`
 	UserID string `json:"user_id,omitempty"`
@@ -20,6 +21,7 @@ type CaptionTemplate struct {
 	UpdatedAt   time.Time `json:"updated_at,omitempty"`
 }
 
+// CaptionTemplateVersion is one historical body of a caption template.
 type CaptionTemplateVersion struct {
 	ID            string    `json:"id"`
 	TemplateID    string    `json:"template_id,omitempty"`

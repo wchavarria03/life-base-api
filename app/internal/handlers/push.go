@@ -8,6 +8,7 @@ import (
 	"life-base-api/app/internal/auth"
 )
 
+// NewPushHandler constructs a PushHandler.
 func NewPushHandler(svc PushManager) *PushHandler {
 	return &PushHandler{svc: svc}
 }

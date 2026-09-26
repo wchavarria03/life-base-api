@@ -6,12 +6,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// NewCaptionHandler constructs a CaptionHandler.
 func NewCaptionHandler(svc CaptionManager) *CaptionHandler {
 	return &CaptionHandler{svc: svc}
 }
 
 // ── Categories ───────────────────────────────────────────────────────────────
 
+// ListCategories handles GET /v1/caption-categories.
 func (h *CaptionHandler) ListCategories(c *gin.Context) {
 	cats, err := h.svc.ListCategories(c.Request.Context())
 	if err != nil {
@@ -25,6 +27,7 @@ type categoryRequest struct {
 	Name string `json:"name" binding:"required"`
 }
 
+// CreateCategory handles POST /v1/caption-categories.
 func (h *CaptionHandler) CreateCategory(c *gin.Context) {
 	var req categoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -39,6 +42,7 @@ func (h *CaptionHandler) CreateCategory(c *gin.Context) {
 	c.JSON(http.StatusCreated, cat)
 }
 
+// UpdateCategory handles PATCH /v1/caption-categories/:id.
 func (h *CaptionHandler) UpdateCategory(c *gin.Context) {
 	var req categoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -53,6 +57,7 @@ func (h *CaptionHandler) UpdateCategory(c *gin.Context) {
 	c.JSON(http.StatusOK, cat)
 }
 
+// DeleteCategory handles DELETE /v1/caption-categories/:id.
 func (h *CaptionHandler) DeleteCategory(c *gin.Context) {
 	if err := h.svc.DeleteCategory(c.Request.Context(), c.Param("id")); err != nil {
 		internalError(c, err)
@@ -63,6 +68,7 @@ func (h *CaptionHandler) DeleteCategory(c *gin.Context) {
 
 // ── Templates ────────────────────────────────────────────────────────────────
 
+// ListTemplates handles GET /v1/caption-templates.
 func (h *CaptionHandler) ListTemplates(c *gin.Context) {
 	templates, err := h.svc.ListTemplates(c.Request.Context())
 	if err != nil {
@@ -78,6 +84,7 @@ type createTemplateRequest struct {
 	CategoryIDs []string `json:"category_ids"`
 }
 
+// CreateTemplate handles POST /v1/caption-templates.
 func (h *CaptionHandler) CreateTemplate(c *gin.Context) {
 	var req createTemplateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -97,6 +104,7 @@ type updateTemplateRequest struct {
 	CategoryIDs *[]string `json:"category_ids"`
 }
 
+// UpdateTemplate handles PATCH /v1/caption-templates/:id.
 func (h *CaptionHandler) UpdateTemplate(c *gin.Context) {
 	var req updateTemplateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -110,6 +118,7 @@ func (h *CaptionHandler) UpdateTemplate(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+// DeleteTemplate handles DELETE /v1/caption-templates/:id.
 func (h *CaptionHandler) DeleteTemplate(c *gin.Context) {
 	if err := h.svc.DeleteTemplate(c.Request.Context(), c.Param("id")); err != nil {
 		internalError(c, err)
@@ -120,6 +129,7 @@ func (h *CaptionHandler) DeleteTemplate(c *gin.Context) {
 
 // ── Versions ─────────────────────────────────────────────────────────────────
 
+// ListVersions handles GET /v1/caption-templates/:id/versions.
 func (h *CaptionHandler) ListVersions(c *gin.Context) {
 	versions, err := h.svc.ListVersions(c.Request.Context(), c.Param("id"))
 	if err != nil {
@@ -133,6 +143,7 @@ type addVersionRequest struct {
 	Body string `json:"body" binding:"required"`
 }
 
+// AddVersion handles POST /v1/caption-templates/:id/versions.
 func (h *CaptionHandler) AddVersion(c *gin.Context) {
 	var req addVersionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -147,6 +158,7 @@ func (h *CaptionHandler) AddVersion(c *gin.Context) {
 	c.JSON(http.StatusCreated, version)
 }
 
+// RevertVersion handles POST /v1/caption-templates/:id/versions/:versionId/revert.
 func (h *CaptionHandler) RevertVersion(c *gin.Context) {
 	if err := h.svc.RevertToVersion(c.Request.Context(), c.Param("id"), c.Param("versionId")); err != nil {
 		internalError(c, err)

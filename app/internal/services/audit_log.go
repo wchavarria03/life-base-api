@@ -9,10 +9,12 @@ import (
 	"life-base-api/app/internal/models"
 )
 
+// AuditLogService records and lists audit log entries.
 type AuditLogService struct {
 	repo *supabaserepo.AuditLogRepository
 }
 
+// NewAuditLogService constructs an AuditLogService.
 func NewAuditLogService(repo *supabaserepo.AuditLogRepository) *AuditLogService {
 	return &AuditLogService{repo: repo}
 }
@@ -32,6 +34,7 @@ func (s *AuditLogService) Create(ctx context.Context, method, path string, statu
 	})
 }
 
+// List returns audit log entries, newest first.
 func (s *AuditLogService) List(ctx context.Context, limit, offset int) ([]*models.AuditLogEntry, error) {
 	return s.repo.List(ctx, limit, offset)
 }

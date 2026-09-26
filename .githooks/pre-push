@@ -1,0 +1,30 @@
+#!/bin/sh
+# Pre-push checks mirroring CI's build-test and lint jobs, so a broken
+# build or a new lint issue is caught before it reaches GitHub Actions.
+# Enable once per clone with:
+#   git config core.hooksPath .githooks
+
+set -e
+
+echo "pre-push: go build"
+go build ./...
+
+echo "pre-push: go vet"
+go vet ./...
+
+echo "pre-push: go test"
+go test ./...
+
+if command -v golangci-lint >/dev/null 2>&1; then
+    base="origin/main"
+    git fetch -q origin main 2>/dev/null || true
+    echo "pre-push: golangci-lint (new issues since $base)"
+    golangci-lint run --new-from-rev="$base" ./... || {
+        echo "pre-push: lint found new issues — fix them or run 'git push --no-verify' to skip (not recommended)"
+        exit 1
+    }
+else
+    echo "pre-push: golangci-lint not found on PATH, skipping lint check (CI will still run it)"
+fi
+
+echo "pre-push: all checks passed"

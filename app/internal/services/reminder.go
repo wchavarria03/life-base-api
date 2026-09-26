@@ -9,6 +9,7 @@ import (
 	"life-base-api/app/internal/models"
 )
 
+// NewReminderService constructs a ReminderService.
 func NewReminderService(reminders ReminderRepository, txCategories TransactionCategoryRepository) *ReminderService {
 	return &ReminderService{reminders: reminders, txCategories: txCategories}
 }

@@ -38,6 +38,7 @@ type Registry struct {
 	Note *NoteService
 }
 
+// NewRegistry wires every service with its repository dependencies.
 func NewRegistry(repos *repositories.Registry, userID string, social SocialConfig, strava StravaConfig, digest DigestConfig) *Registry {
 	classifier := NewClassificationService(repos.Classifications)
 	transfer := NewTransferService(repos.Accounts, repos.Transactions, repos.Transfers)

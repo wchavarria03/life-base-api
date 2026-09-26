@@ -12,6 +12,7 @@ const (
 	maxAuditLogLimit     = 200
 )
 
+// NewAuditLogHandler constructs an AuditLogHandler.
 func NewAuditLogHandler(svc AuditLogManager) *AuditLogHandler {
 	return &AuditLogHandler{svc: svc}
 }

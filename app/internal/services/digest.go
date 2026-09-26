@@ -32,6 +32,7 @@ type DigestConfig struct {
 	ResendFrom   string // e.g. "Life-Base <notifications@yourdomain.com>"
 }
 
+// DigestService computes and sends the push/email notification digest.
 type DigestService struct {
 	reminders ReminderRepository
 	prefs     *PreferencesService
@@ -41,6 +42,7 @@ type DigestService struct {
 	http      *http.Client
 }
 
+// NewDigestService constructs a DigestService.
 func NewDigestService(reminders ReminderRepository, prefs *PreferencesService, push *PushService, admin *supabaserepo.AdminRepository, cfg DigestConfig) *DigestService {
 	return &DigestService{reminders: reminders, prefs: prefs, push: push, admin: admin, cfg: cfg, http: &http.Client{Timeout: 15 * time.Second}}
 }
@@ -130,7 +132,7 @@ func (s *DigestService) RunPush(ctx context.Context) (int, error) {
 				log.Printf("digest: send push to user=%s: %v", p.UserID, err)
 				continue
 			}
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			if resp.StatusCode == 404 || resp.StatusCode == 410 {
 				// Subscription is gone (browser data cleared, uninstalled, etc.).
 				_ = s.push.Delete(ctx, sub.ID)
@@ -146,7 +148,7 @@ func (s *DigestService) RunPush(ctx context.Context) (int, error) {
 // currently has something to report. Best-effort per user.
 func (s *DigestService) RunEmail(ctx context.Context) (int, error) {
 	if s.cfg.ResendAPIKey == "" || s.cfg.ResendFrom == "" {
-		return 0, fmt.Errorf("Resend not configured")
+		return 0, fmt.Errorf("resend not configured")
 	}
 
 	enabled, err := s.prefs.ListEnabledForEmailDigest(ctx)
@@ -210,7 +212,7 @@ func (s *DigestService) sendEmail(ctx context.Context, to, body string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode >= http.StatusBadRequest {
 		return fmt.Errorf("resend: http %d", resp.StatusCode)
 	}

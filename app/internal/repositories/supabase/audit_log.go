@@ -9,19 +9,23 @@ import (
 	"life-base-api/app/internal/models"
 )
 
+// AuditLogRepository persists audit log entries.
 type AuditLogRepository struct {
 	client *databases.SupabaseClient
 }
 
+// NewAuditLogRepository constructs an AuditLogRepository.
 func NewAuditLogRepository(client *databases.SupabaseClient) *AuditLogRepository {
 	return &AuditLogRepository{client: client}
 }
 
+// Create inserts one audit log entry.
 func (r *AuditLogRepository) Create(ctx context.Context, entry *models.AuditLogEntry) error {
 	_, err := databases.Post[[]*models.AuditLogEntry](ctx, r.client, "/rest/v1/audit_logs", entry, "")
 	return err
 }
 
+// List returns audit log entries, newest first.
 func (r *AuditLogRepository) List(ctx context.Context, limit, offset int) ([]*models.AuditLogEntry, error) {
 	return databases.Get[[]*models.AuditLogEntry](ctx, r.client, "/rest/v1/audit_logs", url.Values{
 		"order":  []string{"created_at.desc"},

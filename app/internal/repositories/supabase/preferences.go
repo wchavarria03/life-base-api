@@ -8,14 +8,17 @@ import (
 	"life-base-api/app/internal/models"
 )
 
+// PreferencesRepository persists per-user notification preferences.
 type PreferencesRepository struct {
 	client *databases.SupabaseClient
 }
 
+// NewPreferencesRepository constructs a PreferencesRepository.
 func NewPreferencesRepository(client *databases.SupabaseClient) *PreferencesRepository {
 	return &PreferencesRepository{client: client}
 }
 
+// FindByUserID returns a user's preferences row, or nil if unset.
 func (r *PreferencesRepository) FindByUserID(ctx context.Context, userID string) (*models.UserPreferences, error) {
 	rows, err := databases.Get[[]*models.UserPreferences](ctx, r.client, "/rest/v1/user_preferences",
 		url.Values{"user_id": []string{"eq." + userID}, "limit": []string{"1"}})
@@ -28,6 +31,7 @@ func (r *PreferencesRepository) FindByUserID(ctx context.Context, userID string)
 	return rows[0], nil
 }
 
+// Upsert creates or replaces a user's preferences row.
 func (r *PreferencesRepository) Upsert(ctx context.Context, p *models.UserPreferences) (*models.UserPreferences, error) {
 	rows, err := databases.Post[[]*models.UserPreferences](ctx, r.client,
 		"/rest/v1/user_preferences?on_conflict=user_id", p,

@@ -8,10 +8,12 @@ import (
 	"life-base-api/app/internal/models"
 )
 
+// PushSubscriptionRepository persists web push subscriptions.
 type PushSubscriptionRepository struct {
 	client *databases.SupabaseClient
 }
 
+// NewPushSubscriptionRepository constructs a PushSubscriptionRepository.
 func NewPushSubscriptionRepository(client *databases.SupabaseClient) *PushSubscriptionRepository {
 	return &PushSubscriptionRepository{client: client}
 }
@@ -31,11 +33,13 @@ func (r *PushSubscriptionRepository) Upsert(ctx context.Context, s *models.PushS
 	return rows[0], nil
 }
 
+// DeleteByEndpoint removes a subscription by its endpoint URL.
 func (r *PushSubscriptionRepository) DeleteByEndpoint(ctx context.Context, endpoint string) error {
 	return databases.Delete(ctx, r.client, "/rest/v1/push_subscriptions",
 		url.Values{"endpoint": []string{"eq." + endpoint}})
 }
 
+// ListByUserID returns every subscription for a user.
 func (r *PushSubscriptionRepository) ListByUserID(ctx context.Context, userID string) ([]*models.PushSubscription, error) {
 	return databases.Get[[]*models.PushSubscription](ctx, r.client, "/rest/v1/push_subscriptions",
 		url.Values{"user_id": []string{"eq." + userID}})

@@ -9,28 +9,34 @@ import (
 	"life-base-api/app/internal/models"
 )
 
+// CaptionService manages the caption template library.
 type CaptionService struct {
 	repo *supabaserepo.CaptionRepository
 }
 
+// NewCaptionService constructs a CaptionService.
 func NewCaptionService(repo *supabaserepo.CaptionRepository) *CaptionService {
 	return &CaptionService{repo: repo}
 }
 
 // ── Categories ───────────────────────────────────────────────────────────────
 
+// ListCategories returns every caption category.
 func (s *CaptionService) ListCategories(ctx context.Context) ([]*models.CaptionCategory, error) {
 	return s.repo.ListCategories(ctx)
 }
 
+// CreateCategory creates a new caption category.
 func (s *CaptionService) CreateCategory(ctx context.Context, name string) (*models.CaptionCategory, error) {
 	return s.repo.CreateCategory(ctx, &models.CaptionCategory{Name: name})
 }
 
+// UpdateCategory renames a caption category.
 func (s *CaptionService) UpdateCategory(ctx context.Context, id, name string) (*models.CaptionCategory, error) {
 	return s.repo.UpdateCategory(ctx, id, name)
 }
 
+// DeleteCategory removes a caption category.
 func (s *CaptionService) DeleteCategory(ctx context.Context, id string) error {
 	return s.repo.DeleteCategory(ctx, id)
 }
@@ -112,12 +118,14 @@ func (s *CaptionService) UpdateTemplateMeta(ctx context.Context, id string, titl
 	return nil
 }
 
+// DeleteTemplate removes a caption template.
 func (s *CaptionService) DeleteTemplate(ctx context.Context, id string) error {
 	return s.repo.DeleteTemplate(ctx, id)
 }
 
 // ── Versions ─────────────────────────────────────────────────────────────────
 
+// ListVersions returns a template's version history.
 func (s *CaptionService) ListVersions(ctx context.Context, templateID string) ([]*models.CaptionTemplateVersion, error) {
 	return s.repo.ListVersions(ctx, templateID)
 }
@@ -144,6 +152,7 @@ func (s *CaptionService) AddVersion(ctx context.Context, templateID, body string
 	return version, nil
 }
 
+// RevertToVersion makes an older version current again.
 func (s *CaptionService) RevertToVersion(ctx context.Context, templateID, versionID string) error {
 	version, err := s.repo.GetVersion(ctx, versionID)
 	if err != nil {
@@ -157,10 +166,12 @@ func (s *CaptionService) RevertToVersion(ctx context.Context, templateID, versio
 
 // ── Post categories ──────────────────────────────────────────────────────────
 
+// SetPostCategories tags a social post with the given categories.
 func (s *CaptionService) SetPostCategories(ctx context.Context, postID string, categoryIDs []string) error {
 	return s.repo.SetPostCategories(ctx, postID, categoryIDs)
 }
 
+// ListPostCategoryIDs returns every social post's assigned category IDs.
 func (s *CaptionService) ListPostCategoryIDs(ctx context.Context) (map[string][]string, error) {
 	return s.repo.ListPostCategoryIDs(ctx)
 }

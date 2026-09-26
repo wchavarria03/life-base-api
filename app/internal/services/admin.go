@@ -8,10 +8,12 @@ import (
 	"life-base-api/app/internal/models"
 )
 
+// AdminService manages household roles and the page access matrix.
 type AdminService struct {
 	repo *supabaserepo.AdminRepository
 }
 
+// NewAdminService constructs an AdminService.
 func NewAdminService(repo *supabaserepo.AdminRepository) *AdminService {
 	return &AdminService{repo: repo}
 }
@@ -34,14 +36,17 @@ func (s *AdminService) ListMembers(ctx context.Context) ([]*models.HouseholdMemb
 	return members, nil
 }
 
+// SetMemberRole assigns a role to a household member.
 func (s *AdminService) SetMemberRole(ctx context.Context, userID, role string) error {
 	return s.repo.SetMemberRole(ctx, userID, role)
 }
 
+// ListPageAccess returns the full role/page access matrix.
 func (s *AdminService) ListPageAccess(ctx context.Context) ([]*models.PageAccessEntry, error) {
 	return s.repo.ListPageAccess(ctx)
 }
 
+// SetPageAccess upserts one (role, page_key) access entry.
 func (s *AdminService) SetPageAccess(ctx context.Context, entry *models.PageAccessEntry) error {
 	return s.repo.SetPageAccess(ctx, entry)
 }

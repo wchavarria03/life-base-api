@@ -17,6 +17,7 @@ const (
 	maxSocialListLimit     = 200
 )
 
+// NewSocialHandler constructs a SocialHandler.
 func NewSocialHandler(svc SocialPoster, captions CaptionManager) *SocialHandler {
 	return &SocialHandler{svc: svc, captions: captions}
 }

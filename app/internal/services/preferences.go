@@ -9,10 +9,12 @@ import (
 	"life-base-api/app/internal/models"
 )
 
+// PreferencesService manages per-user notification preferences.
 type PreferencesService struct {
 	repo *supabaserepo.PreferencesRepository
 }
 
+// NewPreferencesService constructs a PreferencesService.
 func NewPreferencesService(repo *supabaserepo.PreferencesRepository) *PreferencesService {
 	return &PreferencesService{repo: repo}
 }
@@ -30,6 +32,7 @@ func (s *PreferencesService) Get(ctx context.Context, userID string) (*models.Us
 	return prefs, nil
 }
 
+// Set updates the caller's notification preferences.
 func (s *PreferencesService) Set(ctx context.Context, userID string, pushEnabled, emailDigestEnabled bool) (*models.UserPreferences, error) {
 	return s.repo.Upsert(ctx, &models.UserPreferences{
 		UserID:             userID,
@@ -38,10 +41,12 @@ func (s *PreferencesService) Set(ctx context.Context, userID string, pushEnabled
 	})
 }
 
+// ListEnabledForPush returns every user with push notifications enabled.
 func (s *PreferencesService) ListEnabledForPush(ctx context.Context) ([]*models.UserPreferences, error) {
 	return s.repo.ListEnabledForPush(ctx)
 }
 
+// ListEnabledForEmailDigest returns every user with the email digest enabled.
 func (s *PreferencesService) ListEnabledForEmailDigest(ctx context.Context) ([]*models.UserPreferences, error) {
 	return s.repo.ListEnabledForEmailDigest(ctx)
 }

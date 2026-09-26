@@ -99,15 +99,18 @@ type SalaryProfileManager interface {
 	CheckPurchase(ctx context.Context, p *models.SalaryProfile, price float64) (*models.PurchaseCheck, error)
 }
 
+// AuditLogManager lists audit log entries for the admin UI.
 type AuditLogManager interface {
 	List(ctx context.Context, limit, offset int) ([]*models.AuditLogEntry, error)
 }
 
+// PushManager registers and removes web push subscriptions.
 type PushManager interface {
 	Subscribe(ctx context.Context, userID, endpoint, p256dh, authKey string) error
 	Unsubscribe(ctx context.Context, endpoint string) error
 }
 
+// PreferenceManager reads and writes per-user notification preferences.
 type PreferenceManager interface {
 	Get(ctx context.Context, userID string) (*models.UserPreferences, error)
 	Set(ctx context.Context, userID string, pushEnabled, emailDigestEnabled bool) (*models.UserPreferences, error)
@@ -121,6 +124,7 @@ type AdminManager interface {
 	AllowedPageKeys(ctx context.Context, role string) ([]string, error)
 }
 
+// CaptionManager manages the caption template library.
 type CaptionManager interface {
 	ListCategories(ctx context.Context) ([]*models.CaptionCategory, error)
 	CreateCategory(ctx context.Context, name string) (*models.CaptionCategory, error)

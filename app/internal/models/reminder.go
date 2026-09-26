@@ -6,15 +6,20 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+// ReminderStatus is the derived (not stored) lifecycle state of a reminder.
 type ReminderStatus string
 
 const (
-	ReminderOverdue   ReminderStatus = "overdue"
-	ReminderDueToday  ReminderStatus = "due_today"
-	ReminderUpcoming  ReminderStatus = "upcoming"
+	// ReminderOverdue means the due date has passed with no completion.
+	ReminderOverdue ReminderStatus = "overdue"
+	// ReminderDueToday means the due date is today, not yet completed.
+	ReminderDueToday ReminderStatus = "due_today"
+	// ReminderUpcoming means the due date is in the future.
+	ReminderUpcoming ReminderStatus = "upcoming"
 	// ReminderResolved means the user marked the reminder paid, but it hasn't
 	// been linked to the real imported transaction yet.
-	ReminderResolved  ReminderStatus = "resolved"
+	ReminderResolved ReminderStatus = "resolved"
+	// ReminderCompleted means the reminder is paid and linked to a transaction.
 	ReminderCompleted ReminderStatus = "completed"
 )
 

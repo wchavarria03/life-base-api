@@ -14,6 +14,7 @@ import (
 // in one page per account rather than building real pagination for export.
 const exportTxLimit = 100_000
 
+// NewExportHandler constructs an ExportHandler.
 func NewExportHandler(
 	accounts AccountLister,
 	transactions TransactionLister,

@@ -11,10 +11,12 @@ import (
 	"life-base-api/app/internal/models"
 )
 
+// AdminRepository backs household/role administration.
 type AdminRepository struct {
 	client *databases.SupabaseClient
 }
 
+// NewAdminRepository constructs an AdminRepository.
 func NewAdminRepository(client *databases.SupabaseClient) *AdminRepository {
 	return &AdminRepository{client: client}
 }
@@ -63,6 +65,7 @@ func (r *AdminRepository) ListAuthEmails(ctx context.Context) (map[string]string
 	return emails, nil
 }
 
+// ListMembers returns every household_members row.
 func (r *AdminRepository) ListMembers(ctx context.Context) ([]*models.HouseholdMember, error) {
 	return databases.Get[[]*models.HouseholdMember](ctx, r.client, "/rest/v1/household_members",
 		url.Values{"select": []string{"user_id,role"}})
@@ -114,6 +117,7 @@ func (r *AdminRepository) SetMemberRole(ctx context.Context, userID, role string
 	return err
 }
 
+// ListPageAccess returns the full role/page access matrix.
 func (r *AdminRepository) ListPageAccess(ctx context.Context) ([]*models.PageAccessEntry, error) {
 	return databases.Get[[]*models.PageAccessEntry](ctx, r.client, "/rest/v1/page_access", nil)
 }

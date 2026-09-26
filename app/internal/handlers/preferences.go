@@ -8,10 +8,12 @@ import (
 	"life-base-api/app/internal/auth"
 )
 
+// NewPreferencesHandler constructs a PreferencesHandler.
 func NewPreferencesHandler(svc PreferenceManager) *PreferencesHandler {
 	return &PreferencesHandler{svc: svc}
 }
 
+// Get handles GET /v1/preferences.
 func (h *PreferencesHandler) Get(c *gin.Context) {
 	userID := auth.UserIDFromContext(c.Request.Context())
 	prefs, err := h.svc.Get(c.Request.Context(), userID)
@@ -27,6 +29,7 @@ type setPreferencesRequest struct {
 	EmailDigestEnabled bool `json:"email_digest_enabled"`
 }
 
+// Set handles PUT /v1/preferences.
 func (h *PreferencesHandler) Set(c *gin.Context) {
 	var req setPreferencesRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

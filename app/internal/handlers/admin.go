@@ -8,6 +8,7 @@ import (
 	"life-base-api/app/internal/models"
 )
 
+// NewAdminHandler constructs an AdminHandler.
 func NewAdminHandler(svc AdminManager) *AdminHandler {
 	return &AdminHandler{svc: svc}
 }
