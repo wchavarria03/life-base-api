@@ -82,6 +82,16 @@ type AuditLogHandler struct {
 	svc AuditLogManager
 }
 
+type ExportHandler struct {
+	accounts     AccountLister
+	transactions TransactionLister
+	categories   CategoryManager
+	budgets      BudgetManager
+	envelopes    EnvelopeManager
+	reminders    ReminderManager
+	social       SocialPoster
+}
+
 type BikeHandler struct {
 	svc BikeManager
 }
