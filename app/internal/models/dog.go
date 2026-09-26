@@ -4,20 +4,22 @@ import "time"
 
 // Dog is the stored shape from dogs.
 type Dog struct {
-	ID          string    `json:"id"`
-	UserID      string    `json:"user_id,omitempty"`
-	Name        string    `json:"name"`
-	MealsPerDay int       `json:"meals_per_day"`
-	Notes       *string   `json:"notes,omitempty"`
-	CreatedAt   time.Time `json:"created_at,omitempty"`
+	ID                     string    `json:"id"`
+	UserID                 string    `json:"user_id,omitempty"`
+	Name                   string    `json:"name"`
+	MealsPerDay            int       `json:"meals_per_day"`
+	DefaultRecipientTypeID *string   `json:"default_recipient_type_id,omitempty"`
+	Notes                  *string   `json:"notes,omitempty"`
+	CreatedAt              time.Time `json:"created_at,omitempty"`
 }
 
 // DogInput is the write shape for Dog create/update.
 type DogInput struct {
-	UserID      string  `json:"user_id,omitempty"`
-	Name        string  `json:"name,omitempty"`
-	MealsPerDay *int    `json:"meals_per_day,omitempty"`
-	Notes       *string `json:"notes,omitempty"`
+	UserID                 string  `json:"user_id,omitempty"`
+	Name                   string  `json:"name,omitempty"`
+	MealsPerDay            *int    `json:"meals_per_day,omitempty"`
+	DefaultRecipientTypeID *string `json:"default_recipient_type_id,omitempty"`
+	Notes                  *string `json:"notes,omitempty"`
 }
 
 // DogRecipientType is a reusable container size (e.g. "Large cup", 250g),
