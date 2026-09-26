@@ -19,6 +19,7 @@ type Registry struct {
 	Upload        *UploadHandler
 	SalaryProfile *SalaryProfileHandler
 	Social        *SocialHandler
+	Admin         *AdminHandler
 
 	Bike            *BikeHandler
 	BikeFitHistory  *BikeFitHistoryHandler
@@ -44,7 +45,7 @@ func NewRegistry(svc *services.Registry) (*Registry, error) {
 		Category:      NewCategoryHandler(svc.Category),
 		Dump:          NewDumpHandler(),
 		Extract:       NewExtractHandler(svc.Import),
-		Me:            NewMeHandler(),
+		Me:            NewMeHandler(svc.Admin),
 		Report:        NewReportHandler(svc.Account, svc.Report),
 		RuleException: NewRuleExceptionHandler(svc.RuleExceptions, svc.Category),
 		Transaction:   NewTransactionHandler(svc.Transaction),
@@ -52,6 +53,7 @@ func NewRegistry(svc *services.Registry) (*Registry, error) {
 		Upload:        NewUploadHandler(svc.Import),
 		SalaryProfile: NewSalaryProfileHandler(svc.SalaryProfile),
 		Social:        NewSocialHandler(svc.Social),
+		Admin:         NewAdminHandler(svc.Admin),
 
 		Bike:            NewBikeHandler(svc.Bike),
 		BikeFitHistory:  NewBikeFitHistoryHandler(svc.BikeFitHistory),

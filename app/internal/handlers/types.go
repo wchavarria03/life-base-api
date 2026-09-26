@@ -10,7 +10,9 @@ type AccountHandler struct {
 	svc AccountLister
 }
 
-type MeHandler struct{}
+type MeHandler struct {
+	admin AdminManager
+}
 
 type TransactionHandler struct {
 	svc TransactionLister
@@ -57,6 +59,10 @@ type SalaryProfileHandler struct {
 
 type SocialHandler struct {
 	svc SocialPoster
+}
+
+type AdminHandler struct {
+	svc AdminManager
 }
 
 type BikeHandler struct {

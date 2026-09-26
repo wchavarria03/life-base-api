@@ -33,6 +33,7 @@ func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL, issuer s
 	v1.Use(middleware.AuditLog())
 
 	v1.GET("/me", hdlrs.Me.GetMe)
+	setupAdminRoutes(v1, hdlrs)
 	setupSocialRoutes(v1, hdlrs)
 	setupBikeRoutes(v1, hdlrs)
 	setupTaskRoutes(v1, hdlrs)
@@ -52,6 +53,15 @@ func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL, issuer s
 	v1.POST("/transfers/reconcile", hdlrs.Transfer.Reconcile)
 	v1.PATCH("/transactions/:id/type", hdlrs.Transfer.UpdateTransactionType)
 	v1.PATCH("/transactions/:id/note", hdlrs.Transaction.UpdateNote)
+}
+
+func setupAdminRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
+	admin := rg.Group("/admin")
+	admin.Use(middleware.RequireRole("admin"))
+	admin.GET("/users", hdlrs.Admin.ListMembers)
+	admin.PATCH("/users/:id/role", hdlrs.Admin.SetMemberRole)
+	admin.GET("/page-access", hdlrs.Admin.ListPageAccess)
+	admin.PUT("/page-access", hdlrs.Admin.SetPageAccess)
 }
 
 func setupSocialRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {

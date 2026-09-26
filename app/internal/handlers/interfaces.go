@@ -99,6 +99,14 @@ type SalaryProfileManager interface {
 	CheckPurchase(ctx context.Context, p *models.SalaryProfile, price float64) (*models.PurchaseCheck, error)
 }
 
+type AdminManager interface {
+	ListMembers(ctx context.Context) ([]*models.HouseholdMember, error)
+	SetMemberRole(ctx context.Context, userID, role string) error
+	ListPageAccess(ctx context.Context) ([]*models.PageAccessEntry, error)
+	SetPageAccess(ctx context.Context, entry *models.PageAccessEntry) error
+	AllowedPageKeys(ctx context.Context, role string) ([]string, error)
+}
+
 type SocialPoster interface {
 	PostImage(ctx context.Context, file io.Reader, filename string, caption *string, force, toFacebook, toInstagram bool) (*models.SocialPost, error)
 	List(ctx context.Context, limit, offset int, status *models.SocialPostStatus) ([]*models.SocialPost, error)

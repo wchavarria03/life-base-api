@@ -19,6 +19,7 @@ type Registry struct {
 	Reminders             *supabaserepo.ReminderRepository
 	SalaryProfiles        *supabaserepo.SalaryProfileRepository
 	SocialPosts           *supabaserepo.SocialPostRepository
+	Admin                 *supabaserepo.AdminRepository
 
 	Bikes            *supabaserepo.BikeRepository
 	BikeFitHistory   *supabaserepo.BikeFitHistoryRepository
@@ -52,6 +53,7 @@ func NewRegistry(dbs *databases.Registry) *Registry {
 		Reminders:             supabaserepo.NewReminderRepository(dbs.Supabase),
 		SalaryProfiles:        supabaserepo.NewSalaryProfileRepository(dbs.Supabase),
 		SocialPosts:           supabaserepo.NewSocialPostRepository(dbs.Supabase),
+		Admin:                 supabaserepo.NewAdminRepository(dbs.Supabase),
 
 		Bikes:            supabaserepo.NewBikeRepository(dbs.Supabase),
 		BikeFitHistory:   supabaserepo.NewBikeFitHistoryRepository(dbs.Supabase),

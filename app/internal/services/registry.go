@@ -16,6 +16,7 @@ type Registry struct {
 	Transfer       *TransferService
 	SalaryProfile  *SalaryProfileService
 	Social         *SocialService
+	Admin          *AdminService
 
 	Bike            *BikeService
 	BikeFitHistory  *BikeFitHistoryService
@@ -50,6 +51,7 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 		Transfer:       transfer,
 		SalaryProfile:  NewSalaryProfileService(repos.SalaryProfiles),
 		Social:         NewSocialService(repos.SocialPosts, social),
+		Admin:          NewAdminService(repos.Admin),
 
 		Bike:            NewBikeService(repos.Bikes),
 		BikeFitHistory:  NewBikeFitHistoryService(repos.BikeFitHistory),

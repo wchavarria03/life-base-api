@@ -33,7 +33,8 @@ const jwksRefreshInterval = 10 * time.Minute
 const jwksMinRefetchInterval = 10 * time.Second
 
 type supabaseClaims struct {
-	Role string `json:"role"`
+	Role     string `json:"role"`
+	UserRole string `json:"user_role"`
 	jwt.RegisteredClaims
 }
 
@@ -209,7 +210,11 @@ func Auth(jwksURL, issuer string) gin.HandlerFunc {
 			return
 		}
 
-		ctx := auth.WithUser(c.Request.Context(), tokenStr, userID)
+		role := claims.UserRole
+		if role == "" {
+			role = "member"
+		}
+		ctx := auth.WithUser(c.Request.Context(), tokenStr, userID, role)
 		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 	}
