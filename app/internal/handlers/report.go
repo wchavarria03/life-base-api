@@ -81,3 +81,55 @@ func (h *ReportHandler) GetSummary(c *gin.Context) {
 
 	c.JSON(http.StatusOK, summary)
 }
+
+// NetWorth handles GET /v1/reports/net-worth?from=&to= — one balance-history
+// summary per currency the caller has accounts in, side by side. No FX
+// conversion: each currency is its own independent total, same as the
+// existing per-currency filter in GetSummary, just run for every currency
+// present instead of requiring the caller to pick one.
+func (h *ReportHandler) NetWorth(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	fromStr := c.Query("from")
+	toStr := c.Query("to")
+	if fromStr == "" || toStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "from and to are required"})
+		return
+	}
+	from, err := time.Parse("2006-01-02", fromStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid from date, expected YYYY-MM-DD"})
+		return
+	}
+	to, err := time.Parse("2006-01-02", toStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid to date, expected YYYY-MM-DD"})
+		return
+	}
+
+	accounts, err := h.accounts.List(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list accounts"})
+		return
+	}
+
+	byCurrency := make(map[string][]string)
+	for _, a := range accounts {
+		if a.Locked || a.External {
+			continue
+		}
+		byCurrency[a.Currency] = append(byCurrency[a.Currency], a.ID)
+	}
+
+	result := make(map[string]*models.ReportSummary, len(byCurrency))
+	for currency, accountIDs := range byCurrency {
+		summary, err := h.summarizer.Summarize(ctx, accountIDs, from, to)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate report"})
+			return
+		}
+		result[currency] = summary
+	}
+
+	c.JSON(http.StatusOK, result)
+}

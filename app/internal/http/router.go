@@ -220,6 +220,7 @@ func setupAccountRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 func setupReportRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	reports := rg.Group("/reports")
 	reports.GET("/summary", hdlrs.Report.GetSummary)
+	reports.GET("/net-worth", hdlrs.Report.NetWorth)
 }
 
 func setupSalaryProfileRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
