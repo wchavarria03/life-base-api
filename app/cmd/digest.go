@@ -9,7 +9,7 @@ import (
 
 var digestCmd = &cobra.Command{
 	Use:   "send-digest",
-	Short: "Send push/email notifications to users with overdue reminders (run on a schedule, e.g. a Render Cron Job)",
+	Short: "Send push/email notifications to users with overdue reminders (run on a schedule, e.g. the daily GitHub Actions workflow in .github/workflows/digest.yml)",
 	RunE: func(_ *cobra.Command, _ []string) error {
 		ctx := context.Background()
 
