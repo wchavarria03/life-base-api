@@ -49,6 +49,7 @@ func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL, issuer s
 	v1.POST("/transfers/link", hdlrs.Transfer.Link)
 	v1.POST("/transfers/link-existing", hdlrs.Transfer.LinkExisting)
 	v1.GET("/transfers/matches", hdlrs.Transfer.GetMatches)
+	v1.POST("/transfers/reconcile", hdlrs.Transfer.Reconcile)
 	v1.PATCH("/transactions/:id/type", hdlrs.Transfer.UpdateTransactionType)
 	v1.PATCH("/transactions/:id/note", hdlrs.Transaction.UpdateNote)
 }

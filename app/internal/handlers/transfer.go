@@ -130,6 +130,42 @@ func (h *TransferHandler) LinkExisting(c *gin.Context) {
 	c.JSON(http.StatusCreated, result)
 }
 
+// Reconcile handles POST /v1/transfers/reconcile — manually re-runs
+// auto-reconciliation for an arbitrary date range. Useful when a
+// transaction's type was corrected to "transfer" after import (a manual
+// edit doesn't itself trigger matching — only a fresh import does), or
+// when catching up historical data imported before this matching logic
+// existed. Only high-confidence pairs (reference or short-number match)
+// get auto-linked, same as the automatic post-import pass.
+func (h *TransferHandler) Reconcile(c *gin.Context) {
+	fromStr := c.Query("from")
+	toStr := c.Query("to")
+
+	if fromStr == "" || toStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "from and to are required"})
+		return
+	}
+
+	from, err := time.Parse("2006-01-02", fromStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid from date, expected YYYY-MM-DD"})
+		return
+	}
+	to, err := time.Parse("2006-01-02", toStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid to date, expected YYYY-MM-DD"})
+		return
+	}
+
+	linked, err := h.svc.ReconcileForPeriod(c.Request.Context(), from, to)
+	if err != nil {
+		internalError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"linked": linked})
+}
+
 func (h *TransferHandler) GetMatches(c *gin.Context) {
 	fromStr := c.Query("from")
 	toStr := c.Query("to")

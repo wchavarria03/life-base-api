@@ -44,6 +44,7 @@ type TransferService interface {
 	LinkTransactions(ctx context.Context, fromTxID, toTxID string) (*models.TransferResult, error)
 	LinkExisting(ctx context.Context, existingTxID, counterpartAccountID string) (*models.TransferResult, error)
 	UpdateTransactionType(ctx context.Context, txID string, newType models.TransactionType) (*models.Transaction, error)
+	ReconcileForPeriod(ctx context.Context, from, to time.Time) (int, error)
 }
 
 type RuleExceptionManager interface {
