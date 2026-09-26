@@ -99,6 +99,11 @@ type SalaryProfileManager interface {
 	CheckPurchase(ctx context.Context, p *models.SalaryProfile, price float64) (*models.PurchaseCheck, error)
 }
 
+type PreferenceManager interface {
+	Get(ctx context.Context, userID string) (*models.UserPreferences, error)
+	Set(ctx context.Context, userID string, pushEnabled, emailDigestEnabled bool) (*models.UserPreferences, error)
+}
+
 type AdminManager interface {
 	ListMembers(ctx context.Context) ([]*models.HouseholdMember, error)
 	SetMemberRole(ctx context.Context, userID, role string) error

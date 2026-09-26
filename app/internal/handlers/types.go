@@ -70,6 +70,10 @@ type CaptionHandler struct {
 	svc CaptionManager
 }
 
+type PreferencesHandler struct {
+	svc PreferenceManager
+}
+
 type BikeHandler struct {
 	svc BikeManager
 }

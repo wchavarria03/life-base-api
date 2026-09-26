@@ -18,6 +18,7 @@ type Registry struct {
 	Social         *SocialService
 	Admin          *AdminService
 	Caption        *CaptionService
+	Preferences    *PreferencesService
 
 	Bike            *BikeService
 	BikeFitHistory  *BikeFitHistoryService
@@ -54,6 +55,7 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 		Social:         NewSocialService(repos.SocialPosts, social),
 		Admin:          NewAdminService(repos.Admin),
 		Caption:        NewCaptionService(repos.Caption),
+		Preferences:    NewPreferencesService(repos.Preferences),
 
 		Bike:            NewBikeService(repos.Bikes),
 		BikeFitHistory:  NewBikeFitHistoryService(repos.BikeFitHistory),

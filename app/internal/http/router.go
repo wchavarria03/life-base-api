@@ -33,6 +33,8 @@ func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL, issuer s
 	v1.Use(middleware.AuditLog())
 
 	v1.GET("/me", hdlrs.Me.GetMe)
+	v1.GET("/preferences", hdlrs.Preferences.Get)
+	v1.PUT("/preferences", hdlrs.Preferences.Set)
 	setupAdminRoutes(v1, hdlrs)
 	setupCaptionRoutes(v1, hdlrs)
 	setupSocialRoutes(v1, hdlrs)
