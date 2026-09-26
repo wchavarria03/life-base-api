@@ -24,6 +24,8 @@ type Registry struct {
 	Preferences           *supabaserepo.PreferencesRepository
 	PushSubscriptions     *supabaserepo.PushSubscriptionRepository
 	AuditLog              *supabaserepo.AuditLogRepository
+	Storage               *supabaserepo.StorageRepository
+	ScheduledPosts        *supabaserepo.ScheduledPostRepository
 
 	Bikes            *supabaserepo.BikeRepository
 	BikeFitHistory   *supabaserepo.BikeFitHistoryRepository
@@ -62,6 +64,8 @@ func NewRegistry(dbs *databases.Registry) *Registry {
 		Preferences:           supabaserepo.NewPreferencesRepository(dbs.Supabase),
 		PushSubscriptions:     supabaserepo.NewPushSubscriptionRepository(dbs.Supabase),
 		AuditLog:              supabaserepo.NewAuditLogRepository(dbs.Supabase),
+		Storage:               supabaserepo.NewStorageRepository(dbs.Supabase),
+		ScheduledPosts:        supabaserepo.NewScheduledPostRepository(dbs.Supabase),
 
 		Bikes:            supabaserepo.NewBikeRepository(dbs.Supabase),
 		BikeFitHistory:   supabaserepo.NewBikeFitHistoryRepository(dbs.Supabase),

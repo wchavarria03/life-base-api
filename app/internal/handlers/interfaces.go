@@ -105,6 +105,14 @@ type AuditLogManager interface {
 }
 
 // PushManager registers and removes web push subscriptions.
+// ScheduledPostManager schedules social posts for later sending.
+type ScheduledPostManager interface {
+	Create(ctx context.Context, file io.Reader, filename, fbCaption string, igCaption *string, toFacebook, toInstagram bool, categoryIDs []string, scheduledAt time.Time) (*models.ScheduledPost, error)
+	List(ctx context.Context) ([]*models.ScheduledPost, error)
+	Cancel(ctx context.Context, id string) error
+	ProcessDue(ctx context.Context, userID string) (sent int, failed int, err error)
+}
+
 type PushManager interface {
 	Subscribe(ctx context.Context, userID, endpoint, p256dh, authKey string) error
 	Unsubscribe(ctx context.Context, endpoint string) error
@@ -146,6 +154,7 @@ type CaptionManager interface {
 
 type SocialPoster interface {
 	PostImage(ctx context.Context, file io.Reader, filename string, caption *string, force, toFacebook, toInstagram bool) (*models.SocialPost, error)
+	PostImageWithCaptions(ctx context.Context, file io.Reader, filename string, fbCaption, igCaption *string, force, toFacebook, toInstagram bool) (*models.SocialPost, error)
 	List(ctx context.Context, limit, offset int, status *models.SocialPostStatus) ([]*models.SocialPost, error)
 	RetryInstagram(ctx context.Context, id string) (*models.SocialPost, error)
 	Delete(ctx context.Context, id string) error

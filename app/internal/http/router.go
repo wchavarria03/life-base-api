@@ -94,6 +94,12 @@ func setupSocialRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	social.GET("", hdlrs.Social.List)
 	social.DELETE("/:id", hdlrs.Social.Delete)
 	social.POST("/:id/retry-instagram", hdlrs.Social.RetryInstagram)
+
+	scheduled := rg.Group("/social/scheduled")
+	scheduled.POST("", hdlrs.ScheduledPost.Create)
+	scheduled.GET("", hdlrs.ScheduledPost.List)
+	scheduled.DELETE("/:id", hdlrs.ScheduledPost.Delete)
+	scheduled.POST("/check-now", hdlrs.ScheduledPost.CheckNow)
 }
 
 func setupBikeRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {

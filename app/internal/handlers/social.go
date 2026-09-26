@@ -43,12 +43,16 @@ func (h *SocialHandler) Create(c *gin.Context) {
 	if v := c.PostForm("caption"); v != "" {
 		caption = &v
 	}
+	var igCaption *string
+	if v := c.PostForm("caption_instagram"); v != "" {
+		igCaption = &v
+	}
 	force := c.PostForm("force") == "true"
 	toFacebook := c.PostForm("post_facebook") != "false"
 	toInstagram := c.PostForm("post_instagram") != "false"
 	categoryIDs := c.PostFormArray("category_ids")
 
-	post, err := h.svc.PostImage(c.Request.Context(), file, header.Filename, caption, force, toFacebook, toInstagram)
+	post, err := h.svc.PostImageWithCaptions(c.Request.Context(), file, header.Filename, caption, igCaption, force, toFacebook, toInstagram)
 	if err != nil {
 		if errors.Is(err, services.ErrDuplicateSocialPost) {
 			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})

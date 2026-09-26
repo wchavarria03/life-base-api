@@ -85,10 +85,24 @@ func NewSocialService(posts SocialPostRepository, cfg SocialConfig) *SocialServi
 // success, failure, or skipped (not selected) — is persisted; PostImage
 // only returns an error if it couldn't even persist the attempt.
 func (s *SocialService) PostImage(ctx context.Context, file io.Reader, filename string, customCaption *string, force, toFacebook, toInstagram bool) (*models.SocialPost, error) {
+	return s.PostImageWithCaptions(ctx, file, filename, customCaption, nil, force, toFacebook, toInstagram)
+}
+
+// PostImageWithCaptions is PostImage with an optional distinct Instagram
+// caption — when igCaption is nil or empty, both networks use the same
+// (Facebook) caption, same as PostImage.
+func (s *SocialService) PostImageWithCaptions(ctx context.Context, file io.Reader, filename string, fbCaption, igCaption *string, force, toFacebook, toInstagram bool) (*models.SocialPost, error) {
 	userID := auth.UserIDFromContext(ctx)
 	if userID == "" {
 		return nil, fmt.Errorf("no authenticated user")
 	}
+	return s.postImageForUser(ctx, userID, file, filename, fbCaption, igCaption, force, toFacebook, toInstagram)
+}
+
+// postImageForUser is PostImageWithCaptions with the acting user supplied
+// directly rather than read from context — used by the scheduled-posts
+// sender, which runs outside any per-request user JWT.
+func (s *SocialService) postImageForUser(ctx context.Context, userID string, file io.Reader, filename string, fbCaption, igCaption *string, force, toFacebook, toInstagram bool) (*models.SocialPost, error) {
 	if s.cfg.AccessToken == "" {
 		return nil, fmt.Errorf("META_ACCESS_TOKEN is not configured")
 	}
@@ -96,16 +110,8 @@ func (s *SocialService) PostImage(ctx context.Context, file io.Reader, filename 
 		return nil, fmt.Errorf("select at least one network to post to")
 	}
 
-	if !force {
-		since := time.Now().Add(-duplicatePostWindow)
-		existing, err := s.posts.FindRecentByFilename(ctx, filename, since)
-		if err != nil {
-			return nil, fmt.Errorf("check for duplicate post: %w", err)
-		}
-		if len(existing) > 0 {
-			return nil, fmt.Errorf("%w: %q was posted at %s — pass force=true to post it again",
-				ErrDuplicateSocialPost, filename, existing[0].CreatedAt.Format(time.RFC3339))
-		}
+	if err := s.checkDuplicate(ctx, filename, force); err != nil {
+		return nil, err
 	}
 
 	data, err := io.ReadAll(file)
@@ -113,37 +119,28 @@ func (s *SocialService) PostImage(ctx context.Context, file io.Reader, filename 
 		return nil, fmt.Errorf("read uploaded image: %w", err)
 	}
 
-	caption := buildCaption(customCaption)
+	caption := buildCaption(fbCaption)
+	igText := caption
+	if igCaption != nil && *igCaption != "" {
+		igText = *igCaption
+	}
 
 	input := models.SocialPostInput{
 		UserID:   userID,
 		Filename: filename,
 		Caption:  caption,
 	}
-
-	notSelected := "not selected"
+	if igText != caption {
+		input.CaptionInstagram = &igText
+	}
 
 	// Facebook upload always happens — even Instagram-only posts need the
 	// resulting hosted photo URL. publish=toFacebook controls whether it
 	// actually becomes a public Facebook Page post.
 	postID, photoID, err := s.postFacebook(ctx, data, filename, caption, toFacebook)
 	if err != nil {
-		if toFacebook {
-			input.FacebookStatus = models.SocialPostFailed
-			msg := err.Error()
-			input.FacebookError = &msg
-		} else {
-			input.FacebookStatus = models.SocialPostSkipped
-			input.FacebookError = &notSelected
-		}
-		if toInstagram {
-			input.InstagramStatus = models.SocialPostFailed
-			msg := "could not prepare image: " + err.Error()
-			input.InstagramError = &msg
-		} else {
-			input.InstagramStatus = models.SocialPostSkipped
-			input.InstagramError = &notSelected
-		}
+		input.FacebookStatus, input.FacebookError = networkOutcome(toFacebook, err.Error())
+		input.InstagramStatus, input.InstagramError = networkOutcome(toInstagram, "could not prepare image: "+err.Error())
 		return s.posts.Create(ctx, input)
 	}
 
@@ -151,20 +148,12 @@ func (s *SocialService) PostImage(ctx context.Context, file io.Reader, filename 
 		input.FacebookStatus = models.SocialPostSuccess
 		input.FacebookPostID = &postID
 	} else {
-		input.FacebookStatus = models.SocialPostSkipped
-		input.FacebookError = &notSelected
+		input.FacebookStatus, input.FacebookError = networkOutcome(false, "")
 	}
 
 	photoURL, permalink, err := s.getFacebookPhotoInfo(ctx, photoID)
 	if err != nil {
-		if toInstagram {
-			input.InstagramStatus = models.SocialPostFailed
-			msg := err.Error()
-			input.InstagramError = &msg
-		} else {
-			input.InstagramStatus = models.SocialPostSkipped
-			input.InstagramError = &notSelected
-		}
+		input.InstagramStatus, input.InstagramError = networkOutcome(toInstagram, err.Error())
 		return s.posts.Create(ctx, input)
 	}
 	input.FacebookPhotoURL = &photoURL
@@ -173,24 +162,11 @@ func (s *SocialService) PostImage(ctx context.Context, file io.Reader, filename 
 	}
 
 	if !toInstagram {
-		input.InstagramStatus = models.SocialPostSkipped
-		input.InstagramError = &notSelected
+		input.InstagramStatus, input.InstagramError = networkOutcome(false, "")
 		return s.posts.Create(ctx, input)
 	}
 
-	mediaID, err := s.postInstagram(ctx, photoURL, caption)
-	if err != nil {
-		input.InstagramStatus = models.SocialPostFailed
-		msg := err.Error()
-		input.InstagramError = &msg
-		return s.posts.Create(ctx, input)
-	}
-	input.InstagramStatus = models.SocialPostSuccess
-	input.InstagramMediaID = &mediaID
-	if igPermalink, err := s.getInstagramPermalink(ctx, mediaID); err == nil && igPermalink != "" {
-		input.InstagramPermalink = &igPermalink
-	}
-
+	s.fillInstagramOutcome(ctx, &input, photoURL, igText)
 	return s.posts.Create(ctx, input)
 }
 
@@ -220,8 +196,13 @@ func (s *SocialService) RetryInstagram(ctx context.Context, id string) (*models.
 		return nil, fmt.Errorf("%w: instagram already posted", ErrInstagramNotRetryable)
 	}
 
+	igCaption := post.Caption
+	if post.CaptionInstagram != nil && *post.CaptionInstagram != "" {
+		igCaption = *post.CaptionInstagram
+	}
+
 	fields := map[string]any{}
-	mediaID, err := s.postInstagram(ctx, *post.FacebookPhotoURL, post.Caption)
+	mediaID, err := s.postInstagram(ctx, *post.FacebookPhotoURL, igCaption)
 	if err != nil {
 		fields["instagram_status"] = models.SocialPostFailed
 		fields["instagram_error"] = err.Error()
@@ -247,6 +228,52 @@ func (s *SocialService) Delete(ctx context.Context, id string) error {
 
 func (s *SocialService) List(ctx context.Context, limit, offset int, status *models.SocialPostStatus) ([]*models.SocialPost, error) {
 	return s.posts.List(ctx, limit, offset, status)
+}
+
+// fillInstagramOutcome publishes to Instagram from photoURL and records the
+// result on input — success (with permalink, best-effort) or failure.
+func (s *SocialService) fillInstagramOutcome(ctx context.Context, input *models.SocialPostInput, photoURL, caption string) {
+	mediaID, err := s.postInstagram(ctx, photoURL, caption)
+	if err != nil {
+		input.InstagramStatus = models.SocialPostFailed
+		msg := err.Error()
+		input.InstagramError = &msg
+		return
+	}
+	input.InstagramStatus = models.SocialPostSuccess
+	input.InstagramMediaID = &mediaID
+	if igPermalink, err := s.getInstagramPermalink(ctx, mediaID); err == nil && igPermalink != "" {
+		input.InstagramPermalink = &igPermalink
+	}
+}
+
+// checkDuplicate errors if filename was posted within duplicatePostWindow,
+// unless force is set.
+func (s *SocialService) checkDuplicate(ctx context.Context, filename string, force bool) error {
+	if force {
+		return nil
+	}
+	since := time.Now().Add(-duplicatePostWindow)
+	existing, err := s.posts.FindRecentByFilename(ctx, filename, since)
+	if err != nil {
+		return fmt.Errorf("check for duplicate post: %w", err)
+	}
+	if len(existing) > 0 {
+		return fmt.Errorf("%w: %q was posted at %s — pass force=true to post it again",
+			ErrDuplicateSocialPost, filename, existing[0].CreatedAt.Format(time.RFC3339))
+	}
+	return nil
+}
+
+// networkOutcome returns the status/error pair for a network leg that
+// didn't succeed: "skipped, not selected" when the caller didn't choose
+// that network, or "failed, failedMsg" when they did but it errored.
+func networkOutcome(selected bool, failedMsg string) (models.SocialPostStatus, *string) {
+	if !selected {
+		msg := "not selected"
+		return models.SocialPostSkipped, &msg
+	}
+	return models.SocialPostFailed, &failedMsg
 }
 
 // buildCaption returns the caller-supplied caption, or picks from the

@@ -20,6 +20,7 @@ type SocialPost struct {
 	UserID             string           `json:"user_id,omitempty"`
 	Filename           string           `json:"filename"`
 	Caption            string           `json:"caption"`
+	CaptionInstagram   *string          `json:"caption_instagram,omitempty"`
 	FacebookStatus     SocialPostStatus `json:"facebook_status"`
 	FacebookPostID     *string          `json:"facebook_post_id,omitempty"`
 	FacebookPhotoURL   *string          `json:"facebook_photo_url,omitempty"`
@@ -38,6 +39,7 @@ type SocialPostInput struct {
 	UserID             string           `json:"user_id,omitempty"`
 	Filename           string           `json:"filename"`
 	Caption            string           `json:"caption"`
+	CaptionInstagram   *string          `json:"caption_instagram,omitempty"`
 	FacebookStatus     SocialPostStatus `json:"facebook_status"`
 	FacebookPostID     *string          `json:"facebook_post_id,omitempty"`
 	FacebookPhotoURL   *string          `json:"facebook_photo_url,omitempty"`

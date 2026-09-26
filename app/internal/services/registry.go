@@ -22,6 +22,7 @@ type Registry struct {
 	Push           *PushService
 	Digest         *DigestService
 	AuditLog       *AuditLogService
+	ScheduledPost  *ScheduledPostService
 
 	Bike            *BikeService
 	BikeFitHistory  *BikeFitHistoryService
@@ -45,6 +46,8 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 	reminder := NewReminderService(repos.Reminders, repos.TransactionCategories)
 	preferences := NewPreferencesService(repos.Preferences)
 	push := NewPushService(repos.PushSubscriptions)
+	socialSvc := NewSocialService(repos.SocialPosts, social)
+	captionSvc := NewCaptionService(repos.Caption)
 	return &Registry{
 		Account:        NewAccountService(repos.Accounts, repos.Transactions),
 		Budget:         NewBudgetService(repos.Budgets, repos.Accounts, repos.Transactions),
@@ -58,13 +61,14 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 		Transaction:    NewTransactionService(repos.Transactions),
 		Transfer:       transfer,
 		SalaryProfile:  NewSalaryProfileService(repos.SalaryProfiles),
-		Social:         NewSocialService(repos.SocialPosts, social),
+		Social:         socialSvc,
 		Admin:          NewAdminService(repos.Admin),
-		Caption:        NewCaptionService(repos.Caption),
+		Caption:        captionSvc,
 		Preferences:    preferences,
 		Push:           push,
 		Digest:         NewDigestService(repos.Reminders, preferences, push, repos.Admin, digest),
 		AuditLog:       NewAuditLogService(repos.AuditLog),
+		ScheduledPost:  NewScheduledPostService(repos.ScheduledPosts, repos.Storage, socialSvc, captionSvc),
 
 		Bike:            NewBikeService(repos.Bikes),
 		BikeFitHistory:  NewBikeFitHistoryService(repos.BikeFitHistory),

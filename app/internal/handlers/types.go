@@ -81,6 +81,11 @@ type PushHandler struct {
 	svc PushManager
 }
 
+// ScheduledPostHandler serves the scheduled social post endpoints.
+type ScheduledPostHandler struct {
+	svc ScheduledPostManager
+}
+
 // AuditLogHandler serves the admin audit log endpoint.
 type AuditLogHandler struct {
 	svc AuditLogManager
