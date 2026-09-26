@@ -22,8 +22,11 @@ func NewSocialHandler(svc SocialPoster) *SocialHandler {
 }
 
 // Create handles POST /v1/social/posts — multipart upload with an "image"
-// file field (required), an optional "caption" text field, and an optional
-// "force" field ("true" to bypass the duplicate-filename warning).
+// file field (required), an optional "caption" text field, an optional
+// "force" field ("true" to bypass the duplicate-filename warning), and
+// optional "post_facebook"/"post_instagram" fields ("false" to skip that
+// network — both default to true when absent, so existing callers that
+// don't send these fields keep posting to both).
 func (h *SocialHandler) Create(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSocialImageBytes)
 
@@ -39,8 +42,10 @@ func (h *SocialHandler) Create(c *gin.Context) {
 		caption = &v
 	}
 	force := c.PostForm("force") == "true"
+	toFacebook := c.PostForm("post_facebook") != "false"
+	toInstagram := c.PostForm("post_instagram") != "false"
 
-	post, err := h.svc.PostImage(c.Request.Context(), file, header.Filename, caption, force)
+	post, err := h.svc.PostImage(c.Request.Context(), file, header.Filename, caption, force, toFacebook, toInstagram)
 	if err != nil {
 		if errors.Is(err, services.ErrDuplicateSocialPost) {
 			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})

@@ -11,6 +11,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"life-base-api/app/internal/auth"
@@ -76,18 +77,23 @@ func NewSocialService(posts SocialPostRepository, cfg SocialConfig) *SocialServi
 	}
 }
 
-// PostImage posts an image to Facebook and, if that succeeds, to Instagram
-// (Instagram publishes from the Facebook-hosted photo URL, so it depends on
-// the Facebook leg). Every outcome — success, failure, or skipped — is
-// persisted; PostImage only returns an error if it couldn't even persist
-// the attempt.
-func (s *SocialService) PostImage(ctx context.Context, file io.Reader, filename string, customCaption *string, force bool) (*models.SocialPost, error) {
+// PostImage posts an image to the selected networks (toFacebook/toInstagram).
+// Instagram always publishes from a Facebook-hosted photo URL, so the
+// Facebook upload happens regardless of toFacebook — when toFacebook is
+// false, it's uploaded unpublished (never becomes a public Facebook Page
+// post), purely to get Instagram a URL to publish from. Every outcome —
+// success, failure, or skipped (not selected) — is persisted; PostImage
+// only returns an error if it couldn't even persist the attempt.
+func (s *SocialService) PostImage(ctx context.Context, file io.Reader, filename string, customCaption *string, force, toFacebook, toInstagram bool) (*models.SocialPost, error) {
 	userID := auth.UserIDFromContext(ctx)
 	if userID == "" {
 		return nil, fmt.Errorf("no authenticated user")
 	}
 	if s.cfg.AccessToken == "" {
 		return nil, fmt.Errorf("META_ACCESS_TOKEN is not configured")
+	}
+	if !toFacebook && !toInstagram {
+		return nil, fmt.Errorf("select at least one network to post to")
 	}
 
 	if !force {
@@ -115,27 +121,61 @@ func (s *SocialService) PostImage(ctx context.Context, file io.Reader, filename 
 		Caption:  caption,
 	}
 
-	postID, photoID, err := s.postFacebook(ctx, data, filename, caption)
+	notSelected := "not selected"
+
+	// Facebook upload always happens — even Instagram-only posts need the
+	// resulting hosted photo URL. publish=toFacebook controls whether it
+	// actually becomes a public Facebook Page post.
+	postID, photoID, err := s.postFacebook(ctx, data, filename, caption, toFacebook)
 	if err != nil {
-		input.FacebookStatus = models.SocialPostFailed
-		msg := err.Error()
-		input.FacebookError = &msg
-		input.InstagramStatus = models.SocialPostSkipped
+		if toFacebook {
+			input.FacebookStatus = models.SocialPostFailed
+			msg := err.Error()
+			input.FacebookError = &msg
+		} else {
+			input.FacebookStatus = models.SocialPostSkipped
+			input.FacebookError = &notSelected
+		}
+		if toInstagram {
+			input.InstagramStatus = models.SocialPostFailed
+			msg := "could not prepare image: " + err.Error()
+			input.InstagramError = &msg
+		} else {
+			input.InstagramStatus = models.SocialPostSkipped
+			input.InstagramError = &notSelected
+		}
 		return s.posts.Create(ctx, input)
 	}
-	input.FacebookStatus = models.SocialPostSuccess
-	input.FacebookPostID = &postID
+
+	if toFacebook {
+		input.FacebookStatus = models.SocialPostSuccess
+		input.FacebookPostID = &postID
+	} else {
+		input.FacebookStatus = models.SocialPostSkipped
+		input.FacebookError = &notSelected
+	}
 
 	photoURL, permalink, err := s.getFacebookPhotoInfo(ctx, photoID)
 	if err != nil {
-		input.InstagramStatus = models.SocialPostFailed
-		msg := err.Error()
-		input.InstagramError = &msg
+		if toInstagram {
+			input.InstagramStatus = models.SocialPostFailed
+			msg := err.Error()
+			input.InstagramError = &msg
+		} else {
+			input.InstagramStatus = models.SocialPostSkipped
+			input.InstagramError = &notSelected
+		}
 		return s.posts.Create(ctx, input)
 	}
 	input.FacebookPhotoURL = &photoURL
-	if permalink != "" {
+	if toFacebook && permalink != "" {
 		input.FacebookPermalink = &permalink
+	}
+
+	if !toInstagram {
+		input.InstagramStatus = models.SocialPostSkipped
+		input.InstagramError = &notSelected
+		return s.posts.Create(ctx, input)
 	}
 
 	mediaID, err := s.postInstagram(ctx, photoURL, caption)
@@ -170,7 +210,10 @@ func (s *SocialService) RetryInstagram(ctx context.Context, id string) (*models.
 	if post == nil {
 		return nil, fmt.Errorf("post not found")
 	}
-	if post.FacebookStatus != models.SocialPostSuccess || post.FacebookPhotoURL == nil {
+	// FacebookPhotoURL exists whenever the upload itself succeeded, whether
+	// or not it was published (an Instagram-only post uploads unpublished
+	// but still gets a usable URL) — that's the only real precondition here.
+	if post.FacebookStatus == models.SocialPostFailed || post.FacebookPhotoURL == nil {
 		return nil, fmt.Errorf("%w: facebook leg did not succeed — resubmit the image instead", ErrInstagramNotRetryable)
 	}
 	if post.InstagramStatus == models.SocialPostSuccess {
@@ -229,12 +272,12 @@ type graphError struct {
 	} `json:"error"`
 }
 
-func (s *SocialService) postFacebook(ctx context.Context, imageData []byte, filename, caption string) (postID, photoID string, err error) {
+func (s *SocialService) postFacebook(ctx context.Context, imageData []byte, filename, caption string, publish bool) (postID, photoID string, err error) {
 	var body bytes.Buffer
 	w := multipart.NewWriter(&body)
 	_ = w.WriteField("caption", caption)
 	_ = w.WriteField("access_token", s.cfg.AccessToken)
-	_ = w.WriteField("published", "true")
+	_ = w.WriteField("published", strconv.FormatBool(publish))
 	part, err := w.CreateFormFile("source", filename)
 	if err != nil {
 		return "", "", fmt.Errorf("build facebook request: %w", err)

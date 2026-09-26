@@ -100,7 +100,7 @@ type SalaryProfileManager interface {
 }
 
 type SocialPoster interface {
-	PostImage(ctx context.Context, file io.Reader, filename string, caption *string, force bool) (*models.SocialPost, error)
+	PostImage(ctx context.Context, file io.Reader, filename string, caption *string, force, toFacebook, toInstagram bool) (*models.SocialPost, error)
 	List(ctx context.Context, limit, offset int, status *models.SocialPostStatus) ([]*models.SocialPost, error)
 	RetryInstagram(ctx context.Context, id string) (*models.SocialPost, error)
 	Delete(ctx context.Context, id string) error

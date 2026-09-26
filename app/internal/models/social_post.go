@@ -8,8 +8,7 @@ type SocialPostStatus string
 const (
 	SocialPostSuccess SocialPostStatus = "success"
 	SocialPostFailed  SocialPostStatus = "failed"
-	// SocialPostSkipped marks Instagram when Facebook failed — Instagram
-	// publishes from the Facebook-hosted photo URL, so it's never attempted.
+	// SocialPostSkipped marks a network the caller didn't select to post to.
 	SocialPostSkipped SocialPostStatus = "skipped"
 )
 
