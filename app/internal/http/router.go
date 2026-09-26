@@ -37,6 +37,7 @@ func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL, issuer s
 	v1.PUT("/preferences", hdlrs.Preferences.Set)
 	v1.POST("/push-subscriptions", hdlrs.Push.Subscribe)
 	v1.DELETE("/push-subscriptions", hdlrs.Push.Unsubscribe)
+	v1.GET("/export", hdlrs.Export.Handle)
 	setupAdminRoutes(v1, hdlrs)
 	setupCaptionRoutes(v1, hdlrs)
 	setupSocialRoutes(v1, hdlrs)

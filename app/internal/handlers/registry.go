@@ -24,6 +24,7 @@ type Registry struct {
 	Preferences   *PreferencesHandler
 	Push          *PushHandler
 	AuditLog      *AuditLogHandler
+	Export        *ExportHandler
 
 	Bike            *BikeHandler
 	BikeFitHistory  *BikeFitHistoryHandler
@@ -62,6 +63,7 @@ func NewRegistry(svc *services.Registry) (*Registry, error) {
 		Preferences:   NewPreferencesHandler(svc.Preferences),
 		Push:          NewPushHandler(svc.Push),
 		AuditLog:      NewAuditLogHandler(svc.AuditLog),
+		Export:        NewExportHandler(svc.Account, svc.Transaction, svc.Category, svc.Budget, svc.Envelope, svc.Reminder, svc.Social),
 
 		Bike:            NewBikeHandler(svc.Bike),
 		BikeFitHistory:  NewBikeFitHistoryHandler(svc.BikeFitHistory),
