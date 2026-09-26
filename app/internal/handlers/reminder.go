@@ -53,6 +53,9 @@ func (h *ReminderHandler) Create(c *gin.Context) {
 	if req.Currency != "" {
 		input.Currency = &req.Currency
 	}
+	if req.CategoryID != "" {
+		input.CategoryID = &req.CategoryID
+	}
 	if req.RecurrenceType != "" {
 		input.RecurrenceType = &req.RecurrenceType
 	}
@@ -88,6 +91,9 @@ func (h *ReminderHandler) Update(c *gin.Context) {
 	}
 	if req.Currency != "" {
 		fields["currency"] = req.Currency
+	}
+	if req.CategoryID != nil {
+		fields["category_id"] = *req.CategoryID
 	}
 	if req.DueDate != "" {
 		fields["due_date"] = req.DueDate

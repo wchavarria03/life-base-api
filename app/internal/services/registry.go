@@ -37,7 +37,7 @@ type Registry struct {
 func NewRegistry(repos *repositories.Registry, userID string, social SocialConfig, strava StravaConfig) *Registry {
 	classifier := NewClassificationService(repos.Classifications)
 	transfer := NewTransferService(repos.Accounts, repos.Transactions, repos.Transfers)
-	reminder := NewReminderService(repos.Reminders)
+	reminder := NewReminderService(repos.Reminders, repos.TransactionCategories)
 	return &Registry{
 		Account:        NewAccountService(repos.Accounts, repos.Transactions),
 		Budget:         NewBudgetService(repos.Budgets, repos.Accounts, repos.Transactions),

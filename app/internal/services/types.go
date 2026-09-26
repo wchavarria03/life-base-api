@@ -50,7 +50,8 @@ type EnvelopeService struct {
 }
 
 type ReminderService struct {
-	reminders ReminderRepository
+	reminders    ReminderRepository
+	txCategories TransactionCategoryRepository
 }
 
 type SalaryProfileService struct {

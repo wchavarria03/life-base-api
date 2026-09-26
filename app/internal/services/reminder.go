@@ -9,8 +9,8 @@ import (
 	"life-base-api/app/internal/models"
 )
 
-func NewReminderService(reminders ReminderRepository) *ReminderService {
-	return &ReminderService{reminders: reminders}
+func NewReminderService(reminders ReminderRepository, txCategories TransactionCategoryRepository) *ReminderService {
+	return &ReminderService{reminders: reminders, txCategories: txCategories}
 }
 
 func (s *ReminderService) List(ctx context.Context) ([]models.ReminderWithStatus, error) {
@@ -97,6 +97,7 @@ func (s *ReminderService) Complete(ctx context.Context, id string) (*models.Remi
 			Title:          reminder.Title,
 			Amount:         reminder.Amount,
 			Currency:       reminder.Currency,
+			CategoryID:     reminder.CategoryID,
 			DueDate:        nextDate,
 			RecurrenceType: reminder.RecurrenceType,
 			Notes:          reminder.Notes,
@@ -187,6 +188,11 @@ func (s *ReminderService) Link(ctx context.Context, id, transactionID, nextDueDa
 
 	if _, err := s.reminders.Update(ctx, id, map[string]any{"transaction_id": transactionID}); err != nil {
 		return nil, fmt.Errorf("link transaction: %w", err)
+	}
+
+	if reminder.CategoryID != nil && *reminder.CategoryID != "" {
+		// Best-effort: categorization failing shouldn't undo a successful link.
+		_ = s.txCategories.SetCategories(ctx, transactionID, []string{*reminder.CategoryID})
 	}
 
 	if nextDueDate != "" && reminder.NextReminderID != nil {

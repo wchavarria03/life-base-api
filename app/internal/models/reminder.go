@@ -35,6 +35,7 @@ type Reminder struct {
 	Title          string           `json:"title"`
 	Amount         *decimal.Decimal `json:"amount,omitempty"`
 	Currency       *string          `json:"currency,omitempty"`
+	CategoryID     *string          `json:"category_id,omitempty"`
 	DueDate        string           `json:"due_date"` // YYYY-MM-DD
 	RecurrenceType *string          `json:"recurrence_type,omitempty"`
 	CompletedAt    *time.Time       `json:"completed_at,omitempty"`
@@ -70,6 +71,7 @@ type ReminderInput struct {
 	Title          string           `json:"title,omitempty"`
 	Amount         *decimal.Decimal `json:"amount,omitempty"`
 	Currency       *string          `json:"currency,omitempty"`
+	CategoryID     *string          `json:"category_id,omitempty"`
 	DueDate        string           `json:"due_date,omitempty"`
 	RecurrenceType *string          `json:"recurrence_type,omitempty"`
 	Notes          *string          `json:"notes,omitempty"`

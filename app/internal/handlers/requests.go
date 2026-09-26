@@ -124,6 +124,7 @@ type createReminderRequest struct {
 	Title          string   `json:"title" binding:"required"`
 	Amount         *float64 `json:"amount"`
 	Currency       string   `json:"currency"`
+	CategoryID     string   `json:"category_id"`
 	DueDate        string   `json:"due_date" binding:"required"`
 	RecurrenceType string   `json:"recurrence_type"` // weekly|biweekly|monthly|yearly
 	Notes          string   `json:"notes"`
@@ -134,6 +135,7 @@ type updateReminderRequest struct {
 	Title          string   `json:"title"`
 	Amount         *float64 `json:"amount"`
 	Currency       string   `json:"currency"`
+	CategoryID     *string  `json:"category_id"`
 	DueDate        string   `json:"due_date"`
 	RecurrenceType string   `json:"recurrence_type"`
 	Notes          string   `json:"notes"`

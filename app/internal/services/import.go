@@ -251,7 +251,33 @@ func (s *ImportService) matchReminders(ctx context.Context, accountID string, st
 	if err != nil {
 		return nil
 	}
-	return matches
+
+	// Confident matches (reminder title recognizable in the transaction
+	// description, not just amount+date) auto-link instead of only being
+	// surfaced — mirroring autoReconcile's auto-link-on-high-confidence
+	// split. Weak matches (amount+date only) still require manual confirm.
+	var surfaced []models.ReminderMatch
+	for _, m := range matches {
+		if reminderTitleMatches(m.Reminder.Title, m.Transaction.Description) {
+			if _, err := s.reminderSvc.Link(ctx, m.Reminder.ID, m.Transaction.ID, ""); err == nil {
+				continue
+			}
+		}
+		surfaced = append(surfaced, m)
+	}
+	return surfaced
+}
+
+// reminderTitleMatches reports whether a reminder's title is recognizable
+// inside a transaction's description (case-insensitive substring) — the
+// signal used to auto-link a reminder to an imported transaction instead of
+// only surfacing it for manual confirmation.
+func reminderTitleMatches(title, description string) bool {
+	title = strings.ToLower(strings.TrimSpace(title))
+	if len(title) < 4 {
+		return false
+	}
+	return strings.Contains(strings.ToLower(description), title)
 }
 
 // autoReconcile runs transfer reconciliation across all accounts for the
