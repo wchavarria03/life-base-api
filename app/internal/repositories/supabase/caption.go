@@ -75,9 +75,9 @@ func (r *CaptionRepository) ListTemplates(ctx context.Context) ([]*TemplateRow, 
 }
 
 // CreateTemplate inserts a new template row (without a version yet).
-func (r *CaptionRepository) CreateTemplate(ctx context.Context, title string) (*TemplateRow, error) {
+func (r *CaptionRepository) CreateTemplate(ctx context.Context, userID, title string) (*TemplateRow, error) {
 	rows, err := databases.Post[[]*TemplateRow](ctx, r.client, "/rest/v1/caption_templates",
-		map[string]string{"title": title}, "return=representation")
+		map[string]string{"user_id": userID, "title": title}, "return=representation")
 	if err != nil {
 		return nil, err
 	}

@@ -6,6 +6,7 @@ import (
 
 	supabaserepo "life-base-api/app/internal/repositories/supabase"
 
+	"life-base-api/app/internal/auth"
 	"life-base-api/app/internal/models"
 )
 
@@ -28,7 +29,7 @@ func (s *CaptionService) ListCategories(ctx context.Context) ([]*models.CaptionC
 
 // CreateCategory creates a new caption category.
 func (s *CaptionService) CreateCategory(ctx context.Context, name string) (*models.CaptionCategory, error) {
-	return s.repo.CreateCategory(ctx, &models.CaptionCategory{Name: name})
+	return s.repo.CreateCategory(ctx, &models.CaptionCategory{UserID: auth.UserIDFromContext(ctx), Name: name})
 }
 
 // UpdateCategory renames a caption category.
@@ -83,7 +84,7 @@ func (s *CaptionService) ListTemplates(ctx context.Context) ([]*models.CaptionTe
 // CreateTemplate creates a template, its first version, and its category
 // links in one call.
 func (s *CaptionService) CreateTemplate(ctx context.Context, title, body string, categoryIDs []string) (*models.CaptionTemplate, error) {
-	row, err := s.repo.CreateTemplate(ctx, title)
+	row, err := s.repo.CreateTemplate(ctx, auth.UserIDFromContext(ctx), title)
 	if err != nil {
 		return nil, err
 	}
