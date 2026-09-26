@@ -25,6 +25,7 @@ type Registry struct {
 	Push          *PushHandler
 	AuditLog      *AuditLogHandler
 	ScheduledPost *ScheduledPostHandler
+	Dog           *DogHandler
 	Export        *ExportHandler
 
 	Bike            *BikeHandler
@@ -65,6 +66,7 @@ func NewRegistry(svc *services.Registry) (*Registry, error) {
 		Push:          NewPushHandler(svc.Push),
 		AuditLog:      NewAuditLogHandler(svc.AuditLog),
 		ScheduledPost: NewScheduledPostHandler(svc.ScheduledPost),
+		Dog:           NewDogHandler(svc.Dog),
 		Export:        NewExportHandler(svc.Account, svc.Transaction, svc.Category, svc.Budget, svc.Envelope, svc.Reminder, svc.Social),
 
 		Bike:            NewBikeHandler(svc.Bike),

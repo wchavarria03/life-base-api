@@ -100,6 +100,31 @@ type SalaryProfileManager interface {
 }
 
 // AuditLogManager lists audit log entries for the admin UI.
+// DogManager manages dogs, recipient containers, bulk food bags, and the
+// portioning workflow.
+type DogManager interface {
+	ListDogs(ctx context.Context) ([]*models.Dog, error)
+	CreateDog(ctx context.Context, input models.DogInput) (*models.Dog, error)
+	UpdateDog(ctx context.Context, id string, input models.DogInput) (*models.Dog, error)
+	DeleteDog(ctx context.Context, id string) error
+
+	ListRecipientTypes(ctx context.Context) ([]*models.DogRecipientType, error)
+	CreateRecipientType(ctx context.Context, input models.DogRecipientTypeInput) (*models.DogRecipientType, error)
+	UpdateRecipientType(ctx context.Context, id string, input models.DogRecipientTypeInput) (*models.DogRecipientType, error)
+	DeleteRecipientType(ctx context.Context, id string) error
+
+	ListRecipients(ctx context.Context, status string) ([]*models.DogRecipient, error)
+	PortionBatch(ctx context.Context, requests []models.PortionRequest) error
+	MarkFed(ctx context.Context, id string) error
+
+	ListBulkBags(ctx context.Context) ([]*models.DogBulkBag, error)
+	CreateBulkBag(ctx context.Context, input models.DogBulkBagInput) (*models.DogBulkBag, error)
+	DeleteBulkBag(ctx context.Context, id string) error
+
+	GetSettings(ctx context.Context) (*models.DogSettings, error)
+	SetSettings(ctx context.Context, thresholdGrams int) (*models.DogSettings, error)
+}
+
 type AuditLogManager interface {
 	List(ctx context.Context, limit, offset int) ([]*models.AuditLogEntry, error)
 }

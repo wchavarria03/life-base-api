@@ -40,6 +40,7 @@ func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL, issuer s
 	v1.GET("/export", hdlrs.Export.Handle)
 	setupAdminRoutes(v1, hdlrs)
 	setupCaptionRoutes(v1, hdlrs)
+	setupDogRoutes(v1, hdlrs)
 	setupSocialRoutes(v1, hdlrs)
 	setupBikeRoutes(v1, hdlrs)
 	setupTaskRoutes(v1, hdlrs)
@@ -69,6 +70,33 @@ func setupAdminRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	admin.GET("/page-access", hdlrs.Admin.ListPageAccess)
 	admin.PUT("/page-access", hdlrs.Admin.SetPageAccess)
 	admin.GET("/audit-log", hdlrs.AuditLog.List)
+}
+
+func setupDogRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
+	dogs := rg.Group("/dogs")
+	dogs.GET("", hdlrs.Dog.ListDogs)
+	dogs.POST("", hdlrs.Dog.CreateDog)
+	dogs.PATCH("/:id", hdlrs.Dog.UpdateDog)
+	dogs.DELETE("/:id", hdlrs.Dog.DeleteDog)
+
+	recipientTypes := rg.Group("/dog-recipient-types")
+	recipientTypes.GET("", hdlrs.Dog.ListRecipientTypes)
+	recipientTypes.POST("", hdlrs.Dog.CreateRecipientType)
+	recipientTypes.PATCH("/:id", hdlrs.Dog.UpdateRecipientType)
+	recipientTypes.DELETE("/:id", hdlrs.Dog.DeleteRecipientType)
+
+	recipients := rg.Group("/dog-recipients")
+	recipients.GET("", hdlrs.Dog.ListRecipients)
+	recipients.POST("/portion", hdlrs.Dog.PortionBatch)
+	recipients.POST("/:id/feed", hdlrs.Dog.MarkFed)
+
+	bulkBags := rg.Group("/dog-bulk-bags")
+	bulkBags.GET("", hdlrs.Dog.ListBulkBags)
+	bulkBags.POST("", hdlrs.Dog.CreateBulkBag)
+	bulkBags.DELETE("/:id", hdlrs.Dog.DeleteBulkBag)
+
+	rg.GET("/dog-settings", hdlrs.Dog.GetSettings)
+	rg.PUT("/dog-settings", hdlrs.Dog.SetSettings)
 }
 
 func setupCaptionRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {

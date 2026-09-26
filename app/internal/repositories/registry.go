@@ -26,6 +26,11 @@ type Registry struct {
 	AuditLog              *supabaserepo.AuditLogRepository
 	Storage               *supabaserepo.StorageRepository
 	ScheduledPosts        *supabaserepo.ScheduledPostRepository
+	Dogs                  *supabaserepo.DogRepository
+	DogRecipientTypes     *supabaserepo.DogRecipientTypeRepository
+	DogRecipients         *supabaserepo.DogRecipientRepository
+	DogBulkBags           *supabaserepo.DogBulkBagRepository
+	DogSettings           *supabaserepo.DogSettingsRepository
 
 	Bikes            *supabaserepo.BikeRepository
 	BikeFitHistory   *supabaserepo.BikeFitHistoryRepository
@@ -66,6 +71,11 @@ func NewRegistry(dbs *databases.Registry) *Registry {
 		AuditLog:              supabaserepo.NewAuditLogRepository(dbs.Supabase),
 		Storage:               supabaserepo.NewStorageRepository(dbs.Supabase),
 		ScheduledPosts:        supabaserepo.NewScheduledPostRepository(dbs.Supabase),
+		Dogs:                  supabaserepo.NewDogRepository(dbs.Supabase),
+		DogRecipientTypes:     supabaserepo.NewDogRecipientTypeRepository(dbs.Supabase),
+		DogRecipients:         supabaserepo.NewDogRecipientRepository(dbs.Supabase),
+		DogBulkBags:           supabaserepo.NewDogBulkBagRepository(dbs.Supabase),
+		DogSettings:           supabaserepo.NewDogSettingsRepository(dbs.Supabase),
 
 		Bikes:            supabaserepo.NewBikeRepository(dbs.Supabase),
 		BikeFitHistory:   supabaserepo.NewBikeFitHistoryRepository(dbs.Supabase),

@@ -91,6 +91,11 @@ type AuditLogHandler struct {
 	svc AuditLogManager
 }
 
+// DogHandler serves the dogs/recipients/bulk-bags endpoints.
+type DogHandler struct {
+	svc DogManager
+}
+
 // ExportHandler serves a single JSON dump of everything the caller owns.
 type ExportHandler struct {
 	accounts     AccountLister
