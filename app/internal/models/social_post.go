@@ -30,6 +30,7 @@ type SocialPost struct {
 	InstagramPermalink *string          `json:"instagram_permalink,omitempty"`
 	InstagramError     *string          `json:"instagram_error,omitempty"`
 	CreatedAt          time.Time        `json:"created_at,omitempty"`
+	CategoryIDs        []string         `json:"category_ids,omitempty"`
 }
 
 // SocialPostInput is the write shape for Create.

@@ -17,16 +17,17 @@ const (
 	maxSocialListLimit     = 200
 )
 
-func NewSocialHandler(svc SocialPoster) *SocialHandler {
-	return &SocialHandler{svc: svc}
+func NewSocialHandler(svc SocialPoster, captions CaptionManager) *SocialHandler {
+	return &SocialHandler{svc: svc, captions: captions}
 }
 
 // Create handles POST /v1/social/posts — multipart upload with an "image"
 // file field (required), an optional "caption" text field, an optional
-// "force" field ("true" to bypass the duplicate-filename warning), and
+// "force" field ("true" to bypass the duplicate-filename warning),
 // optional "post_facebook"/"post_instagram" fields ("false" to skip that
 // network — both default to true when absent, so existing callers that
-// don't send these fields keep posting to both).
+// don't send these fields keep posting to both), and optional repeated
+// "category_ids" fields to tag the post.
 func (h *SocialHandler) Create(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSocialImageBytes)
 
@@ -44,6 +45,7 @@ func (h *SocialHandler) Create(c *gin.Context) {
 	force := c.PostForm("force") == "true"
 	toFacebook := c.PostForm("post_facebook") != "false"
 	toInstagram := c.PostForm("post_instagram") != "false"
+	categoryIDs := c.PostFormArray("category_ids")
 
 	post, err := h.svc.PostImage(c.Request.Context(), file, header.Filename, caption, force, toFacebook, toInstagram)
 	if err != nil {
@@ -54,6 +56,15 @@ func (h *SocialHandler) Create(c *gin.Context) {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 		return
 	}
+
+	if len(categoryIDs) > 0 {
+		// Best-effort: tagging is metadata, a failure here shouldn't undo an
+		// otherwise-successful post.
+		if err := h.captions.SetPostCategories(c.Request.Context(), post.ID, categoryIDs); err == nil {
+			post.CategoryIDs = categoryIDs
+		}
+	}
+
 	c.JSON(http.StatusCreated, post)
 }
 
@@ -87,6 +98,13 @@ func (h *SocialHandler) List(c *gin.Context) {
 		internalError(c, err)
 		return
 	}
+
+	if catsByPost, err := h.captions.ListPostCategoryIDs(c.Request.Context()); err == nil {
+		for _, p := range posts {
+			p.CategoryIDs = catsByPost[p.ID]
+		}
+	}
+
 	c.JSON(http.StatusOK, posts)
 }
 

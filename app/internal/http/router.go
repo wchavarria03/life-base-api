@@ -34,6 +34,7 @@ func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL, issuer s
 
 	v1.GET("/me", hdlrs.Me.GetMe)
 	setupAdminRoutes(v1, hdlrs)
+	setupCaptionRoutes(v1, hdlrs)
 	setupSocialRoutes(v1, hdlrs)
 	setupBikeRoutes(v1, hdlrs)
 	setupTaskRoutes(v1, hdlrs)
@@ -62,6 +63,23 @@ func setupAdminRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	admin.PATCH("/users/:id/role", hdlrs.Admin.SetMemberRole)
 	admin.GET("/page-access", hdlrs.Admin.ListPageAccess)
 	admin.PUT("/page-access", hdlrs.Admin.SetPageAccess)
+}
+
+func setupCaptionRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
+	cats := rg.Group("/caption-categories")
+	cats.GET("", hdlrs.Caption.ListCategories)
+	cats.POST("", hdlrs.Caption.CreateCategory)
+	cats.PATCH("/:id", hdlrs.Caption.UpdateCategory)
+	cats.DELETE("/:id", hdlrs.Caption.DeleteCategory)
+
+	templates := rg.Group("/caption-templates")
+	templates.GET("", hdlrs.Caption.ListTemplates)
+	templates.POST("", hdlrs.Caption.CreateTemplate)
+	templates.PATCH("/:id", hdlrs.Caption.UpdateTemplate)
+	templates.DELETE("/:id", hdlrs.Caption.DeleteTemplate)
+	templates.GET("/:id/versions", hdlrs.Caption.ListVersions)
+	templates.POST("/:id/versions", hdlrs.Caption.AddVersion)
+	templates.POST("/:id/versions/:versionId/revert", hdlrs.Caption.RevertVersion)
 }
 
 func setupSocialRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {

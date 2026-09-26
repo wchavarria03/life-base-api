@@ -58,11 +58,16 @@ type SalaryProfileHandler struct {
 }
 
 type SocialHandler struct {
-	svc SocialPoster
+	svc      SocialPoster
+	captions CaptionManager
 }
 
 type AdminHandler struct {
 	svc AdminManager
+}
+
+type CaptionHandler struct {
+	svc CaptionManager
 }
 
 type BikeHandler struct {

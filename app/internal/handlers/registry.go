@@ -20,6 +20,7 @@ type Registry struct {
 	SalaryProfile *SalaryProfileHandler
 	Social        *SocialHandler
 	Admin         *AdminHandler
+	Caption       *CaptionHandler
 
 	Bike            *BikeHandler
 	BikeFitHistory  *BikeFitHistoryHandler
@@ -52,8 +53,9 @@ func NewRegistry(svc *services.Registry) (*Registry, error) {
 		Transfer:      NewTransferHandler(svc.Transfer),
 		Upload:        NewUploadHandler(svc.Import),
 		SalaryProfile: NewSalaryProfileHandler(svc.SalaryProfile),
-		Social:        NewSocialHandler(svc.Social),
+		Social:        NewSocialHandler(svc.Social, svc.Caption),
 		Admin:         NewAdminHandler(svc.Admin),
+		Caption:       NewCaptionHandler(svc.Caption),
 
 		Bike:            NewBikeHandler(svc.Bike),
 		BikeFitHistory:  NewBikeFitHistoryHandler(svc.BikeFitHistory),

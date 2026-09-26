@@ -107,6 +107,25 @@ type AdminManager interface {
 	AllowedPageKeys(ctx context.Context, role string) ([]string, error)
 }
 
+type CaptionManager interface {
+	ListCategories(ctx context.Context) ([]*models.CaptionCategory, error)
+	CreateCategory(ctx context.Context, name string) (*models.CaptionCategory, error)
+	UpdateCategory(ctx context.Context, id, name string) (*models.CaptionCategory, error)
+	DeleteCategory(ctx context.Context, id string) error
+
+	ListTemplates(ctx context.Context) ([]*models.CaptionTemplate, error)
+	CreateTemplate(ctx context.Context, title, body string, categoryIDs []string) (*models.CaptionTemplate, error)
+	UpdateTemplateMeta(ctx context.Context, id string, title *string, categoryIDs *[]string) error
+	DeleteTemplate(ctx context.Context, id string) error
+
+	ListVersions(ctx context.Context, templateID string) ([]*models.CaptionTemplateVersion, error)
+	AddVersion(ctx context.Context, templateID, body string) (*models.CaptionTemplateVersion, error)
+	RevertToVersion(ctx context.Context, templateID, versionID string) error
+
+	SetPostCategories(ctx context.Context, postID string, categoryIDs []string) error
+	ListPostCategoryIDs(ctx context.Context) (map[string][]string, error)
+}
+
 type SocialPoster interface {
 	PostImage(ctx context.Context, file io.Reader, filename string, caption *string, force, toFacebook, toInstagram bool) (*models.SocialPost, error)
 	List(ctx context.Context, limit, offset int, status *models.SocialPostStatus) ([]*models.SocialPost, error)
