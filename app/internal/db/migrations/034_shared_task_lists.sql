@@ -1,4 +1,4 @@
--- Migration 031: tokenized public share links for a task list (household /
+-- Migration 034: tokenized public share links for a task list (household /
 -- house / todo). A share link needs no login at all — the token itself is
 -- the access credential (see app/internal/services/shared_task_list.go).
 -- Lives in the default "public" schema (unlike tasks.tasks) since it's read

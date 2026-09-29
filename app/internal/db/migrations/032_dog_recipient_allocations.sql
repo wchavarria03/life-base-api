@@ -1,4 +1,4 @@
--- Migration 031: replace one-row-per-physical-container recipient tracking
+-- Migration 032: replace one-row-per-physical-container recipient tracking
 -- with a count-based allocation model.
 --
 -- dog_recipient_types.quantity_total still means "total physical containers

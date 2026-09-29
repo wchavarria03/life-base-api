@@ -1,4 +1,4 @@
--- Migration 030: track purchase date + price on bulk bags instead of frozen
+-- Migration 031: track purchase date + price on bulk bags instead of frozen
 -- date. No production data yet, so we rename the column in place rather than
 -- carrying a parallel one.
 

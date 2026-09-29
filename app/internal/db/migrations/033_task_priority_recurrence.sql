@@ -1,4 +1,4 @@
--- Migration 030: recurring tasks with a shared weekly/biweekly/monthly/yearly
+-- Migration 033: recurring tasks with a shared weekly/biweekly/monthly/yearly
 -- recurrence enum (same as payment_reminders.recurrence_type), plus a
 -- 3-level priority scale (minor/major/critical) replacing the old
 -- low/medium/high scale. due_date already exists on tasks.tasks (one-off
