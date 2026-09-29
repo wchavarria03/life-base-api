@@ -6,31 +6,32 @@ import (
 )
 
 type Registry struct {
-	Accounts              *supabaserepo.AccountRepository
-	Transactions          *supabaserepo.TransactionRepository
-	Transfers             *supabaserepo.TransferRepository
-	Classifications       *supabaserepo.ClassificationRepository
-	Categories            *supabaserepo.CategoryRepository
-	CategoryRules         *supabaserepo.CategoryRuleRepository
-	TransactionCategories *supabaserepo.TransactionCategoryRepository
-	RuleExceptions        *supabaserepo.AccountRuleExceptionRepository
-	Budgets               *supabaserepo.BudgetRepository
-	Envelopes             *supabaserepo.EnvelopeRepository
-	Reminders             *supabaserepo.ReminderRepository
-	SalaryProfiles        *supabaserepo.SalaryProfileRepository
-	SocialPosts           *supabaserepo.SocialPostRepository
-	Admin                 *supabaserepo.AdminRepository
-	Caption               *supabaserepo.CaptionRepository
-	Preferences           *supabaserepo.PreferencesRepository
-	PushSubscriptions     *supabaserepo.PushSubscriptionRepository
-	AuditLog              *supabaserepo.AuditLogRepository
-	Storage               *supabaserepo.StorageRepository
-	ScheduledPosts        *supabaserepo.ScheduledPostRepository
-	Dogs                  *supabaserepo.DogRepository
-	DogRecipientTypes     *supabaserepo.DogRecipientTypeRepository
-	DogRecipients         *supabaserepo.DogRecipientRepository
-	DogBulkBags           *supabaserepo.DogBulkBagRepository
-	DogSettings           *supabaserepo.DogSettingsRepository
+	Accounts                *supabaserepo.AccountRepository
+	Transactions            *supabaserepo.TransactionRepository
+	Transfers               *supabaserepo.TransferRepository
+	Classifications         *supabaserepo.ClassificationRepository
+	Categories              *supabaserepo.CategoryRepository
+	CategoryRules           *supabaserepo.CategoryRuleRepository
+	TransactionCategories   *supabaserepo.TransactionCategoryRepository
+	RuleExceptions          *supabaserepo.AccountRuleExceptionRepository
+	Budgets                 *supabaserepo.BudgetRepository
+	Envelopes               *supabaserepo.EnvelopeRepository
+	Reminders               *supabaserepo.ReminderRepository
+	SalaryProfiles          *supabaserepo.SalaryProfileRepository
+	SocialPosts             *supabaserepo.SocialPostRepository
+	Admin                   *supabaserepo.AdminRepository
+	Caption                 *supabaserepo.CaptionRepository
+	Preferences             *supabaserepo.PreferencesRepository
+	PushSubscriptions       *supabaserepo.PushSubscriptionRepository
+	AuditLog                *supabaserepo.AuditLogRepository
+	Storage                 *supabaserepo.StorageRepository
+	ScheduledPosts          *supabaserepo.ScheduledPostRepository
+	Dogs                    *supabaserepo.DogRepository
+	DogRecipientTypes       *supabaserepo.DogRecipientTypeRepository
+	DogRecipientAllocations *supabaserepo.DogRecipientAllocationRepository
+	DogFeedLog              *supabaserepo.DogFeedLogRepository
+	DogBulkBags             *supabaserepo.DogBulkBagRepository
+	DogSettings             *supabaserepo.DogSettingsRepository
 
 	Bikes            *supabaserepo.BikeRepository
 	BikeFitHistory   *supabaserepo.BikeFitHistoryRepository
@@ -51,31 +52,32 @@ type Registry struct {
 
 func NewRegistry(dbs *databases.Registry) *Registry {
 	return &Registry{
-		Accounts:              supabaserepo.NewAccountRepository(dbs.Supabase),
-		Transactions:          supabaserepo.NewTransactionRepository(dbs.Supabase),
-		Transfers:             supabaserepo.NewTransferRepository(dbs.Supabase),
-		Classifications:       supabaserepo.NewClassificationRepository(dbs.Supabase),
-		Categories:            supabaserepo.NewCategoryRepository(dbs.Supabase),
-		CategoryRules:         supabaserepo.NewCategoryRuleRepository(dbs.Supabase),
-		TransactionCategories: supabaserepo.NewTransactionCategoryRepository(dbs.Supabase),
-		RuleExceptions:        supabaserepo.NewAccountRuleExceptionRepository(dbs.Supabase),
-		Budgets:               supabaserepo.NewBudgetRepository(dbs.Supabase),
-		Envelopes:             supabaserepo.NewEnvelopeRepository(dbs.Supabase),
-		Reminders:             supabaserepo.NewReminderRepository(dbs.Supabase),
-		SalaryProfiles:        supabaserepo.NewSalaryProfileRepository(dbs.Supabase),
-		SocialPosts:           supabaserepo.NewSocialPostRepository(dbs.Supabase),
-		Admin:                 supabaserepo.NewAdminRepository(dbs.Supabase),
-		Caption:               supabaserepo.NewCaptionRepository(dbs.Supabase),
-		Preferences:           supabaserepo.NewPreferencesRepository(dbs.Supabase),
-		PushSubscriptions:     supabaserepo.NewPushSubscriptionRepository(dbs.Supabase),
-		AuditLog:              supabaserepo.NewAuditLogRepository(dbs.Supabase),
-		Storage:               supabaserepo.NewStorageRepository(dbs.Supabase),
-		ScheduledPosts:        supabaserepo.NewScheduledPostRepository(dbs.Supabase),
-		Dogs:                  supabaserepo.NewDogRepository(dbs.Supabase),
-		DogRecipientTypes:     supabaserepo.NewDogRecipientTypeRepository(dbs.Supabase),
-		DogRecipients:         supabaserepo.NewDogRecipientRepository(dbs.Supabase),
-		DogBulkBags:           supabaserepo.NewDogBulkBagRepository(dbs.Supabase),
-		DogSettings:           supabaserepo.NewDogSettingsRepository(dbs.Supabase),
+		Accounts:                supabaserepo.NewAccountRepository(dbs.Supabase),
+		Transactions:            supabaserepo.NewTransactionRepository(dbs.Supabase),
+		Transfers:               supabaserepo.NewTransferRepository(dbs.Supabase),
+		Classifications:         supabaserepo.NewClassificationRepository(dbs.Supabase),
+		Categories:              supabaserepo.NewCategoryRepository(dbs.Supabase),
+		CategoryRules:           supabaserepo.NewCategoryRuleRepository(dbs.Supabase),
+		TransactionCategories:   supabaserepo.NewTransactionCategoryRepository(dbs.Supabase),
+		RuleExceptions:          supabaserepo.NewAccountRuleExceptionRepository(dbs.Supabase),
+		Budgets:                 supabaserepo.NewBudgetRepository(dbs.Supabase),
+		Envelopes:               supabaserepo.NewEnvelopeRepository(dbs.Supabase),
+		Reminders:               supabaserepo.NewReminderRepository(dbs.Supabase),
+		SalaryProfiles:          supabaserepo.NewSalaryProfileRepository(dbs.Supabase),
+		SocialPosts:             supabaserepo.NewSocialPostRepository(dbs.Supabase),
+		Admin:                   supabaserepo.NewAdminRepository(dbs.Supabase),
+		Caption:                 supabaserepo.NewCaptionRepository(dbs.Supabase),
+		Preferences:             supabaserepo.NewPreferencesRepository(dbs.Supabase),
+		PushSubscriptions:       supabaserepo.NewPushSubscriptionRepository(dbs.Supabase),
+		AuditLog:                supabaserepo.NewAuditLogRepository(dbs.Supabase),
+		Storage:                 supabaserepo.NewStorageRepository(dbs.Supabase),
+		ScheduledPosts:          supabaserepo.NewScheduledPostRepository(dbs.Supabase),
+		Dogs:                    supabaserepo.NewDogRepository(dbs.Supabase),
+		DogRecipientTypes:       supabaserepo.NewDogRecipientTypeRepository(dbs.Supabase),
+		DogRecipientAllocations: supabaserepo.NewDogRecipientAllocationRepository(dbs.Supabase),
+		DogFeedLog:              supabaserepo.NewDogFeedLogRepository(dbs.Supabase),
+		DogBulkBags:             supabaserepo.NewDogBulkBagRepository(dbs.Supabase),
+		DogSettings:             supabaserepo.NewDogSettingsRepository(dbs.Supabase),
 
 		Bikes:            supabaserepo.NewBikeRepository(dbs.Supabase),
 		BikeFitHistory:   supabaserepo.NewBikeFitHistoryRepository(dbs.Supabase),

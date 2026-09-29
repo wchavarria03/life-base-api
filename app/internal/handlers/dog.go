@@ -109,19 +109,19 @@ func (h *DogHandler) DeleteRecipientType(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// ── Recipients ───────────────────────────────────────────────────────────────
+// ── Recipient allocations ────────────────────────────────────────────────────
 
-// ListRecipients handles GET /v1/dog-recipients?status=.
-func (h *DogHandler) ListRecipients(c *gin.Context) {
-	recipients, err := h.svc.ListRecipients(c.Request.Context(), c.Query("status"))
+// ListAllocations handles GET /v1/dog-recipient-allocations.
+func (h *DogHandler) ListAllocations(c *gin.Context) {
+	allocations, err := h.svc.ListAllocations(c.Request.Context())
 	if err != nil {
 		internalError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, recipients)
+	c.JSON(http.StatusOK, allocations)
 }
 
-// PortionBatch handles POST /v1/dog-recipients/portion.
+// PortionBatch handles POST /v1/dog-recipient-allocations/portion.
 func (h *DogHandler) PortionBatch(c *gin.Context) {
 	var req struct {
 		Requests []models.PortionRequest `json:"requests" binding:"required"`
@@ -137,13 +137,50 @@ func (h *DogHandler) PortionBatch(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// MarkFed handles POST /v1/dog-recipients/:id/feed.
+// MarkFed handles POST /v1/dogs/:id/feed.
 func (h *DogHandler) MarkFed(c *gin.Context) {
-	if err := h.svc.MarkFed(c.Request.Context(), c.Param("id")); err != nil {
+	fed, err := h.svc.MarkFed(c.Request.Context(), c.Param("id"))
+	if err != nil {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 		return
 	}
+	if !fed {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "no portioned food available for this dog"})
+		return
+	}
 	c.Status(http.StatusNoContent)
+}
+
+// CatchUpFeeds handles POST /v1/dogs/:id/catch-up-feed. It batch-logs up to
+// count missed feeds (used by the feed-review banner's "log the missing
+// feeds now" action) and reports how many were actually logged, since
+// available allocated/bulk stock may not cover the full shortfall.
+func (h *DogHandler) CatchUpFeeds(c *gin.Context) {
+	var req struct {
+		Count int `json:"count" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	logged, err := h.svc.CatchUpFeeds(c.Request.Context(), c.Param("id"), req.Count)
+	if err != nil {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"logged": logged})
+}
+
+// FeedReview handles GET /v1/dogs/feed-review — the shortfall between
+// expected and actually-logged feeds per dog over the last
+// services.DogFeedReviewLookbackDays days.
+func (h *DogHandler) FeedReview(c *gin.Context) {
+	entries, err := h.svc.FeedReview(c.Request.Context())
+	if err != nil {
+		internalError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, entries)
 }
 
 // ── Bulk bags ────────────────────────────────────────────────────────────────

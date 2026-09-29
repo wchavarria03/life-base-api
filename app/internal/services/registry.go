@@ -69,7 +69,7 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 		Push:           push,
 		Digest:         NewDigestService(repos.Reminders, preferences, push, repos.Admin, digest),
 		AuditLog:       NewAuditLogService(repos.AuditLog),
-		Dog:            NewDogService(repos.Dogs, repos.DogRecipientTypes, repos.DogRecipients, repos.DogBulkBags, repos.DogSettings),
+		Dog:            NewDogService(repos.Dogs, repos.DogRecipientTypes, repos.DogRecipientAllocations, repos.DogFeedLog, repos.DogBulkBags, repos.DogSettings),
 		ScheduledPost:  NewScheduledPostService(repos.ScheduledPosts, repos.Storage, socialSvc, captionSvc),
 
 		Bike:            NewBikeService(repos.Bikes),

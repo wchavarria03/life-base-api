@@ -78,6 +78,9 @@ func setupDogRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	dogs.POST("", hdlrs.Dog.CreateDog)
 	dogs.PATCH("/:id", hdlrs.Dog.UpdateDog)
 	dogs.DELETE("/:id", hdlrs.Dog.DeleteDog)
+	dogs.GET("/feed-review", hdlrs.Dog.FeedReview)
+	dogs.POST("/:id/feed", hdlrs.Dog.MarkFed)
+	dogs.POST("/:id/catch-up-feed", hdlrs.Dog.CatchUpFeeds)
 
 	recipientTypes := rg.Group("/dog-recipient-types")
 	recipientTypes.GET("", hdlrs.Dog.ListRecipientTypes)
@@ -85,10 +88,9 @@ func setupDogRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	recipientTypes.PATCH("/:id", hdlrs.Dog.UpdateRecipientType)
 	recipientTypes.DELETE("/:id", hdlrs.Dog.DeleteRecipientType)
 
-	recipients := rg.Group("/dog-recipients")
-	recipients.GET("", hdlrs.Dog.ListRecipients)
-	recipients.POST("/portion", hdlrs.Dog.PortionBatch)
-	recipients.POST("/:id/feed", hdlrs.Dog.MarkFed)
+	allocations := rg.Group("/dog-recipient-allocations")
+	allocations.GET("", hdlrs.Dog.ListAllocations)
+	allocations.POST("/portion", hdlrs.Dog.PortionBatch)
 
 	bulkBags := rg.Group("/dog-bulk-bags")
 	bulkBags.GET("", hdlrs.Dog.ListBulkBags)
