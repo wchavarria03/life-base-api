@@ -31,6 +31,7 @@ type cliConfig struct {
 	VAPIDSubject        string
 	ResendAPIKey        string
 	ResendFrom          string
+	FrontendURL         string
 }
 
 var (
@@ -72,6 +73,7 @@ var rootCmd = &cobra.Command{
 			VAPIDSubject:        cfg.VAPIDSubject,
 			ResendAPIKey:        cfg.ResendAPIKey,
 			ResendFrom:          cfg.ResendFrom,
+			FrontendURL:         cfg.FrontendURL,
 		})
 		if err != nil {
 			return fmt.Errorf("initialising dependencies: %w", err)
@@ -112,4 +114,5 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfg.VAPIDSubject, "vapid-subject", os.Getenv("VAPID_SUBJECT"), "VAPID subject (mailto: contact) for web push")
 	rootCmd.PersistentFlags().StringVar(&cfg.ResendAPIKey, "resend-api-key", os.Getenv("RESEND_API_KEY"), "Resend API key for the email digest")
 	rootCmd.PersistentFlags().StringVar(&cfg.ResendFrom, "resend-from", os.Getenv("RESEND_FROM"), "From address for the email digest, e.g. \"Life-Base <notifications@yourdomain.com>\"")
+	rootCmd.PersistentFlags().StringVar(&cfg.FrontendURL, "frontend-url", os.Getenv("FRONTEND_URL"), "Deployed frontend base URL (no trailing slash), used to build shared task-list links")
 }

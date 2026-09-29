@@ -36,12 +36,13 @@ type Registry struct {
 	Activity        *ActivityService
 	Strava          *StravaService
 
-	Task *TaskService
-	Note *NoteService
+	Task           *TaskService
+	Note           *NoteService
+	SharedTaskList *SharedTaskListService
 }
 
 // NewRegistry wires every service with its repository dependencies.
-func NewRegistry(repos *repositories.Registry, userID string, social SocialConfig, strava StravaConfig, digest DigestConfig) *Registry {
+func NewRegistry(repos *repositories.Registry, userID string, social SocialConfig, strava StravaConfig, digest DigestConfig, sharedTaskLists SharedTaskListConfig) *Registry {
 	classifier := NewClassificationService(repos.Classifications)
 	transfer := NewTransferService(repos.Accounts, repos.Transactions, repos.Transfers)
 	reminder := NewReminderService(repos.Reminders, repos.TransactionCategories)
@@ -49,7 +50,7 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 	push := NewPushService(repos.PushSubscriptions)
 	socialSvc := NewSocialService(repos.SocialPosts, social)
 	captionSvc := NewCaptionService(repos.Caption)
-	return &Registry{
+	r := &Registry{
 		Account:        NewAccountService(repos.Accounts, repos.Transactions),
 		Budget:         NewBudgetService(repos.Budgets, repos.Accounts, repos.Transactions),
 		Envelope:       NewEnvelopeService(repos.Envelopes),
@@ -86,4 +87,6 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 		Task: NewTaskService(repos.Tasks),
 		Note: NewNoteService(repos.Notes),
 	}
+	r.SharedTaskList = NewSharedTaskListService(repos.SharedTaskLists, r.Task, sharedTaskLists)
+	return r
 }

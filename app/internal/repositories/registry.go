@@ -45,8 +45,9 @@ type Registry struct {
 	Activities       *supabaserepo.ActivityRepository
 	Strava           *supabaserepo.StravaRepository
 
-	Tasks *supabaserepo.TaskRepository
-	Notes *supabaserepo.NoteRepository
+	Tasks           *supabaserepo.TaskRepository
+	Notes           *supabaserepo.NoteRepository
+	SharedTaskLists *supabaserepo.SharedTaskListRepository
 }
 
 func NewRegistry(dbs *databases.Registry) *Registry {
@@ -90,7 +91,8 @@ func NewRegistry(dbs *databases.Registry) *Registry {
 		Activities:       supabaserepo.NewActivityRepository(dbs.Supabase),
 		Strava:           supabaserepo.NewStravaRepository(dbs.Supabase),
 
-		Tasks: supabaserepo.NewTaskRepository(dbs.Supabase),
-		Notes: supabaserepo.NewNoteRepository(dbs.Supabase),
+		Tasks:           supabaserepo.NewTaskRepository(dbs.Supabase),
+		Notes:           supabaserepo.NewNoteRepository(dbs.Supabase),
+		SharedTaskLists: supabaserepo.NewSharedTaskListRepository(dbs.Supabase),
 	}
 }

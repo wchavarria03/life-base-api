@@ -39,8 +39,9 @@ type Registry struct {
 	Activity        *ActivityHandler
 	Strava          *StravaHandler
 
-	Task *TaskHandler
-	Note *NoteHandler
+	Task           *TaskHandler
+	Note           *NoteHandler
+	SharedTaskList *SharedTaskListHandler
 }
 
 func NewRegistry(svc *services.Registry) (*Registry, error) {
@@ -80,8 +81,9 @@ func NewRegistry(svc *services.Registry) (*Registry, error) {
 		Activity:        NewActivityHandler(svc.Activity),
 		Strava:          NewStravaHandler(svc.Strava),
 
-		Task: NewTaskHandler(svc.Task),
-		Note: NewNoteHandler(svc.Note),
+		Task:           NewTaskHandler(svc.Task),
+		Note:           NewNoteHandler(svc.Note),
+		SharedTaskList: NewSharedTaskListHandler(svc.SharedTaskList),
 	}, nil
 }
 
