@@ -27,6 +27,7 @@ type Config struct {
 	VAPIDSubject        string
 	ResendAPIKey        string
 	ResendFrom          string
+	FrontendURL         string
 }
 
 // Dependencies is a collection of all application dependencies.
@@ -68,6 +69,10 @@ func NewDependencies(cfg Config) (*Dependencies, error) {
 		VAPIDSubject:    cfg.VAPIDSubject,
 		ResendAPIKey:    cfg.ResendAPIKey,
 		ResendFrom:      cfg.ResendFrom,
+	}, services.SharedTaskListConfig{
+		ResendAPIKey: cfg.ResendAPIKey,
+		ResendFrom:   cfg.ResendFrom,
+		FrontendURL:  cfg.FrontendURL,
 	})
 
 	deps.Handlers, err = handlers.NewRegistry(deps.Services)

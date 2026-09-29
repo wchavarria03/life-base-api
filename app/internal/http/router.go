@@ -21,8 +21,21 @@ func NewRouter(hdlrs *handlers.Registry, jwksURL, issuer string, allowedOrigins 
 	engine.Use(middleware.CORS(allowedOrigins))
 
 	setupRoutes(engine, hdlrs, jwksURL, issuer, auditWriter)
+	setupPublicRoutes(engine, hdlrs)
 
 	return &Router{engine: engine}
+}
+
+// setupPublicRoutes configures the deliberately-unauthenticated routes: a
+// tokenized task-list share link needs no login at all, so this group skips
+// middleware.Auth entirely (and RateLimit/AuditLog, which assume an
+// authenticated caller) — see services/shared_task_list.go for how the
+// token itself is the access credential.
+func setupPublicRoutes(engine *gin.Engine, hdlrs *handlers.Registry) {
+	public := engine.Group("/public")
+	shared := public.Group("/shared")
+	shared.GET("/:token", hdlrs.SharedTaskList.PublicTasks)
+	shared.POST("/:token/tasks/:id/complete", hdlrs.SharedTaskList.PublicComplete)
 }
 
 // setupRoutes configures all versioned routes for the application.
@@ -47,6 +60,7 @@ func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL, issuer s
 	setupBikeRoutes(v1, hdlrs)
 	setupTaskRoutes(v1, hdlrs)
 	setupNoteRoutes(v1, hdlrs)
+	setupSharedTaskListRoutes(v1, hdlrs)
 	setupAccountRoutes(v1, hdlrs)
 	setupBudgetRoutes(v1, hdlrs)
 	setupEnvelopeRoutes(v1, hdlrs)
@@ -202,6 +216,13 @@ func setupTaskRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	tasks.PATCH("/:id", hdlrs.Task.Update)
 	tasks.DELETE("/:id", hdlrs.Task.Delete)
 	tasks.POST("/:id/complete", hdlrs.Task.Complete)
+}
+
+func setupSharedTaskListRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
+	shared := rg.Group("/shared-lists")
+	shared.GET("", hdlrs.SharedTaskList.List)
+	shared.POST("", hdlrs.SharedTaskList.Create)
+	shared.DELETE("/:id", hdlrs.SharedTaskList.Revoke)
 }
 
 func setupNoteRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {

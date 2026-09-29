@@ -26,6 +26,20 @@ func (r *TaskRepository) List(ctx context.Context, category *models.TaskCategory
 	return databases.Get[[]*models.Task](ctx, r.client, "/rest/v1/tasks", params, tasksSchema)
 }
 
+// ListByUserAndCategory returns userID's tasks in category, explicitly
+// filtered (rather than relying on RLS) because this backs the public
+// /public/shared/:token route: that path has no user JWT, so requests go
+// out with the service-role key, which bypasses RLS entirely — see
+// databases.resolveKeys and services/shared_task_list.go.
+func (r *TaskRepository) ListByUserAndCategory(ctx context.Context, userID string, category models.TaskCategory) ([]*models.Task, error) {
+	params := url.Values{
+		"user_id":  []string{"eq." + userID},
+		"category": []string{"eq." + string(category)},
+		"order":    []string{"created_at.asc"},
+	}
+	return databases.Get[[]*models.Task](ctx, r.client, "/rest/v1/tasks", params, tasksSchema)
+}
+
 func (r *TaskRepository) FindByID(ctx context.Context, id string) (*models.Task, error) {
 	rows, err := databases.Get[[]*models.Task](ctx, r.client, "/rest/v1/tasks", url.Values{
 		"id":    []string{"eq." + id},
