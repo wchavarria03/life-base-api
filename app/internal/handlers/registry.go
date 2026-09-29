@@ -4,29 +4,30 @@ import "life-base-api/app/internal/services"
 
 // Registry holds all HTTP handlers.
 type Registry struct {
-	Account       *AccountHandler
-	Budget        *BudgetHandler
-	Envelope      *EnvelopeHandler
-	Reminder      *ReminderHandler
-	Category      *CategoryHandler
-	Dump          *DumpHandler
-	Extract       *ExtractHandler
-	Me            *MeHandler
-	Report        *ReportHandler
-	RuleException *RuleExceptionHandler
-	Transaction   *TransactionHandler
-	Transfer      *TransferHandler
-	Upload        *UploadHandler
-	SalaryProfile *SalaryProfileHandler
-	Social        *SocialHandler
-	Admin         *AdminHandler
-	Caption       *CaptionHandler
-	Preferences   *PreferencesHandler
-	Push          *PushHandler
-	AuditLog      *AuditLogHandler
-	ScheduledPost *ScheduledPostHandler
-	Dog           *DogHandler
-	Export        *ExportHandler
+	Account         *AccountHandler
+	Budget          *BudgetHandler
+	Envelope        *EnvelopeHandler
+	Reminder        *ReminderHandler
+	Category        *CategoryHandler
+	Dump            *DumpHandler
+	Extract         *ExtractHandler
+	Me              *MeHandler
+	Report          *ReportHandler
+	RuleException   *RuleExceptionHandler
+	Transaction     *TransactionHandler
+	Transfer        *TransferHandler
+	Upload          *UploadHandler
+	SalaryProfile   *SalaryProfileHandler
+	Social          *SocialHandler
+	Admin           *AdminHandler
+	Caption         *CaptionHandler
+	Preferences     *PreferencesHandler
+	MenuPreferences *MenuPreferencesHandler
+	Push            *PushHandler
+	AuditLog        *AuditLogHandler
+	ScheduledPost   *ScheduledPostHandler
+	Dog             *DogHandler
+	Export          *ExportHandler
 
 	Bike            *BikeHandler
 	BikeFitHistory  *BikeFitHistoryHandler
@@ -45,29 +46,30 @@ type Registry struct {
 
 func NewRegistry(svc *services.Registry) (*Registry, error) {
 	return &Registry{
-		Account:       NewAccountHandler(svc.Account),
-		Budget:        NewBudgetHandler(svc.Budget, svc.Transfer),
-		Envelope:      NewEnvelopeHandler(svc.Envelope),
-		Reminder:      NewReminderHandler(svc.Reminder),
-		Category:      NewCategoryHandler(svc.Category),
-		Dump:          NewDumpHandler(),
-		Extract:       NewExtractHandler(svc.Import),
-		Me:            NewMeHandler(svc.Admin),
-		Report:        NewReportHandler(svc.Account, svc.Report),
-		RuleException: NewRuleExceptionHandler(svc.RuleExceptions, svc.Category),
-		Transaction:   NewTransactionHandler(svc.Transaction),
-		Transfer:      NewTransferHandler(svc.Transfer),
-		Upload:        NewUploadHandler(svc.Import),
-		SalaryProfile: NewSalaryProfileHandler(svc.SalaryProfile),
-		Social:        NewSocialHandler(svc.Social, svc.Caption),
-		Admin:         NewAdminHandler(svc.Admin),
-		Caption:       NewCaptionHandler(svc.Caption),
-		Preferences:   NewPreferencesHandler(svc.Preferences),
-		Push:          NewPushHandler(svc.Push),
-		AuditLog:      NewAuditLogHandler(svc.AuditLog),
-		ScheduledPost: NewScheduledPostHandler(svc.ScheduledPost),
-		Dog:           NewDogHandler(svc.Dog),
-		Export:        NewExportHandler(svc.Account, svc.Transaction, svc.Category, svc.Budget, svc.Envelope, svc.Reminder, svc.Social),
+		Account:         NewAccountHandler(svc.Account),
+		Budget:          NewBudgetHandler(svc.Budget, svc.Transfer),
+		Envelope:        NewEnvelopeHandler(svc.Envelope),
+		Reminder:        NewReminderHandler(svc.Reminder),
+		Category:        NewCategoryHandler(svc.Category),
+		Dump:            NewDumpHandler(),
+		Extract:         NewExtractHandler(svc.Import),
+		Me:              NewMeHandler(svc.Admin),
+		Report:          NewReportHandler(svc.Account, svc.Report),
+		RuleException:   NewRuleExceptionHandler(svc.RuleExceptions, svc.Category),
+		Transaction:     NewTransactionHandler(svc.Transaction),
+		Transfer:        NewTransferHandler(svc.Transfer),
+		Upload:          NewUploadHandler(svc.Import),
+		SalaryProfile:   NewSalaryProfileHandler(svc.SalaryProfile),
+		Social:          NewSocialHandler(svc.Social, svc.Caption),
+		Admin:           NewAdminHandler(svc.Admin),
+		Caption:         NewCaptionHandler(svc.Caption),
+		Preferences:     NewPreferencesHandler(svc.Preferences),
+		MenuPreferences: NewMenuPreferencesHandler(svc.MenuPreferences),
+		Push:            NewPushHandler(svc.Push),
+		AuditLog:        NewAuditLogHandler(svc.AuditLog),
+		ScheduledPost:   NewScheduledPostHandler(svc.ScheduledPost),
+		Dog:             NewDogHandler(svc.Dog),
+		Export:          NewExportHandler(svc.Account, svc.Transaction, svc.Category, svc.Budget, svc.Envelope, svc.Reminder, svc.Social),
 
 		Bike:            NewBikeHandler(svc.Bike),
 		BikeFitHistory:  NewBikeFitHistoryHandler(svc.BikeFitHistory),

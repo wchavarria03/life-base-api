@@ -35,6 +35,8 @@ func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL, issuer s
 	v1.GET("/me", hdlrs.Me.GetMe)
 	v1.GET("/preferences", hdlrs.Preferences.Get)
 	v1.PUT("/preferences", hdlrs.Preferences.Set)
+	v1.GET("/menu-preferences", hdlrs.MenuPreferences.Get)
+	v1.PUT("/menu-preferences", hdlrs.MenuPreferences.Set)
 	v1.POST("/push-subscriptions", hdlrs.Push.Subscribe)
 	v1.DELETE("/push-subscriptions", hdlrs.Push.Unsubscribe)
 	v1.GET("/export", hdlrs.Export.Handle)

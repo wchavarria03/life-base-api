@@ -149,6 +149,12 @@ type PreferenceManager interface {
 	Set(ctx context.Context, userID string, pushEnabled, emailDigestEnabled bool) (*models.UserPreferences, error)
 }
 
+// MenuPreferenceManager reads and writes per-user hidden-nav-page preferences.
+type MenuPreferenceManager interface {
+	Get(ctx context.Context, userID string) ([]string, error)
+	Set(ctx context.Context, userID, pageKey string, hidden bool) ([]string, error)
+}
+
 type AdminManager interface {
 	ListMembers(ctx context.Context) ([]*models.HouseholdMember, error)
 	SetMemberRole(ctx context.Context, userID, role string) error

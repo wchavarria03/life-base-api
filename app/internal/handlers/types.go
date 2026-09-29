@@ -76,6 +76,11 @@ type PreferencesHandler struct {
 	svc PreferenceManager
 }
 
+// MenuPreferencesHandler serves the per-user hidden-nav-page endpoints.
+type MenuPreferencesHandler struct {
+	svc MenuPreferenceManager
+}
+
 // PushHandler serves the push subscription endpoints.
 type PushHandler struct {
 	svc PushManager

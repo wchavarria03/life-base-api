@@ -3,27 +3,28 @@ package services
 import "life-base-api/app/internal/repositories"
 
 type Registry struct {
-	Account        *AccountService
-	Budget         *BudgetService
-	Envelope       *EnvelopeService
-	Reminder       *ReminderService
-	Category       *CategoryService
-	Classification *ClassificationService
-	Import         *ImportService
-	Report         *ReportService
-	RuleExceptions AccountRuleExceptionRepository
-	Transaction    *TransactionService
-	Transfer       *TransferService
-	SalaryProfile  *SalaryProfileService
-	Social         *SocialService
-	Admin          *AdminService
-	Caption        *CaptionService
-	Preferences    *PreferencesService
-	Push           *PushService
-	Digest         *DigestService
-	AuditLog       *AuditLogService
-	Dog            *DogService
-	ScheduledPost  *ScheduledPostService
+	Account         *AccountService
+	Budget          *BudgetService
+	Envelope        *EnvelopeService
+	Reminder        *ReminderService
+	Category        *CategoryService
+	Classification  *ClassificationService
+	Import          *ImportService
+	Report          *ReportService
+	RuleExceptions  AccountRuleExceptionRepository
+	Transaction     *TransactionService
+	Transfer        *TransferService
+	SalaryProfile   *SalaryProfileService
+	Social          *SocialService
+	Admin           *AdminService
+	Caption         *CaptionService
+	Preferences     *PreferencesService
+	MenuPreferences *MenuPreferencesService
+	Push            *PushService
+	Digest          *DigestService
+	AuditLog        *AuditLogService
+	Dog             *DogService
+	ScheduledPost   *ScheduledPostService
 
 	Bike            *BikeService
 	BikeFitHistory  *BikeFitHistoryService
@@ -50,27 +51,28 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 	socialSvc := NewSocialService(repos.SocialPosts, social)
 	captionSvc := NewCaptionService(repos.Caption)
 	return &Registry{
-		Account:        NewAccountService(repos.Accounts, repos.Transactions),
-		Budget:         NewBudgetService(repos.Budgets, repos.Accounts, repos.Transactions),
-		Envelope:       NewEnvelopeService(repos.Envelopes),
-		Reminder:       reminder,
-		Category:       NewCategoryService(repos.Categories, repos.CategoryRules, repos.TransactionCategories, repos.Transactions),
-		Classification: classifier,
-		Import:         NewImportService(repos.Accounts, repos.Transactions, classifier, repos.CategoryRules, repos.TransactionCategories, repos.RuleExceptions, transfer, reminder, userID),
-		Report:         NewReportService(repos.Transactions, repos.Categories),
-		RuleExceptions: repos.RuleExceptions,
-		Transaction:    NewTransactionService(repos.Transactions),
-		Transfer:       transfer,
-		SalaryProfile:  NewSalaryProfileService(repos.SalaryProfiles),
-		Social:         socialSvc,
-		Admin:          NewAdminService(repos.Admin),
-		Caption:        captionSvc,
-		Preferences:    preferences,
-		Push:           push,
-		Digest:         NewDigestService(repos.Reminders, preferences, push, repos.Admin, digest),
-		AuditLog:       NewAuditLogService(repos.AuditLog),
-		Dog:            NewDogService(repos.Dogs, repos.DogRecipientTypes, repos.DogRecipients, repos.DogBulkBags, repos.DogSettings),
-		ScheduledPost:  NewScheduledPostService(repos.ScheduledPosts, repos.Storage, socialSvc, captionSvc),
+		Account:         NewAccountService(repos.Accounts, repos.Transactions),
+		Budget:          NewBudgetService(repos.Budgets, repos.Accounts, repos.Transactions),
+		Envelope:        NewEnvelopeService(repos.Envelopes),
+		Reminder:        reminder,
+		Category:        NewCategoryService(repos.Categories, repos.CategoryRules, repos.TransactionCategories, repos.Transactions),
+		Classification:  classifier,
+		Import:          NewImportService(repos.Accounts, repos.Transactions, classifier, repos.CategoryRules, repos.TransactionCategories, repos.RuleExceptions, transfer, reminder, userID),
+		Report:          NewReportService(repos.Transactions, repos.Categories),
+		RuleExceptions:  repos.RuleExceptions,
+		Transaction:     NewTransactionService(repos.Transactions),
+		Transfer:        transfer,
+		SalaryProfile:   NewSalaryProfileService(repos.SalaryProfiles),
+		Social:          socialSvc,
+		Admin:           NewAdminService(repos.Admin),
+		Caption:         captionSvc,
+		Preferences:     preferences,
+		MenuPreferences: NewMenuPreferencesService(repos.MenuPreferences),
+		Push:            push,
+		Digest:          NewDigestService(repos.Reminders, preferences, push, repos.Admin, digest),
+		AuditLog:        NewAuditLogService(repos.AuditLog),
+		Dog:             NewDogService(repos.Dogs, repos.DogRecipientTypes, repos.DogRecipients, repos.DogBulkBags, repos.DogSettings),
+		ScheduledPost:   NewScheduledPostService(repos.ScheduledPosts, repos.Storage, socialSvc, captionSvc),
 
 		Bike:            NewBikeService(repos.Bikes),
 		BikeFitHistory:  NewBikeFitHistoryService(repos.BikeFitHistory),
