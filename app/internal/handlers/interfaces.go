@@ -113,9 +113,11 @@ type DogManager interface {
 	UpdateRecipientType(ctx context.Context, id string, input models.DogRecipientTypeInput) (*models.DogRecipientType, error)
 	DeleteRecipientType(ctx context.Context, id string) error
 
-	ListRecipients(ctx context.Context, status string) ([]*models.DogRecipient, error)
+	ListAllocations(ctx context.Context) ([]*models.DogRecipientAllocation, error)
 	PortionBatch(ctx context.Context, requests []models.PortionRequest) error
-	MarkFed(ctx context.Context, id string) error
+	MarkFed(ctx context.Context, dogID string) (bool, error)
+	CatchUpFeeds(ctx context.Context, dogID string, count int) (int, error)
+	FeedReview(ctx context.Context) ([]models.DogFeedReviewEntry, error)
 
 	ListBulkBags(ctx context.Context) ([]*models.DogBulkBag, error)
 	CreateBulkBag(ctx context.Context, input models.DogBulkBagInput) (*models.DogBulkBag, error)

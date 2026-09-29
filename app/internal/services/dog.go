@@ -11,12 +11,18 @@ import (
 	"life-base-api/app/internal/models"
 )
 
-// DogService manages dogs, recipient types/containers, bulk food bags, and
-// the portioning workflow that ties them together.
+// DogFeedReviewLookbackDays is the fixed lookback window (in days) the
+// "did you forget to feed?" auto-review compares expected vs actual feeds
+// over — matches the 2-day window requested for the feature.
+const DogFeedReviewLookbackDays = 2
+
+// DogService manages dogs, recipient types, portioning allocations, bulk
+// food bags, and the feed log that ties them together.
 type DogService struct {
 	dogs           *supabaserepo.DogRepository
 	recipientTypes *supabaserepo.DogRecipientTypeRepository
-	recipients     *supabaserepo.DogRecipientRepository
+	allocations    *supabaserepo.DogRecipientAllocationRepository
+	feedLog        *supabaserepo.DogFeedLogRepository
 	bulkBags       *supabaserepo.DogBulkBagRepository
 	settings       *supabaserepo.DogSettingsRepository
 }
@@ -25,11 +31,15 @@ type DogService struct {
 func NewDogService(
 	dogs *supabaserepo.DogRepository,
 	recipientTypes *supabaserepo.DogRecipientTypeRepository,
-	recipients *supabaserepo.DogRecipientRepository,
+	allocations *supabaserepo.DogRecipientAllocationRepository,
+	feedLog *supabaserepo.DogFeedLogRepository,
 	bulkBags *supabaserepo.DogBulkBagRepository,
 	settings *supabaserepo.DogSettingsRepository,
 ) *DogService {
-	return &DogService{dogs: dogs, recipientTypes: recipientTypes, recipients: recipients, bulkBags: bulkBags, settings: settings}
+	return &DogService{
+		dogs: dogs, recipientTypes: recipientTypes, allocations: allocations,
+		feedLog: feedLog, bulkBags: bulkBags, settings: settings,
+	}
 }
 
 // ── Dogs ─────────────────────────────────────────────────────────────────────
@@ -69,8 +79,9 @@ func (s *DogService) ListRecipientTypes(ctx context.Context) ([]*models.DogRecip
 	return s.recipientTypes.List(ctx)
 }
 
-// CreateRecipientType creates a recipient type and provisions its initial
-// empty containers.
+// CreateRecipientType creates a recipient type. quantity_total is just the
+// physical count of containers owned of this size — no per-container rows
+// are provisioned.
 func (s *DogService) CreateRecipientType(ctx context.Context, input models.DogRecipientTypeInput) (*models.DogRecipientType, error) {
 	if input.Name == "" || input.SizeGrams == nil || *input.SizeGrams <= 0 {
 		return nil, fmt.Errorf("name and a positive size_grams are required")
@@ -79,110 +90,129 @@ func (s *DogService) CreateRecipientType(ctx context.Context, input models.DogRe
 		zero := 0
 		input.QuantityTotal = &zero
 	}
-	userID := auth.UserIDFromContext(ctx)
-	input.UserID = userID
-	rt, err := s.recipientTypes.Create(ctx, input)
-	if err != nil {
-		return nil, err
-	}
-	if err := s.recipients.CreateEmpty(ctx, userID, rt.ID, *input.QuantityTotal); err != nil {
-		return nil, fmt.Errorf("provision containers: %w", err)
-	}
-	return rt, nil
+	input.UserID = auth.UserIDFromContext(ctx)
+	return s.recipientTypes.Create(ctx, input)
 }
 
-// UpdateRecipientType patches a recipient type. Increasing quantity_total
-// provisions the delta as new empty containers; decreasing it is not
-// supported (existing containers are never removed).
+// UpdateRecipientType patches a recipient type. quantity_total may not be
+// set below the number of containers currently allocated (portioned and not
+// yet fully fed), since that would make the empty count negative.
 func (s *DogService) UpdateRecipientType(ctx context.Context, id string, input models.DogRecipientTypeInput) (*models.DogRecipientType, error) {
 	if input.QuantityTotal != nil {
-		existing, err := s.recipientTypes.FindByID(ctx, id)
+		allocated, err := s.allocatedQuantity(ctx, id)
 		if err != nil {
-			return nil, fmt.Errorf("find recipient type: %w", err)
+			return nil, err
 		}
-		if existing == nil {
-			return nil, fmt.Errorf("recipient type not found")
-		}
-		delta := *input.QuantityTotal - existing.QuantityTotal
-		if delta < 0 {
-			return nil, fmt.Errorf("quantity_total cannot be decreased (existing containers are never removed)")
-		}
-		if delta > 0 {
-			if err := s.recipients.CreateEmpty(ctx, auth.UserIDFromContext(ctx), id, delta); err != nil {
-				return nil, fmt.Errorf("provision additional containers: %w", err)
-			}
+		if *input.QuantityTotal < allocated {
+			return nil, fmt.Errorf("quantity_total cannot be less than %d currently-allocated containers", allocated)
 		}
 	}
 	return s.recipientTypes.Update(ctx, id, input)
 }
 
-// DeleteRecipientType removes a recipient type and its containers.
+// DeleteRecipientType removes a recipient type and its allocations.
 func (s *DogService) DeleteRecipientType(ctx context.Context, id string) error {
 	return s.recipientTypes.Delete(ctx, id)
 }
 
-// ── Recipients ───────────────────────────────────────────────────────────────
+// ── Recipient allocations ────────────────────────────────────────────────────
 
-// ListRecipients returns every recipient, optionally filtered by status
-// ("empty" or "portioned").
-func (s *DogService) ListRecipients(ctx context.Context, status string) ([]*models.DogRecipient, error) {
-	return s.recipients.List(ctx, status)
+// ListAllocations returns every recipient allocation.
+func (s *DogService) ListAllocations(ctx context.Context) ([]*models.DogRecipientAllocation, error) {
+	return s.allocations.List(ctx)
 }
 
-// PortionBatch fills a batch of currently-empty containers, assigning each
-// to one dog (or two, if shared), and deducts the corresponding weight from
-// bulk bag stock (oldest-frozen first). Validates total bulk stock covers
-// the batch before making any change — nothing is partially applied.
+// allocatedQuantity sums the quantity of every active allocation for a
+// recipient type.
+func (s *DogService) allocatedQuantity(ctx context.Context, recipientTypeID string) (int, error) {
+	allocations, err := s.allocations.List(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("list allocations: %w", err)
+	}
+	total := 0
+	for _, a := range allocations {
+		if a.RecipientTypeID == recipientTypeID {
+			total += a.Quantity
+		}
+	}
+	return total, nil
+}
+
+// PortionBatch fills one or more type+quantity+dog assignments, validating
+// each against the currently-empty container count for that type, deducts
+// the corresponding weight from bulk bag stock (oldest-purchased first),
+// and creates one allocation row per request. Validates everything up front
+// so nothing is partially applied on a validation failure (bulk-stock
+// deduction and allocation creation themselves are best-effort, matching
+// the rest of this service).
 func (s *DogService) PortionBatch(ctx context.Context, requests []models.PortionRequest) error {
 	if len(requests) == 0 {
-		return fmt.Errorf("no containers selected")
+		return fmt.Errorf("no portions selected")
+	}
+
+	allocations, err := s.allocations.List(ctx)
+	if err != nil {
+		return fmt.Errorf("list allocations: %w", err)
+	}
+	allocatedByType := make(map[string]int)
+	for _, a := range allocations {
+		allocatedByType[a.RecipientTypeID] += a.Quantity
 	}
 
 	typeCache := make(map[string]*models.DogRecipientType)
+	requestedByType := make(map[string]int)
 	totalGrams := 0
-	for _, req := range requests {
-		recipient, err := s.recipients.FindByID(ctx, req.RecipientID)
-		if err != nil {
-			return fmt.Errorf("find recipient %s: %w", req.RecipientID, err)
-		}
-		if recipient == nil {
-			return fmt.Errorf("recipient %s not found", req.RecipientID)
-		}
-		if recipient.Status != models.DogRecipientEmpty {
-			return fmt.Errorf("recipient %s is not empty", req.RecipientID)
+	for i, req := range requests {
+		if req.Quantity <= 0 {
+			return fmt.Errorf("request %d: quantity must be positive", i)
 		}
 		if req.DogID1 == "" {
-			return fmt.Errorf("recipient %s needs at least one dog assigned", req.RecipientID)
+			return fmt.Errorf("request %d: dog_id_1 is required", i)
 		}
-
-		rt, ok := typeCache[recipient.RecipientTypeID]
+		rt, ok := typeCache[req.RecipientTypeID]
 		if !ok {
-			rt, err = s.recipientTypes.FindByID(ctx, recipient.RecipientTypeID)
+			rt, err = s.recipientTypes.FindByID(ctx, req.RecipientTypeID)
 			if err != nil {
 				return fmt.Errorf("find recipient type: %w", err)
 			}
 			if rt == nil {
-				return fmt.Errorf("recipient type not found for recipient %s", req.RecipientID)
+				return fmt.Errorf("recipient type %s not found", req.RecipientTypeID)
 			}
-			typeCache[recipient.RecipientTypeID] = rt
+			typeCache[req.RecipientTypeID] = rt
 		}
-		totalGrams += rt.SizeGrams
+		requestedByType[req.RecipientTypeID] += req.Quantity
+		totalGrams += rt.SizeGrams * req.Quantity
+	}
+
+	for typeID, requested := range requestedByType {
+		empty := typeCache[typeID].QuantityTotal - allocatedByType[typeID]
+		if requested > empty {
+			return fmt.Errorf("not enough empty containers of type %q: requested %d, %d available", typeCache[typeID].Name, requested, empty)
+		}
 	}
 
 	if err := s.deductBulkStock(ctx, totalGrams); err != nil {
 		return err
 	}
 
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := time.Now().UTC()
 	for _, req := range requests {
-		if err := s.recipients.MarkPortioned(ctx, req.RecipientID, req.DogID1, req.DogID2, now); err != nil {
-			return fmt.Errorf("mark recipient %s portioned: %w", req.RecipientID, err)
+		alloc := models.DogRecipientAllocation{
+			UserID:          auth.UserIDFromContext(ctx),
+			RecipientTypeID: req.RecipientTypeID,
+			DogID1:          req.DogID1,
+			DogID2:          req.DogID2,
+			Quantity:        req.Quantity,
+			PortionedAt:     now,
+		}
+		if _, err := s.allocations.Create(ctx, alloc); err != nil {
+			return fmt.Errorf("create allocation: %w", err)
 		}
 	}
 	return nil
 }
 
-// deductBulkStock subtracts grams from available bulk bags, oldest-frozen
+// deductBulkStock subtracts grams from available bulk bags, oldest-purchased
 // first, spilling into the next bag when one is exhausted. Errors (without
 // writing anything) if total available stock can't cover it.
 func (s *DogService) deductBulkStock(ctx context.Context, grams int) error {
@@ -216,19 +246,88 @@ func (s *DogService) deductBulkStock(ctx context.Context, grams int) error {
 	return nil
 }
 
-// MarkFed recycles a portioned container back to empty.
-func (s *DogService) MarkFed(ctx context.Context, id string) error {
-	recipient, err := s.recipients.FindByID(ctx, id)
+// MarkFed feeds one portion to dogID: it finds that dog's oldest active
+// allocation (an allocation dogID is dog_id_1 or dog_id_2 of, with
+// quantity > 0), decrements it by one (deleting the row once it hits zero),
+// and logs the feed. A shared allocation (dog_id_2 set) is decremented the
+// same way regardless of which of the two dogs' buttons triggered the feed
+// — it represents one feeding event for both dogs at once, not two.
+// Returns false (no error) if the dog has no allocated food available.
+func (s *DogService) MarkFed(ctx context.Context, dogID string) (bool, error) {
+	alloc, err := s.allocations.FindOldestActiveForDog(ctx, dogID)
 	if err != nil {
-		return fmt.Errorf("find recipient: %w", err)
+		return false, fmt.Errorf("find allocation: %w", err)
 	}
-	if recipient == nil {
-		return fmt.Errorf("recipient not found")
+	if alloc == nil {
+		return false, nil
 	}
-	if recipient.Status != models.DogRecipientPortioned {
-		return fmt.Errorf("recipient is not portioned")
+
+	if alloc.Quantity <= 1 {
+		if err := s.allocations.Delete(ctx, alloc.ID); err != nil {
+			return false, fmt.Errorf("delete exhausted allocation: %w", err)
+		}
+	} else {
+		if err := s.allocations.SetQuantity(ctx, alloc.ID, alloc.Quantity-1); err != nil {
+			return false, fmt.Errorf("decrement allocation: %w", err)
+		}
 	}
-	return s.recipients.MarkFed(ctx, id)
+
+	recipientTypeID := alloc.RecipientTypeID
+	entry := models.DogFeedLogEntry{
+		UserID:          auth.UserIDFromContext(ctx),
+		DogID:           dogID,
+		RecipientTypeID: &recipientTypeID,
+		FedAt:           time.Now().UTC(),
+	}
+	if _, err := s.feedLog.Create(ctx, entry); err != nil {
+		return false, fmt.Errorf("log feed: %w", err)
+	}
+	return true, nil
+}
+
+// CatchUpFeeds logs up to count missed feeds for dogID by calling MarkFed
+// repeatedly, stopping early (without error) if allocated stock runs out.
+// Returns how many feeds were actually logged.
+func (s *DogService) CatchUpFeeds(ctx context.Context, dogID string, count int) (int, error) {
+	logged := 0
+	for i := 0; i < count; i++ {
+		fed, err := s.MarkFed(ctx, dogID)
+		if err != nil {
+			return logged, err
+		}
+		if !fed {
+			break
+		}
+		logged++
+	}
+	return logged, nil
+}
+
+// FeedReview computes, for every dog, the expected feeds over the last
+// DogFeedReviewLookbackDays days (meals_per_day * lookback) vs the actual
+// count of feed-log rows in that window, returning only dogs with a
+// shortfall.
+func (s *DogService) FeedReview(ctx context.Context) ([]models.DogFeedReviewEntry, error) {
+	dogs, err := s.dogs.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list dogs: %w", err)
+	}
+	since := time.Now().UTC().AddDate(0, 0, -DogFeedReviewLookbackDays)
+
+	entries := make([]models.DogFeedReviewEntry, 0)
+	for _, dog := range dogs {
+		actual, err := s.feedLog.CountSince(ctx, dog.ID, since)
+		if err != nil {
+			return nil, fmt.Errorf("count feed log for %s: %w", dog.Name, err)
+		}
+		expected := dog.MealsPerDay * DogFeedReviewLookbackDays
+		if actual < expected {
+			entries = append(entries, models.DogFeedReviewEntry{
+				DogID: dog.ID, DogName: dog.Name, Expected: expected, Actual: actual,
+			})
+		}
+	}
+	return entries, nil
 }
 
 // ── Bulk bags ────────────────────────────────────────────────────────────────
@@ -243,8 +342,8 @@ func (s *DogService) CreateBulkBag(ctx context.Context, input models.DogBulkBagI
 	if input.Label == "" || input.TotalWeightGrams <= 0 {
 		return nil, fmt.Errorf("label and a positive total_weight_grams are required")
 	}
-	if input.FrozenDate == "" {
-		input.FrozenDate = time.Now().UTC().Format("2006-01-02")
+	if input.PurchaseDate == "" {
+		input.PurchaseDate = time.Now().UTC().Format("2006-01-02")
 	}
 	input.UserID = auth.UserIDFromContext(ctx)
 	return s.bulkBags.Create(ctx, input)

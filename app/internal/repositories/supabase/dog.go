@@ -2,7 +2,9 @@ package supabase
 
 import (
 	"context"
+	"fmt"
 	"net/url"
+	"time"
 
 	"life-base-api/app/internal/databases"
 	"life-base-api/app/internal/models"
@@ -23,6 +25,19 @@ func NewDogRepository(client *databases.SupabaseClient) *DogRepository {
 // List returns every dog.
 func (r *DogRepository) List(ctx context.Context) ([]*models.Dog, error) {
 	return databases.Get[[]*models.Dog](ctx, r.client, "/rest/v1/dogs", url.Values{"order": []string{"name.asc"}})
+}
+
+// FindByID returns a dog by id, or nil if not found.
+func (r *DogRepository) FindByID(ctx context.Context, id string) (*models.Dog, error) {
+	rows, err := databases.Get[[]*models.Dog](ctx, r.client, "/rest/v1/dogs",
+		url.Values{"id": []string{"eq." + id}, "limit": []string{"1"}})
+	if err != nil {
+		return nil, err
+	}
+	if len(rows) == 0 {
+		return nil, nil
+	}
+	return rows[0], nil
 }
 
 // Create inserts a new dog.
@@ -110,36 +125,33 @@ func (r *DogRecipientTypeRepository) FindByID(ctx context.Context, id string) (*
 	return rows[0], nil
 }
 
-// Delete removes a recipient type (cascades to its recipients).
+// Delete removes a recipient type (cascades to its allocations).
 func (r *DogRecipientTypeRepository) Delete(ctx context.Context, id string) error {
 	return databases.Delete(ctx, r.client, "/rest/v1/dog_recipient_types", databases.EqID(id))
 }
 
-// ── Recipients ───────────────────────────────────────────────────────────────
+// ── Recipient allocations ────────────────────────────────────────────────────
 
-// DogRecipientRepository persists individual recipient containers.
-type DogRecipientRepository struct {
+// DogRecipientAllocationRepository persists recipient allocations — batches
+// of N filled containers of one type assigned to a dog (or dog pair).
+type DogRecipientAllocationRepository struct {
 	client *databases.SupabaseClient
 }
 
-// NewDogRecipientRepository constructs a DogRecipientRepository.
-func NewDogRecipientRepository(client *databases.SupabaseClient) *DogRecipientRepository {
-	return &DogRecipientRepository{client: client}
+// NewDogRecipientAllocationRepository constructs a DogRecipientAllocationRepository.
+func NewDogRecipientAllocationRepository(client *databases.SupabaseClient) *DogRecipientAllocationRepository {
+	return &DogRecipientAllocationRepository{client: client}
 }
 
-// List returns every recipient, optionally filtered by status.
-func (r *DogRecipientRepository) List(ctx context.Context, status string) ([]*models.DogRecipient, error) {
-	params := url.Values{"order": []string{"created_at.asc"}}
-	if status != "" {
-		params.Set("status", "eq."+status)
-	}
-	return databases.Get[[]*models.DogRecipient](ctx, r.client, "/rest/v1/dog_recipients", params)
+// List returns every allocation, oldest-portioned first.
+func (r *DogRecipientAllocationRepository) List(ctx context.Context) ([]*models.DogRecipientAllocation, error) {
+	return databases.Get[[]*models.DogRecipientAllocation](ctx, r.client, "/rest/v1/dog_recipient_allocations",
+		url.Values{"order": []string{"portioned_at.asc"}})
 }
 
-// FindByID returns a recipient by id, or nil if not found.
-func (r *DogRecipientRepository) FindByID(ctx context.Context, id string) (*models.DogRecipient, error) {
-	rows, err := databases.Get[[]*models.DogRecipient](ctx, r.client, "/rest/v1/dog_recipients",
-		url.Values{"id": []string{"eq." + id}, "limit": []string{"1"}})
+// Create inserts a new allocation row.
+func (r *DogRecipientAllocationRepository) Create(ctx context.Context, input models.DogRecipientAllocation) (*models.DogRecipientAllocation, error) {
+	rows, err := databases.Post[[]*models.DogRecipientAllocation](ctx, r.client, "/rest/v1/dog_recipient_allocations", input, "return=representation")
 	if err != nil {
 		return nil, err
 	}
@@ -149,48 +161,79 @@ func (r *DogRecipientRepository) FindByID(ctx context.Context, id string) (*mode
 	return rows[0], nil
 }
 
-// CreateEmpty inserts n empty recipients of recipientTypeID — used to
-// provision containers when a recipient type is created or its quantity
-// increased.
-func (r *DogRecipientRepository) CreateEmpty(ctx context.Context, userID, recipientTypeID string, n int) error {
-	if n <= 0 {
-		return nil
+// FindOldestActiveForDog returns the oldest (by portioned_at) allocation
+// with quantity > 0 involving dogID as either dog_id_1 or dog_id_2 — a
+// shared allocation is found and fed the same way from either dog's button.
+// Returns nil if none is available.
+func (r *DogRecipientAllocationRepository) FindOldestActiveForDog(ctx context.Context, dogID string) (*models.DogRecipientAllocation, error) {
+	rows, err := databases.Get[[]*models.DogRecipientAllocation](ctx, r.client, "/rest/v1/dog_recipient_allocations",
+		url.Values{
+			"or":       []string{fmt.Sprintf("(dog_id_1.eq.%s,dog_id_2.eq.%s)", dogID, dogID)},
+			"quantity": []string{"gt.0"},
+			"order":    []string{"portioned_at.asc"},
+			"limit":    []string{"1"},
+		})
+	if err != nil {
+		return nil, err
 	}
-	rows := make([]map[string]string, n)
-	for i := range rows {
-		rows[i] = map[string]string{"user_id": userID, "recipient_type_id": recipientTypeID, "status": string(models.DogRecipientEmpty)}
+	if len(rows) == 0 {
+		return nil, nil
 	}
-	_, err := databases.Post[[]*models.DogRecipient](ctx, r.client, "/rest/v1/dog_recipients", rows, "")
+	return rows[0], nil
+}
+
+// SetQuantity updates an allocation's remaining quantity.
+func (r *DogRecipientAllocationRepository) SetQuantity(ctx context.Context, id string, quantity int) error {
+	_, err := databases.Patch[[]*models.DogRecipientAllocation](ctx, r.client, "/rest/v1/dog_recipient_allocations",
+		databases.EqID(id), map[string]any{"quantity": quantity}, "")
 	return err
 }
 
-// MarkPortioned fills a container: status -> portioned, dog assignment set.
-func (r *DogRecipientRepository) MarkPortioned(ctx context.Context, id, dogID1 string, dogID2 *string, portionedAt string) error {
-	fields := map[string]any{
-		"status":       string(models.DogRecipientPortioned),
-		"dog_id_1":     dogID1,
-		"dog_id_2":     dogID2,
-		"portioned_at": portionedAt,
-	}
-	_, err := databases.Patch[[]*models.DogRecipient](ctx, r.client, "/rest/v1/dog_recipients", databases.EqID(id), fields, "")
-	return err
+// Delete removes an allocation (used once its quantity reaches zero).
+func (r *DogRecipientAllocationRepository) Delete(ctx context.Context, id string) error {
+	return databases.Delete(ctx, r.client, "/rest/v1/dog_recipient_allocations", databases.EqID(id))
 }
 
-// MarkFed recycles a container back to empty.
-func (r *DogRecipientRepository) MarkFed(ctx context.Context, id string) error {
-	fields := map[string]any{
-		"status":       string(models.DogRecipientEmpty),
-		"dog_id_1":     nil,
-		"dog_id_2":     nil,
-		"portioned_at": nil,
+// ── Feed log ─────────────────────────────────────────────────────────────────
+
+// DogFeedLogRepository persists individual feed events.
+type DogFeedLogRepository struct {
+	client *databases.SupabaseClient
+}
+
+// NewDogFeedLogRepository constructs a DogFeedLogRepository.
+func NewDogFeedLogRepository(client *databases.SupabaseClient) *DogFeedLogRepository {
+	return &DogFeedLogRepository{client: client}
+}
+
+// Create inserts a new feed log entry.
+func (r *DogFeedLogRepository) Create(ctx context.Context, entry models.DogFeedLogEntry) (*models.DogFeedLogEntry, error) {
+	rows, err := databases.Post[[]*models.DogFeedLogEntry](ctx, r.client, "/rest/v1/dog_feed_log", entry, "return=representation")
+	if err != nil {
+		return nil, err
 	}
-	_, err := databases.Patch[[]*models.DogRecipient](ctx, r.client, "/rest/v1/dog_recipients", databases.EqID(id), fields, "")
-	return err
+	if len(rows) == 0 {
+		return nil, nil
+	}
+	return rows[0], nil
+}
+
+// CountSince returns how many feed-log rows exist for dogID at or after since.
+func (r *DogFeedLogRepository) CountSince(ctx context.Context, dogID string, since time.Time) (int, error) {
+	rows, err := databases.Get[[]*models.DogFeedLogEntry](ctx, r.client, "/rest/v1/dog_feed_log",
+		url.Values{
+			"dog_id": []string{"eq." + dogID},
+			"fed_at": []string{"gte." + since.Format(time.RFC3339)},
+		})
+	if err != nil {
+		return 0, err
+	}
+	return len(rows), nil
 }
 
 // ── Bulk bags ────────────────────────────────────────────────────────────────
 
-// DogBulkBagRepository persists bulk (large) frozen food bags.
+// DogBulkBagRepository persists bulk (large) raw-food bags.
 type DogBulkBagRepository struct {
 	client *databases.SupabaseClient
 }
@@ -200,19 +243,19 @@ func NewDogBulkBagRepository(client *databases.SupabaseClient) *DogBulkBagReposi
 	return &DogBulkBagRepository{client: client}
 }
 
-// List returns every bulk bag with remaining stock, oldest-frozen first.
+// List returns every bulk bag, oldest-purchased first.
 func (r *DogBulkBagRepository) List(ctx context.Context) ([]*models.DogBulkBag, error) {
 	return databases.Get[[]*models.DogBulkBag](ctx, r.client, "/rest/v1/dog_bulk_bags",
-		url.Values{"order": []string{"frozen_date.asc"}})
+		url.Values{"order": []string{"purchase_date.asc"}})
 }
 
-// ListAvailable returns bulk bags with remaining stock > 0, oldest first —
-// the draw order for PortionBatch.
+// ListAvailable returns bulk bags with remaining stock > 0, oldest-purchased
+// first — the draw order for PortionBatch.
 func (r *DogBulkBagRepository) ListAvailable(ctx context.Context) ([]*models.DogBulkBag, error) {
 	return databases.Get[[]*models.DogBulkBag](ctx, r.client, "/rest/v1/dog_bulk_bags",
 		url.Values{
 			"remaining_weight_grams": []string{"gt.0"},
-			"order":                  []string{"frozen_date.asc"},
+			"order":                  []string{"purchase_date.asc"},
 		})
 }
 
@@ -224,7 +267,8 @@ func (r *DogBulkBagRepository) Create(ctx context.Context, input models.DogBulkB
 		"label":                  input.Label,
 		"total_weight_grams":     input.TotalWeightGrams,
 		"remaining_weight_grams": input.TotalWeightGrams,
-		"frozen_date":            input.FrozenDate,
+		"purchase_date":          input.PurchaseDate,
+		"price":                  input.Price,
 	}
 	rows, err := databases.Post[[]*models.DogBulkBag](ctx, r.client, "/rest/v1/dog_bulk_bags", body, "return=representation")
 	if err != nil {
