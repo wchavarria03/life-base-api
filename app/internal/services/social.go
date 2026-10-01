@@ -607,6 +607,10 @@ func (s *SocialService) postInstagram(ctx context.Context, imageURL, caption str
 		return "", fmt.Errorf("instagram container: %w", err)
 	}
 
+	if err := s.waitForContainerReady(ctx, container.ID); err != nil {
+		return "", err
+	}
+
 	publishURL := fmt.Sprintf("%s/%s/media_publish", graphAPIBase, s.cfg.InstagramUser)
 	publishBody := formValues(map[string]string{
 		"creation_id":  container.ID,
@@ -625,6 +629,40 @@ func (s *SocialService) postInstagram(ctx context.Context, imageURL, caption str
 		return "", fmt.Errorf("instagram publish: %w", err)
 	}
 	return media.ID, nil
+}
+
+// waitForContainerReady polls an Instagram media container's status_code
+// until it's FINISHED (ready to publish) or ERROR/EXPIRED, or times out.
+// Meta downloads/validates the image asynchronously after container
+// creation — publishing before it finishes fails with "Media ID is not
+// available", which this avoids.
+func (s *SocialService) waitForContainerReady(ctx context.Context, containerID string) error {
+	statusURL := fmt.Sprintf("%s/%s?fields=status_code&access_token=%s", graphAPIBase, containerID, url.QueryEscape(s.cfg.AccessToken))
+	const maxAttempts = 15
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, statusURL, nil)
+		if err != nil {
+			return fmt.Errorf("build container status request: %w", err)
+		}
+		var status struct {
+			StatusCode string `json:"status_code"`
+		}
+		if err := s.doGraphRequest(req, &status); err != nil {
+			return fmt.Errorf("instagram container status: %w", err)
+		}
+		switch status.StatusCode {
+		case "FINISHED":
+			return nil
+		case "ERROR", "EXPIRED":
+			return fmt.Errorf("instagram container failed to process (status %s)", status.StatusCode)
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(1500 * time.Millisecond):
+		}
+	}
+	return fmt.Errorf("instagram container did not finish processing in time")
 }
 
 func (s *SocialService) doGraphRequest(req *http.Request, out any) error {
