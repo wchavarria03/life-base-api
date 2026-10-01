@@ -49,7 +49,7 @@ type DogRecipientTypeInput struct {
 // shared allocation. The "currently empty" count for a recipient type is its
 // quantity_total minus the sum of Quantity across its active allocations.
 type DogRecipientAllocation struct {
-	ID              string    `json:"id"`
+	ID              string    `json:"id,omitempty"`
 	UserID          string    `json:"user_id,omitempty"`
 	RecipientTypeID string    `json:"recipient_type_id"`
 	DogID1          string    `json:"dog_id_1"`
@@ -62,7 +62,7 @@ type DogRecipientAllocation struct {
 // DogFeedLogEntry records one portion actually fed to a dog — used both as
 // a feeding history and to reconcile the "did you forget to feed?" review.
 type DogFeedLogEntry struct {
-	ID              string    `json:"id"`
+	ID              string    `json:"id,omitempty"`
 	UserID          string    `json:"user_id,omitempty"`
 	DogID           string    `json:"dog_id"`
 	RecipientTypeID *string   `json:"recipient_type_id,omitempty"`
