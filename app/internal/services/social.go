@@ -16,6 +16,7 @@ import (
 
 	"life-base-api/app/internal/auth"
 	"life-base-api/app/internal/models"
+	supabaserepo "life-base-api/app/internal/repositories/supabase"
 )
 
 const graphAPIBase = "https://graph.facebook.com/v21.0"
@@ -61,20 +62,166 @@ type SocialConfig struct {
 	InstagramUser string
 }
 
+// socialManualImagesBucket is the same public bucket scheduled posts use —
+// public so a logged/draft thumbnail is directly embeddable, and there's no
+// reason to split tracking images across two buckets.
+const socialManualImagesBucket = scheduledImagesBucket
+
 // SocialService posts images to Facebook and Instagram via the Meta Graph
 // API, persisting a history row for every attempt.
 type SocialService struct {
 	posts      SocialPostRepository
+	storage    *supabaserepo.StorageRepository
 	cfg        SocialConfig
 	httpClient *http.Client
 }
 
-func NewSocialService(posts SocialPostRepository, cfg SocialConfig) *SocialService {
+// NewSocialService constructs a SocialService.
+func NewSocialService(posts SocialPostRepository, storage *supabaserepo.StorageRepository, cfg SocialConfig) *SocialService {
 	return &SocialService{
 		posts:      posts,
+		storage:    storage,
 		cfg:        cfg,
 		httpClient: &http.Client{Timeout: 60 * time.Second},
 	}
+}
+
+// ManualPostInput describes a draft or already-posted-elsewhere social post
+// recorded with no Graph API call ever made.
+type ManualPostInput struct {
+	FacebookCaption    string
+	InstagramCaption   *string
+	PostFacebook       bool
+	PostInstagram      bool
+	Status             models.SocialPostLifecycle // draft | logged
+	PostedAt           *time.Time                 // required for logged, ignored for draft
+	FacebookPermalink  *string
+	InstagramPermalink *string
+}
+
+// CreateManual uploads image to our own storage and inserts a social_posts
+// row with no Graph API call — used both for "save as draft" (status
+// draft, nothing has happened yet) and "log a post that already happened
+// outside this app" (status logged, optionally with the live permalinks).
+func (s *SocialService) CreateManual(ctx context.Context, file io.Reader, filename string, in ManualPostInput) (*models.SocialPost, error) {
+	userID := auth.UserIDFromContext(ctx)
+	if userID == "" {
+		return nil, fmt.Errorf("no authenticated user")
+	}
+	if in.Status != models.SocialPostLifecycleDraft && in.Status != models.SocialPostLifecycleLogged {
+		return nil, fmt.Errorf("invalid post_status %q", in.Status)
+	}
+	if in.Status == models.SocialPostLifecycleLogged && !in.PostFacebook && !in.PostInstagram {
+		return nil, fmt.Errorf("select at least one network this post actually went to")
+	}
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, fmt.Errorf("read uploaded image: %w", err)
+	}
+	path := fmt.Sprintf("%s/manual/%d-%s", userID, time.Now().UnixNano(), filename)
+	publicURL, err := s.storage.UploadObject(ctx, socialManualImagesBucket, path, data, contentTypeForFilename(filename))
+	if err != nil {
+		return nil, fmt.Errorf("upload image: %w", err)
+	}
+
+	fbStatus, igStatus := models.SocialPostSkipped, models.SocialPostSkipped
+	var fbPermalink, igPermalink *string
+	if in.Status == models.SocialPostLifecycleLogged {
+		if in.PostFacebook {
+			fbStatus = models.SocialPostSuccess
+			fbPermalink = in.FacebookPermalink
+		}
+		if in.PostInstagram {
+			igStatus = models.SocialPostSuccess
+			igPermalink = in.InstagramPermalink
+		}
+	}
+
+	return s.posts.Create(ctx, models.SocialPostInput{
+		UserID:             userID,
+		Filename:           filename,
+		Caption:            in.FacebookCaption,
+		CaptionInstagram:   in.InstagramCaption,
+		FacebookStatus:     fbStatus,
+		FacebookPhotoURL:   &publicURL,
+		FacebookPermalink:  fbPermalink,
+		InstagramStatus:    igStatus,
+		InstagramPermalink: igPermalink,
+		PostStatus:         in.Status,
+		PostedAt:           in.PostedAt,
+		ImageStoragePath:   &path,
+		PostFacebook:       in.PostFacebook,
+		PostInstagram:      in.PostInstagram,
+	})
+}
+
+// UpdatePostInput is the partial-update shape for UpdatePost — nil fields
+// are left unchanged. Image, when set, replaces the stored photo (and
+// removes the previous object if we owned it); for a 'posted' row this only
+// changes our tracking record, never the live Facebook/Instagram post.
+type UpdatePostInput struct {
+	Caption            *string
+	CaptionInstagram   *string
+	PostedAt           *time.Time
+	FacebookPermalink  *string
+	InstagramPermalink *string
+	Image              io.Reader
+	ImageFilename      string
+}
+
+// UpdatePost applies a partial edit to an existing social post. Editing any
+// field on a post that isn't a draft (i.e. one that was actually posted or
+// logged as posted) marks it `edited` — surfaced in the UI as a reminder
+// that the live Facebook/Instagram post itself is untouched.
+func (s *SocialService) UpdatePost(ctx context.Context, id string, in UpdatePostInput) (*models.SocialPost, error) {
+	existing, err := s.posts.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if existing == nil {
+		return nil, fmt.Errorf("post not found")
+	}
+
+	fields := map[string]any{}
+	if in.Caption != nil {
+		fields["caption"] = *in.Caption
+	}
+	if in.CaptionInstagram != nil {
+		fields["caption_instagram"] = *in.CaptionInstagram
+	}
+	if in.PostedAt != nil {
+		fields["posted_at"] = in.PostedAt.UTC().Format(time.RFC3339)
+	}
+	if in.FacebookPermalink != nil {
+		fields["facebook_permalink"] = *in.FacebookPermalink
+	}
+	if in.InstagramPermalink != nil {
+		fields["instagram_permalink"] = *in.InstagramPermalink
+	}
+	if in.Image != nil {
+		data, err := io.ReadAll(in.Image)
+		if err != nil {
+			return nil, fmt.Errorf("read uploaded image: %w", err)
+		}
+		path := fmt.Sprintf("%s/manual/%d-%s", existing.UserID, time.Now().UnixNano(), in.ImageFilename)
+		publicURL, err := s.storage.UploadObject(ctx, socialManualImagesBucket, path, data, contentTypeForFilename(in.ImageFilename))
+		if err != nil {
+			return nil, fmt.Errorf("upload image: %w", err)
+		}
+		if existing.ImageStoragePath != nil {
+			_ = s.storage.DeleteObject(ctx, socialManualImagesBucket, *existing.ImageStoragePath)
+		}
+		fields["facebook_photo_url"] = publicURL
+		fields["image_storage_path"] = path
+	}
+	if len(fields) > 0 && existing.PostStatus != models.SocialPostLifecycleDraft {
+		fields["edited"] = true
+	}
+	if len(fields) == 0 {
+		return existing, nil
+	}
+	return s.posts.Update(ctx, id, fields)
 }
 
 // PostImage posts an image to the selected networks (toFacebook/toInstagram).
@@ -125,10 +272,15 @@ func (s *SocialService) postImageForUser(ctx context.Context, userID string, fil
 		igText = *igCaption
 	}
 
+	now := time.Now().UTC()
 	input := models.SocialPostInput{
-		UserID:   userID,
-		Filename: filename,
-		Caption:  caption,
+		UserID:        userID,
+		Filename:      filename,
+		Caption:       caption,
+		PostStatus:    models.SocialPostLifecyclePosted,
+		PostedAt:      &now,
+		PostFacebook:  toFacebook,
+		PostInstagram: toInstagram,
 	}
 	if igText != caption {
 		input.CaptionInstagram = &igText
@@ -222,6 +374,9 @@ func (s *SocialService) Delete(ctx context.Context, id string) error {
 	userID := auth.UserIDFromContext(ctx)
 	if userID == "" {
 		return fmt.Errorf("no authenticated user")
+	}
+	if existing, err := s.posts.FindByID(ctx, id); err == nil && existing != nil && existing.ImageStoragePath != nil {
+		_ = s.storage.DeleteObject(ctx, socialManualImagesBucket, *existing.ImageStoragePath)
 	}
 	return s.posts.Delete(ctx, id)
 }

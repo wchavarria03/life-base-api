@@ -49,7 +49,7 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 	reminder := NewReminderService(repos.Reminders, repos.TransactionCategories)
 	preferences := NewPreferencesService(repos.Preferences)
 	push := NewPushService(repos.PushSubscriptions)
-	socialSvc := NewSocialService(repos.SocialPosts, social)
+	socialSvc := NewSocialService(repos.SocialPosts, repos.Storage, social)
 	captionSvc := NewCaptionService(repos.Caption)
 	r := &Registry{
 		Account:         NewAccountService(repos.Accounts, repos.Transactions),

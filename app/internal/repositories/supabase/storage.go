@@ -48,3 +48,27 @@ func (r *StorageRepository) UploadObject(ctx context.Context, bucket, path strin
 
 	return fmt.Sprintf("%s/storage/v1/object/public/%s/%s", r.client.BaseURL, bucket, path), nil
 }
+
+// DeleteObject removes bucket/path. Best-effort by convention at call
+// sites — a stray orphaned file is harmless, so callers generally don't
+// fail an otherwise-successful operation (like deleting a row) over this.
+func (r *StorageRepository) DeleteObject(ctx context.Context, bucket, path string) error {
+	url := fmt.Sprintf("%s/storage/v1/object/%s/%s", r.client.BaseURL, bucket, path)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
+	if err != nil {
+		return fmt.Errorf("build storage delete request: %w", err)
+	}
+	req.Header.Set("apikey", r.client.APIKey)
+	req.Header.Set("Authorization", "Bearer "+r.client.APIKey)
+
+	resp, err := r.client.HTTPClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("delete from storage: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode >= http.StatusBadRequest {
+		return fmt.Errorf("storage delete: http %d", resp.StatusCode)
+	}
+	return nil
+}

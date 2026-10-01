@@ -137,7 +137,9 @@ func setupCaptionRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 func setupSocialRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	social := rg.Group("/social/posts")
 	social.POST("", hdlrs.Social.Create)
+	social.POST("/manual", hdlrs.Social.CreateManual)
 	social.GET("", hdlrs.Social.List)
+	social.PATCH("/:id", hdlrs.Social.UpdatePost)
 	social.DELETE("/:id", hdlrs.Social.Delete)
 	social.POST("/:id/retry-instagram", hdlrs.Social.RetryInstagram)
 
