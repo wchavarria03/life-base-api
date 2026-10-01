@@ -4,7 +4,7 @@ import "time"
 
 // CaptionCategory is a user-managed tag for caption templates and posts.
 type CaptionCategory struct {
-	ID     string `json:"id"`
+	ID     string `json:"id,omitempty"`
 	UserID string `json:"user_id,omitempty"`
 	Name   string `json:"name"`
 }
