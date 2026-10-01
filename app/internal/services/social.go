@@ -224,6 +224,59 @@ func (s *SocialService) UpdatePost(ctx context.Context, id string, in UpdatePost
 	return s.posts.Update(ctx, id, fields)
 }
 
+// MarkDraftPostedInput is the input for MarkDraftPosted.
+type MarkDraftPostedInput struct {
+	PostFacebook       bool
+	PostInstagram      bool
+	PostedAt           time.Time
+	FacebookPermalink  *string
+	InstagramPermalink *string
+}
+
+// MarkDraftPosted converts a draft into a logged post — used when a draft
+// (e.g. an Instagram/Facebook Story, which this app can't post to directly)
+// was posted by hand outside the app, and the user comes back to flag it.
+// Only valid on a row whose post_status is still 'draft'.
+func (s *SocialService) MarkDraftPosted(ctx context.Context, id string, in MarkDraftPostedInput) (*models.SocialPost, error) {
+	existing, err := s.posts.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if existing == nil {
+		return nil, fmt.Errorf("post not found")
+	}
+	if existing.PostStatus != models.SocialPostLifecycleDraft {
+		return nil, fmt.Errorf("only a draft can be marked posted")
+	}
+	if !in.PostFacebook && !in.PostInstagram {
+		return nil, fmt.Errorf("select at least one network this post actually went to")
+	}
+
+	fbStatus, igStatus := models.SocialPostSkipped, models.SocialPostSkipped
+	if in.PostFacebook {
+		fbStatus = models.SocialPostSuccess
+	}
+	if in.PostInstagram {
+		igStatus = models.SocialPostSuccess
+	}
+
+	fields := map[string]any{
+		"post_status":      models.SocialPostLifecycleLogged,
+		"posted_at":        in.PostedAt.UTC().Format(time.RFC3339),
+		"post_facebook":    in.PostFacebook,
+		"post_instagram":   in.PostInstagram,
+		"facebook_status":  fbStatus,
+		"instagram_status": igStatus,
+	}
+	if in.FacebookPermalink != nil {
+		fields["facebook_permalink"] = *in.FacebookPermalink
+	}
+	if in.InstagramPermalink != nil {
+		fields["instagram_permalink"] = *in.InstagramPermalink
+	}
+	return s.posts.Update(ctx, id, fields)
+}
+
 // PostImage posts an image to the selected networks (toFacebook/toInstagram).
 // Instagram always publishes from a Facebook-hosted photo URL, so the
 // Facebook upload happens regardless of toFacebook — when toFacebook is

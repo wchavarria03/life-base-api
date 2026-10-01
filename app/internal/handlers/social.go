@@ -195,6 +195,43 @@ func (h *SocialHandler) UpdatePost(c *gin.Context) {
 	c.JSON(http.StatusOK, post)
 }
 
+// MarkDraftPosted handles POST /v1/social/posts/:id/mark-posted — flips a
+// draft to logged once it's been posted by hand outside the app (e.g. an
+// Instagram/Facebook Story, which this app has no way to post to directly).
+// JSON body: post_facebook, post_instagram (bool), posted_at (RFC3339,
+// required), facebook_permalink/instagram_permalink (optional).
+func (h *SocialHandler) MarkDraftPosted(c *gin.Context) {
+	var req struct {
+		PostFacebook       bool    `json:"post_facebook"`
+		PostInstagram      bool    `json:"post_instagram"`
+		PostedAt           string  `json:"posted_at" binding:"required"`
+		FacebookPermalink  *string `json:"facebook_permalink,omitempty"`
+		InstagramPermalink *string `json:"instagram_permalink,omitempty"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	postedAt, err := time.Parse(time.RFC3339, req.PostedAt)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "posted_at must be RFC3339"})
+		return
+	}
+
+	post, err := h.svc.MarkDraftPosted(c.Request.Context(), c.Param("id"), services.MarkDraftPostedInput{
+		PostFacebook:       req.PostFacebook,
+		PostInstagram:      req.PostInstagram,
+		PostedAt:           postedAt,
+		FacebookPermalink:  req.FacebookPermalink,
+		InstagramPermalink: req.InstagramPermalink,
+	})
+	if err != nil {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, post)
+}
+
 // List handles GET /v1/social/posts?limit=&offset=&status=.
 func (h *SocialHandler) List(c *gin.Context) {
 	limit := defaultSocialListLimit

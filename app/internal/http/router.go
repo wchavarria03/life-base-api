@@ -140,6 +140,7 @@ func setupSocialRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	social.POST("/manual", hdlrs.Social.CreateManual)
 	social.GET("", hdlrs.Social.List)
 	social.PATCH("/:id", hdlrs.Social.UpdatePost)
+	social.POST("/:id/mark-posted", hdlrs.Social.MarkDraftPosted)
 	social.DELETE("/:id", hdlrs.Social.Delete)
 	social.POST("/:id/retry-instagram", hdlrs.Social.RetryInstagram)
 

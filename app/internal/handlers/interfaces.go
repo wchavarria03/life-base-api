@@ -191,6 +191,7 @@ type SocialPoster interface {
 	PostImageWithCaptions(ctx context.Context, file io.Reader, filename string, fbCaption, igCaption *string, force, toFacebook, toInstagram bool) (*models.SocialPost, error)
 	CreateManual(ctx context.Context, file io.Reader, filename string, in services.ManualPostInput) (*models.SocialPost, error)
 	UpdatePost(ctx context.Context, id string, in services.UpdatePostInput) (*models.SocialPost, error)
+	MarkDraftPosted(ctx context.Context, id string, in services.MarkDraftPostedInput) (*models.SocialPost, error)
 	List(ctx context.Context, limit, offset int, status *models.SocialPostStatus) ([]*models.SocialPost, error)
 	RetryInstagram(ctx context.Context, id string) (*models.SocialPost, error)
 	Delete(ctx context.Context, id string) error
