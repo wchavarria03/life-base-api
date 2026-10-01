@@ -26,6 +26,19 @@ const (
 	SocialPostLifecyclePosted SocialPostLifecycle = "posted"
 )
 
+// SocialPostSource distinguishes how a 'posted' row was actually sent —
+// meaningless (null) for draft/logged rows.
+type SocialPostSource string
+
+const (
+	// SocialPostSourceDirect is the in-app "Post" button, immediate.
+	SocialPostSourceDirect SocialPostSource = "direct"
+	// SocialPostSourceScheduledCron is the hourly GitHub Actions job.
+	SocialPostSourceScheduledCron SocialPostSource = "scheduled-cron"
+	// SocialPostSourceScheduledManual is the "Check scheduled now" button.
+	SocialPostSourceScheduledManual SocialPostSource = "scheduled-manual"
+)
+
 // SocialPost is the stored shape from social_posts: one record per upload,
 // with independent Facebook/Instagram outcomes since Instagram depends on
 // the Facebook leg succeeding first.
@@ -52,6 +65,7 @@ type SocialPost struct {
 	ImageStoragePath   *string             `json:"image_storage_path,omitempty"`
 	PostFacebook       bool                `json:"post_facebook"`
 	PostInstagram      bool                `json:"post_instagram"`
+	Source             *SocialPostSource   `json:"source,omitempty"`
 }
 
 // SocialPostInput is the write shape for Create.
@@ -74,4 +88,5 @@ type SocialPostInput struct {
 	ImageStoragePath   *string             `json:"image_storage_path,omitempty"`
 	PostFacebook       bool                `json:"post_facebook"`
 	PostInstagram      bool                `json:"post_instagram"`
+	Source             *SocialPostSource   `json:"source,omitempty"`
 }

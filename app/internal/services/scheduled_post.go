@@ -109,8 +109,13 @@ func (s *ScheduledPostService) ProcessDue(ctx context.Context, userID string) (s
 		return 0, 0, fmt.Errorf("list due scheduled posts: %w", err)
 	}
 
+	source := models.SocialPostSourceScheduledManual
+	if userID == "" {
+		source = models.SocialPostSourceScheduledCron
+	}
+
 	for _, p := range due {
-		if procErr := s.processOne(ctx, p); procErr != nil {
+		if procErr := s.processOne(ctx, p, source); procErr != nil {
 			_ = s.repo.Update(ctx, p.ID, map[string]any{
 				"status": string(models.ScheduledPostFailed),
 				"error":  procErr.Error(),
@@ -123,7 +128,7 @@ func (s *ScheduledPostService) ProcessDue(ctx context.Context, userID string) (s
 	return sent, failed, nil
 }
 
-func (s *ScheduledPostService) processOne(ctx context.Context, p *models.ScheduledPost) error {
+func (s *ScheduledPostService) processOne(ctx context.Context, p *models.ScheduledPost, source models.SocialPostSource) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.StoragePath, nil)
 	if err != nil {
 		return fmt.Errorf("build image fetch request: %w", err)
@@ -142,7 +147,7 @@ func (s *ScheduledPostService) processOne(ctx context.Context, p *models.Schedul
 	}
 
 	post, err := s.social.postImageForUser(ctx, p.UserID, bytes.NewReader(data), p.Filename,
-		&p.CaptionFacebook, p.CaptionInstagram, true, p.PostFacebook, p.PostInstagram)
+		&p.CaptionFacebook, p.CaptionInstagram, true, p.PostFacebook, p.PostInstagram, source)
 	if err != nil {
 		return fmt.Errorf("post image: %w", err)
 	}

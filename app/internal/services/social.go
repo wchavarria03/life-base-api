@@ -296,13 +296,14 @@ func (s *SocialService) PostImageWithCaptions(ctx context.Context, file io.Reade
 	if userID == "" {
 		return nil, fmt.Errorf("no authenticated user")
 	}
-	return s.postImageForUser(ctx, userID, file, filename, fbCaption, igCaption, force, toFacebook, toInstagram)
+	return s.postImageForUser(ctx, userID, file, filename, fbCaption, igCaption, force, toFacebook, toInstagram, models.SocialPostSourceDirect)
 }
 
-// postImageForUser is PostImageWithCaptions with the acting user supplied
-// directly rather than read from context — used by the scheduled-posts
-// sender, which runs outside any per-request user JWT.
-func (s *SocialService) postImageForUser(ctx context.Context, userID string, file io.Reader, filename string, fbCaption, igCaption *string, force, toFacebook, toInstagram bool) (*models.SocialPost, error) {
+// postImageForUser is PostImageWithCaptions with the acting user and a
+// source tag supplied directly rather than read from context — used by the
+// scheduled-posts sender, which runs outside any per-request user JWT and
+// needs to record whether the cron or a manual "check now" sent it.
+func (s *SocialService) postImageForUser(ctx context.Context, userID string, file io.Reader, filename string, fbCaption, igCaption *string, force, toFacebook, toInstagram bool, source models.SocialPostSource) (*models.SocialPost, error) {
 	if s.cfg.AccessToken == "" {
 		return nil, fmt.Errorf("META_ACCESS_TOKEN is not configured")
 	}
@@ -334,6 +335,7 @@ func (s *SocialService) postImageForUser(ctx context.Context, userID string, fil
 		PostedAt:      &now,
 		PostFacebook:  toFacebook,
 		PostInstagram: toInstagram,
+		Source:        &source,
 	}
 	if igText != caption {
 		input.CaptionInstagram = &igText
