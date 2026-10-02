@@ -38,6 +38,7 @@ type Registry struct {
 	Strava          *StravaService
 
 	Task           *TaskService
+	TaskList       *TaskListService
 	Note           *NoteService
 	SharedTaskList *SharedTaskListService
 	ShareLink      *ShareLinkService
@@ -89,8 +90,9 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 		Activity:        NewActivityService(repos.Activities, repos.Bikes, repos.Components, repos.Gear),
 		Strava:          NewStravaService(repos.Strava, strava),
 
-		Task: NewTaskService(repos.Tasks),
-		Note: NewNoteService(repos.Notes),
+		Task:     NewTaskService(repos.Tasks),
+		TaskList: NewTaskListService(repos.TaskLists),
+		Note:     NewNoteService(repos.Notes),
 	}
 	r.SharedTaskList = NewSharedTaskListService(repos.SharedTaskLists, r.Task, sharedTaskLists)
 	r.ShareLink = NewShareLinkService(repos.ShareLinks, r.Note, r.Bike, r.Component)

@@ -227,6 +227,11 @@ func setupTaskRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	tasks.PATCH("/:id", hdlrs.Task.Update)
 	tasks.DELETE("/:id", hdlrs.Task.Delete)
 	tasks.POST("/:id/complete", hdlrs.Task.Complete)
+
+	taskLists := rg.Group("/task-lists")
+	taskLists.GET("", hdlrs.TaskList.List)
+	taskLists.POST("", hdlrs.TaskList.Create)
+	taskLists.DELETE("/:id", hdlrs.TaskList.Delete)
 }
 
 func setupSharedTaskListRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {

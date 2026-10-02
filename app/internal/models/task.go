@@ -74,8 +74,12 @@ type Task struct {
 	RecurrenceType    *string      `json:"recurrence_type,omitempty"`
 	NextTaskID        *string      `json:"next_task_id,omitempty"`
 	DueDate           *string      `json:"due_date,omitempty"`
+	DueTime           *string      `json:"due_time,omitempty"`
 	CompletedAt       *time.Time   `json:"completed_at,omitempty"`
 	Notes             *string      `json:"notes,omitempty"`
+	ListID            *string      `json:"list_id,omitempty"`
+	ParentTaskID      *string      `json:"parent_task_id,omitempty"`
+	Tags              []string     `json:"tags"`
 	CreatedAt         time.Time    `json:"created_at,omitempty"`
 	UpdatedAt         time.Time    `json:"updated_at,omitempty"`
 }
@@ -91,7 +95,11 @@ type TaskInput struct {
 	IntervalDays   *int         `json:"interval_days,omitempty"`
 	RecurrenceType *string      `json:"recurrence_type,omitempty"`
 	DueDate        *string      `json:"due_date,omitempty"`
+	DueTime        *string      `json:"due_time,omitempty"`
 	Notes          *string      `json:"notes,omitempty"`
+	ListID         *string      `json:"list_id,omitempty"`
+	ParentTaskID   *string      `json:"parent_task_id,omitempty"`
+	Tags           []string     `json:"tags,omitempty"`
 }
 
 // TaskWithStatus enriches Task with a derived status field.
