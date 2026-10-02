@@ -136,6 +136,14 @@ type DocumentManager interface {
 	Delete(ctx context.Context, id string) error
 }
 
+// HouseTimerManager is the subset of HouseTimerService the handler needs.
+type HouseTimerManager interface {
+	List(ctx context.Context) ([]*models.HouseTimer, error)
+	Create(ctx context.Context, label, message string, minutes int) (*models.HouseTimer, error)
+	MarkAnnounced(ctx context.Context, id string) error
+	Delete(ctx context.Context, id string) error
+}
+
 type AuditLogManager interface {
 	List(ctx context.Context, limit, offset int) ([]*models.AuditLogEntry, error)
 }

@@ -45,6 +45,7 @@ type Registry struct {
 	SharedTaskList *SharedTaskListHandler
 	ShareLink      *ShareLinkHandler
 	Document       *DocumentHandler
+	HouseTimer     *HouseTimerHandler
 }
 
 func NewRegistry(svc *services.Registry) (*Registry, error) {
@@ -90,6 +91,7 @@ func NewRegistry(svc *services.Registry) (*Registry, error) {
 		SharedTaskList: NewSharedTaskListHandler(svc.SharedTaskList),
 		ShareLink:      NewShareLinkHandler(svc.ShareLink),
 		Document:       NewDocumentHandler(svc.Document),
+		HouseTimer:     NewHouseTimerHandler(svc.HouseTimer),
 	}, nil
 }
 

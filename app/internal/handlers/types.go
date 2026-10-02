@@ -106,6 +106,11 @@ type DocumentHandler struct {
 	svc DocumentManager
 }
 
+// HouseTimerHandler serves the dashboard-timer endpoints.
+type HouseTimerHandler struct {
+	svc HouseTimerManager
+}
+
 // ExportHandler serves a single JSON dump of everything the caller owns.
 type ExportHandler struct {
 	accounts     AccountLister

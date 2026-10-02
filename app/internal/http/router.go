@@ -68,6 +68,7 @@ func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL, issuer s
 	setupSharedTaskListRoutes(v1, hdlrs)
 	setupShareLinkRoutes(v1, hdlrs)
 	setupDocumentRoutes(v1, hdlrs)
+	setupHouseTimerRoutes(v1, hdlrs)
 	setupAccountRoutes(v1, hdlrs)
 	setupBudgetRoutes(v1, hdlrs)
 	setupEnvelopeRoutes(v1, hdlrs)
@@ -248,6 +249,14 @@ func setupDocumentRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	docs.POST("", hdlrs.Document.Upload)
 	docs.GET("/:id/download", hdlrs.Document.Download)
 	docs.DELETE("/:id", hdlrs.Document.Delete)
+}
+
+func setupHouseTimerRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
+	timers := rg.Group("/house-timers")
+	timers.GET("", hdlrs.HouseTimer.List)
+	timers.POST("", hdlrs.HouseTimer.Create)
+	timers.POST("/:id/announced", hdlrs.HouseTimer.MarkAnnounced)
+	timers.DELETE("/:id", hdlrs.HouseTimer.Delete)
 }
 
 func setupNoteRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {

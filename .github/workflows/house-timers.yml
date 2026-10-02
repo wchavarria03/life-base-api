@@ -1,0 +1,35 @@
+name: Notify House Timers
+
+# Short-interval check for fired house timers (dashboard "start a timer"
+# shortcuts, e.g. a wall tablet in the laundry room) — push-notifies the
+# owner's phone as a backup to the tablet's own in-page announcement.
+# 5 minutes is GitHub Actions' minimum cron granularity.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  notify-house-timers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - run: go build -o life-base-api .
+
+      - run: ./life-base-api notify-house-timers
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
