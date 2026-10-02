@@ -128,6 +128,14 @@ type DogManager interface {
 	SetSettings(ctx context.Context, thresholdGrams int) (*models.DogSettings, error)
 }
 
+// DocumentManager is the subset of DocumentService the handler needs.
+type DocumentManager interface {
+	List(ctx context.Context) ([]*models.Document, error)
+	Upload(ctx context.Context, file io.Reader, title, fileName, contentType string, category *string) (*models.Document, error)
+	Download(ctx context.Context, id string) (*models.Document, []byte, error)
+	Delete(ctx context.Context, id string) error
+}
+
 type AuditLogManager interface {
 	List(ctx context.Context, limit, offset int) ([]*models.AuditLogEntry, error)
 }

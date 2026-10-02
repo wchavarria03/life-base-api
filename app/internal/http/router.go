@@ -67,6 +67,7 @@ func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL, issuer s
 	setupNoteRoutes(v1, hdlrs)
 	setupSharedTaskListRoutes(v1, hdlrs)
 	setupShareLinkRoutes(v1, hdlrs)
+	setupDocumentRoutes(v1, hdlrs)
 	setupAccountRoutes(v1, hdlrs)
 	setupBudgetRoutes(v1, hdlrs)
 	setupEnvelopeRoutes(v1, hdlrs)
@@ -239,6 +240,14 @@ func setupShareLinkRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	links.GET("", hdlrs.ShareLink.List)
 	links.POST("", hdlrs.ShareLink.Create)
 	links.DELETE("/:id", hdlrs.ShareLink.Revoke)
+}
+
+func setupDocumentRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
+	docs := rg.Group("/documents")
+	docs.GET("", hdlrs.Document.List)
+	docs.POST("", hdlrs.Document.Upload)
+	docs.GET("/:id/download", hdlrs.Document.Download)
+	docs.DELETE("/:id", hdlrs.Document.Delete)
 }
 
 func setupNoteRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {

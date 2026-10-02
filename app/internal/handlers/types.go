@@ -101,6 +101,11 @@ type DogHandler struct {
 	svc DogManager
 }
 
+// DocumentHandler serves the document vault endpoints.
+type DocumentHandler struct {
+	svc DocumentManager
+}
+
 // ExportHandler serves a single JSON dump of everything the caller owns.
 type ExportHandler struct {
 	accounts     AccountLister
