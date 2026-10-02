@@ -33,11 +33,12 @@ func (s *PreferencesService) Get(ctx context.Context, userID string) (*models.Us
 }
 
 // Set updates the caller's notification preferences.
-func (s *PreferencesService) Set(ctx context.Context, userID string, pushEnabled, emailDigestEnabled bool) (*models.UserPreferences, error) {
+func (s *PreferencesService) Set(ctx context.Context, userID string, pushEnabled, emailDigestEnabled bool, defaultPage string) (*models.UserPreferences, error) {
 	return s.repo.Upsert(ctx, &models.UserPreferences{
 		UserID:             userID,
 		PushEnabled:        pushEnabled,
 		EmailDigestEnabled: emailDigestEnabled,
+		DefaultPage:        defaultPage,
 	})
 }
 

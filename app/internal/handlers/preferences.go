@@ -25,8 +25,9 @@ func (h *PreferencesHandler) Get(c *gin.Context) {
 }
 
 type setPreferencesRequest struct {
-	PushEnabled        bool `json:"push_enabled"`
-	EmailDigestEnabled bool `json:"email_digest_enabled"`
+	PushEnabled        bool   `json:"push_enabled"`
+	EmailDigestEnabled bool   `json:"email_digest_enabled"`
+	DefaultPage        string `json:"default_page"`
 }
 
 // Set handles PUT /v1/preferences.
@@ -37,7 +38,7 @@ func (h *PreferencesHandler) Set(c *gin.Context) {
 		return
 	}
 	userID := auth.UserIDFromContext(c.Request.Context())
-	prefs, err := h.svc.Set(c.Request.Context(), userID, req.PushEnabled, req.EmailDigestEnabled)
+	prefs, err := h.svc.Set(c.Request.Context(), userID, req.PushEnabled, req.EmailDigestEnabled, req.DefaultPage)
 	if err != nil {
 		internalError(c, err)
 		return
