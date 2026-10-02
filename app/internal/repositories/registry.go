@@ -50,6 +50,7 @@ type Registry struct {
 	Tasks           *supabaserepo.TaskRepository
 	Notes           *supabaserepo.NoteRepository
 	SharedTaskLists *supabaserepo.SharedTaskListRepository
+	ShareLinks      *supabaserepo.ShareLinkRepository
 }
 
 func NewRegistry(dbs *databases.Registry) *Registry {
@@ -98,5 +99,6 @@ func NewRegistry(dbs *databases.Registry) *Registry {
 		Tasks:           supabaserepo.NewTaskRepository(dbs.Supabase),
 		Notes:           supabaserepo.NewNoteRepository(dbs.Supabase),
 		SharedTaskLists: supabaserepo.NewSharedTaskListRepository(dbs.Supabase),
+		ShareLinks:      supabaserepo.NewShareLinkRepository(dbs.Supabase),
 	}
 }

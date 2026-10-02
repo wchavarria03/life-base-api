@@ -36,6 +36,11 @@ func setupPublicRoutes(engine *gin.Engine, hdlrs *handlers.Registry) {
 	shared := public.Group("/shared")
 	shared.GET("/:token", hdlrs.SharedTaskList.PublicTasks)
 	shared.POST("/:token/tasks/:id/complete", hdlrs.SharedTaskList.PublicComplete)
+
+	// Short path ("/s/") for note/bike share links — distinct from
+	// "/shared/" above (task lists) to avoid a route collision, and shorter
+	// to match the "shortener" link these are meant to read as.
+	public.GET("/s/:token", hdlrs.ShareLink.PublicResolve)
 }
 
 // setupRoutes configures all versioned routes for the application.
@@ -61,6 +66,7 @@ func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL, issuer s
 	setupTaskRoutes(v1, hdlrs)
 	setupNoteRoutes(v1, hdlrs)
 	setupSharedTaskListRoutes(v1, hdlrs)
+	setupShareLinkRoutes(v1, hdlrs)
 	setupAccountRoutes(v1, hdlrs)
 	setupBudgetRoutes(v1, hdlrs)
 	setupEnvelopeRoutes(v1, hdlrs)
@@ -226,6 +232,13 @@ func setupSharedTaskListRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	shared.GET("", hdlrs.SharedTaskList.List)
 	shared.POST("", hdlrs.SharedTaskList.Create)
 	shared.DELETE("/:id", hdlrs.SharedTaskList.Revoke)
+}
+
+func setupShareLinkRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
+	links := rg.Group("/share-links")
+	links.GET("", hdlrs.ShareLink.List)
+	links.POST("", hdlrs.ShareLink.Create)
+	links.DELETE("/:id", hdlrs.ShareLink.Revoke)
 }
 
 func setupNoteRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {

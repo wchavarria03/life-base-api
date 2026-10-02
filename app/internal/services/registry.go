@@ -40,6 +40,7 @@ type Registry struct {
 	Task           *TaskService
 	Note           *NoteService
 	SharedTaskList *SharedTaskListService
+	ShareLink      *ShareLinkService
 }
 
 // NewRegistry wires every service with its repository dependencies.
@@ -90,5 +91,6 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 		Note: NewNoteService(repos.Notes),
 	}
 	r.SharedTaskList = NewSharedTaskListService(repos.SharedTaskLists, r.Task, sharedTaskLists)
+	r.ShareLink = NewShareLinkService(repos.ShareLinks, r.Note, r.Bike, r.Component)
 	return r
 }

@@ -43,6 +43,7 @@ type Registry struct {
 	Task           *TaskHandler
 	Note           *NoteHandler
 	SharedTaskList *SharedTaskListHandler
+	ShareLink      *ShareLinkHandler
 }
 
 func NewRegistry(svc *services.Registry) (*Registry, error) {
@@ -86,6 +87,7 @@ func NewRegistry(svc *services.Registry) (*Registry, error) {
 		Task:           NewTaskHandler(svc.Task),
 		Note:           NewNoteHandler(svc.Note),
 		SharedTaskList: NewSharedTaskListHandler(svc.SharedTaskList),
+		ShareLink:      NewShareLinkHandler(svc.ShareLink),
 	}, nil
 }
 
