@@ -38,9 +38,8 @@ func (h *TaskListHandler) List(c *gin.Context) {
 
 // Create handles POST /v1/task-lists.
 func (h *TaskListHandler) Create(c *gin.Context) {
-	var input models.TaskListInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	input, ok := bindJSON[models.TaskListInput](c)
+	if !ok {
 		return
 	}
 	list, err := h.svc.Create(c.Request.Context(), input)

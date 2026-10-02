@@ -15,3 +15,15 @@ func internalError(c *gin.Context, err error) {
 	log.Printf("internal error: %s %s: %v", c.Request.Method, c.FullPath(), err)
 	c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 }
+
+// bindJSON decodes the request body into T, writing a 400 response itself
+// on failure. The caller just checks ok and returns.
+func bindJSON[T any](c *gin.Context) (T, bool) {
+	var v T
+	if err := c.ShouldBindJSON(&v); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		var zero T
+		return zero, false
+	}
+	return v, true
+}
