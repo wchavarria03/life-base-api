@@ -15,6 +15,7 @@ type ActivityService struct {
 	tasks      *TaskService
 }
 
+// NewActivityService constructs an ActivityService.
 func NewActivityService(activities ActivityRepository, bikes BikeRepository, components ComponentRepository, gear GearRepository, tasks *TaskService) *ActivityService {
 	return &ActivityService{activities: activities, bikes: bikes, components: components, gear: gear, tasks: tasks}
 }
