@@ -37,15 +37,16 @@ type Registry struct {
 	Activity        *ActivityService
 	Strava          *StravaService
 
-	Task           *TaskService
-	TaskList       *TaskListService
-	Note           *NoteService
-	SharedTaskList *SharedTaskListService
-	ShareLink      *ShareLinkService
-	Document       *DocumentService
-	HouseTimer     *HouseTimerService
-	MedicalProfile *MedicalProfileService
-	MedicalRecord  *MedicalRecordService
+	Task                *TaskService
+	TaskList            *TaskListService
+	Note                *NoteService
+	SharedTaskList      *SharedTaskListService
+	ShareLink           *ShareLinkService
+	Document            *DocumentService
+	HouseTimer          *HouseTimerService
+	MedicalProfile      *MedicalProfileService
+	MedicalRecord       *MedicalRecordService
+	MedicalAttributeDef *MedicalAttributeDefService
 }
 
 // NewRegistry wires every service with its repository dependencies.
@@ -105,6 +106,7 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 	})
 	r.MedicalRecord = NewMedicalRecordService(repos.MedicalRecords, repos.MedicalRecordFiles, repos.Storage)
 	r.MedicalProfile = NewMedicalProfileService(repos.MedicalProfiles, repos.MedicalAccess, repos.MedicalRecords)
+	r.MedicalAttributeDef = NewMedicalAttributeDefService(repos.MedicalAttributeDefs)
 	r.ShareLink = NewShareLinkService(repos.ShareLinks, r.Note, r.Bike, r.Component, r.MedicalProfile, r.MedicalRecord)
 	return r
 }

@@ -210,3 +210,33 @@ func (r *MedicalRecordFileRepository) Create(ctx context.Context, f *models.Medi
 func (r *MedicalRecordFileRepository) Delete(ctx context.Context, id string) error {
 	return databases.Delete(ctx, r.client, "/rest/v1/medical_record_files", databases.EqID(id))
 }
+
+// MedicalAttributeDefRepository persists medical_attribute_defs rows.
+type MedicalAttributeDefRepository struct {
+	client *databases.SupabaseClient
+}
+
+// NewMedicalAttributeDefRepository constructs a MedicalAttributeDefRepository.
+func NewMedicalAttributeDefRepository(client *databases.SupabaseClient) *MedicalAttributeDefRepository {
+	return &MedicalAttributeDefRepository{client: client}
+}
+
+// List returns every attribute def the caller owns.
+func (r *MedicalAttributeDefRepository) List(ctx context.Context) ([]*models.MedicalAttributeDef, error) {
+	return databases.Get[[]*models.MedicalAttributeDef](ctx, r.client, "/rest/v1/medical_attribute_defs",
+		url.Values{"order": []string{"attr_key.asc"}})
+}
+
+// Upsert creates or replaces a def (unique on user_id+attr_key).
+func (r *MedicalAttributeDefRepository) Upsert(ctx context.Context, d *models.MedicalAttributeDef) (*models.MedicalAttributeDef, error) {
+	rows, err := databases.Post[[]*models.MedicalAttributeDef](ctx, r.client,
+		"/rest/v1/medical_attribute_defs?on_conflict=user_id,attr_key", d,
+		"resolution=merge-duplicates,return=representation")
+	if err != nil {
+		return nil, err
+	}
+	if len(rows) == 0 {
+		return nil, nil
+	}
+	return rows[0], nil
+}

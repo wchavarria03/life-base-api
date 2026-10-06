@@ -231,3 +231,32 @@ func (h *MedicalRecordHandler) DeleteFile(c *gin.Context) {
 	}
 	c.Status(http.StatusNoContent)
 }
+
+// NewMedicalAttributeDefHandler constructs a MedicalAttributeDefHandler.
+func NewMedicalAttributeDefHandler(svc MedicalAttributeDefManager) *MedicalAttributeDefHandler {
+	return &MedicalAttributeDefHandler{svc: svc}
+}
+
+// List handles GET /v1/medical-attribute-defs.
+func (h *MedicalAttributeDefHandler) List(c *gin.Context) {
+	defs, err := h.svc.List(c.Request.Context())
+	if err != nil {
+		internalError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, defs)
+}
+
+// Upsert handles PUT /v1/medical-attribute-defs.
+func (h *MedicalAttributeDefHandler) Upsert(c *gin.Context) {
+	input, ok := bindJSON[models.MedicalAttributeDefInput](c)
+	if !ok {
+		return
+	}
+	def, err := h.svc.Upsert(c.Request.Context(), input)
+	if err != nil {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, def)
+}

@@ -114,3 +114,23 @@ type MedicalTimelinePoint struct {
 	RecordDate string `json:"record_date"`
 	Value      any    `json:"value"`
 }
+
+// MedicalAttributeDef is a user's friendly label/description for an
+// attribute key (e.g. "cholesterol_ldl" -> "LDL Cholesterol" / "'Bad'
+// cholesterol — lower is generally better."), shared across all their
+// profiles and records.
+type MedicalAttributeDef struct {
+	UserID      string    `json:"user_id,omitempty"`
+	AttrKey     string    `json:"attr_key"`
+	Label       *string   `json:"label,omitempty"`
+	Description *string   `json:"description,omitempty"`
+	CreatedAt   time.Time `json:"created_at,omitempty"`
+	UpdatedAt   time.Time `json:"updated_at,omitempty"`
+}
+
+// MedicalAttributeDefInput is the write shape for upserting a def.
+type MedicalAttributeDefInput struct {
+	AttrKey     string  `json:"attr_key"`
+	Label       *string `json:"label,omitempty"`
+	Description *string `json:"description,omitempty"`
+}

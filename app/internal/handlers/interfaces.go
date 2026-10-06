@@ -160,6 +160,12 @@ type MedicalRecordManager interface {
 	DeleteFile(ctx context.Context, fileID string) error
 }
 
+// MedicalAttributeDefManager is the subset of MedicalAttributeDefService the handler needs.
+type MedicalAttributeDefManager interface {
+	List(ctx context.Context) ([]*models.MedicalAttributeDef, error)
+	Upsert(ctx context.Context, input models.MedicalAttributeDefInput) (*models.MedicalAttributeDef, error)
+}
+
 // HouseTimerManager is the subset of HouseTimerService the handler needs.
 type HouseTimerManager interface {
 	List(ctx context.Context) ([]*models.HouseTimer, error)

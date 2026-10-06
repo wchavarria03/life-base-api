@@ -55,10 +55,11 @@ type Registry struct {
 	Documents       *supabaserepo.DocumentRepository
 	HouseTimers     *supabaserepo.HouseTimerRepository
 
-	MedicalProfiles    *supabaserepo.MedicalProfileRepository
-	MedicalAccess      *supabaserepo.MedicalAccessRepository
-	MedicalRecords     *supabaserepo.MedicalRecordRepository
-	MedicalRecordFiles *supabaserepo.MedicalRecordFileRepository
+	MedicalProfiles      *supabaserepo.MedicalProfileRepository
+	MedicalAccess        *supabaserepo.MedicalAccessRepository
+	MedicalRecords       *supabaserepo.MedicalRecordRepository
+	MedicalRecordFiles   *supabaserepo.MedicalRecordFileRepository
+	MedicalAttributeDefs *supabaserepo.MedicalAttributeDefRepository
 }
 
 func NewRegistry(dbs *databases.Registry) *Registry {
@@ -112,9 +113,10 @@ func NewRegistry(dbs *databases.Registry) *Registry {
 		Documents:       supabaserepo.NewDocumentRepository(dbs.Supabase),
 		HouseTimers:     supabaserepo.NewHouseTimerRepository(dbs.Supabase),
 
-		MedicalProfiles:    supabaserepo.NewMedicalProfileRepository(dbs.Supabase),
-		MedicalAccess:      supabaserepo.NewMedicalAccessRepository(dbs.Supabase),
-		MedicalRecords:     supabaserepo.NewMedicalRecordRepository(dbs.Supabase),
-		MedicalRecordFiles: supabaserepo.NewMedicalRecordFileRepository(dbs.Supabase),
+		MedicalProfiles:      supabaserepo.NewMedicalProfileRepository(dbs.Supabase),
+		MedicalAccess:        supabaserepo.NewMedicalAccessRepository(dbs.Supabase),
+		MedicalRecords:       supabaserepo.NewMedicalRecordRepository(dbs.Supabase),
+		MedicalRecordFiles:   supabaserepo.NewMedicalRecordFileRepository(dbs.Supabase),
+		MedicalAttributeDefs: supabaserepo.NewMedicalAttributeDefRepository(dbs.Supabase),
 	}
 }

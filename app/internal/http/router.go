@@ -285,6 +285,10 @@ func setupMedicalRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	records.POST("/:id/files", hdlrs.MedicalRecord.UploadFile)
 	records.GET("/:id/files/:fileId/download", hdlrs.MedicalRecord.DownloadFile)
 	records.DELETE("/:id/files/:fileId", hdlrs.MedicalRecord.DeleteFile)
+
+	attrDefs := rg.Group("/medical-attribute-defs")
+	attrDefs.GET("", hdlrs.MedicalAttributeDef.List)
+	attrDefs.PUT("", hdlrs.MedicalAttributeDef.Upsert)
 }
 
 func setupNoteRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {

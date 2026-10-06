@@ -249,3 +249,37 @@ func (s *MedicalRecordService) DeleteFile(ctx context.Context, fileID string) er
 	_ = s.storage.DeleteObject(ctx, medicalFilesBucket, f.StoragePath)
 	return nil
 }
+
+// MedicalAttributeDefService manages per-user attribute label/description
+// definitions.
+type MedicalAttributeDefService struct {
+	repo *supabaserepo.MedicalAttributeDefRepository
+}
+
+// NewMedicalAttributeDefService constructs a MedicalAttributeDefService.
+func NewMedicalAttributeDefService(repo *supabaserepo.MedicalAttributeDefRepository) *MedicalAttributeDefService {
+	return &MedicalAttributeDefService{repo: repo}
+}
+
+// List returns every def the caller owns.
+func (s *MedicalAttributeDefService) List(ctx context.Context) ([]*models.MedicalAttributeDef, error) {
+	return s.repo.List(ctx)
+}
+
+// Upsert creates or updates a def for the caller.
+func (s *MedicalAttributeDefService) Upsert(ctx context.Context, input models.MedicalAttributeDefInput) (*models.MedicalAttributeDef, error) {
+	userID := auth.UserIDFromContext(ctx)
+	if userID == "" {
+		return nil, fmt.Errorf("no authenticated user")
+	}
+	if input.AttrKey == "" {
+		return nil, fmt.Errorf("attr_key is required")
+	}
+	def, err := s.repo.Upsert(ctx, &models.MedicalAttributeDef{
+		UserID: userID, AttrKey: input.AttrKey, Label: input.Label, Description: input.Description,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("upsert attribute def: %w", err)
+	}
+	return def, nil
+}

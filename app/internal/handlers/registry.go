@@ -40,15 +40,16 @@ type Registry struct {
 	Activity        *ActivityHandler
 	Strava          *StravaHandler
 
-	Task           *TaskHandler
-	TaskList       *TaskListHandler
-	Note           *NoteHandler
-	SharedTaskList *SharedTaskListHandler
-	ShareLink      *ShareLinkHandler
-	Document       *DocumentHandler
-	HouseTimer     *HouseTimerHandler
-	MedicalProfile *MedicalProfileHandler
-	MedicalRecord  *MedicalRecordHandler
+	Task                *TaskHandler
+	TaskList            *TaskListHandler
+	Note                *NoteHandler
+	SharedTaskList      *SharedTaskListHandler
+	ShareLink           *ShareLinkHandler
+	Document            *DocumentHandler
+	HouseTimer          *HouseTimerHandler
+	MedicalProfile      *MedicalProfileHandler
+	MedicalRecord       *MedicalRecordHandler
+	MedicalAttributeDef *MedicalAttributeDefHandler
 }
 
 func NewRegistry(svc *services.Registry) (*Registry, error) {
@@ -89,15 +90,16 @@ func NewRegistry(svc *services.Registry) (*Registry, error) {
 		Activity:        NewActivityHandler(svc.Activity),
 		Strava:          NewStravaHandler(svc.Strava),
 
-		Task:           NewTaskHandler(svc.Task),
-		TaskList:       NewTaskListHandler(svc.TaskList),
-		Note:           NewNoteHandler(svc.Note),
-		SharedTaskList: NewSharedTaskListHandler(svc.SharedTaskList),
-		ShareLink:      NewShareLinkHandler(svc.ShareLink),
-		Document:       NewDocumentHandler(svc.Document),
-		HouseTimer:     NewHouseTimerHandler(svc.HouseTimer),
-		MedicalProfile: NewMedicalProfileHandler(svc.MedicalProfile),
-		MedicalRecord:  NewMedicalRecordHandler(svc.MedicalRecord),
+		Task:                NewTaskHandler(svc.Task),
+		TaskList:            NewTaskListHandler(svc.TaskList),
+		Note:                NewNoteHandler(svc.Note),
+		SharedTaskList:      NewSharedTaskListHandler(svc.SharedTaskList),
+		ShareLink:           NewShareLinkHandler(svc.ShareLink),
+		Document:            NewDocumentHandler(svc.Document),
+		HouseTimer:          NewHouseTimerHandler(svc.HouseTimer),
+		MedicalProfile:      NewMedicalProfileHandler(svc.MedicalProfile),
+		MedicalRecord:       NewMedicalRecordHandler(svc.MedicalRecord),
+		MedicalAttributeDef: NewMedicalAttributeDefHandler(svc.MedicalAttributeDef),
 	}, nil
 }
 
