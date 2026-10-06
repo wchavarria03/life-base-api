@@ -77,6 +77,7 @@ type MedicalRecord struct {
 	Notes           *string           `json:"notes,omitempty"`
 	DoctorName      *string           `json:"doctor_name,omitempty"`
 	Recommendations *string           `json:"recommendations,omitempty"`
+	LinkedNoteID    *string           `json:"linked_note_id,omitempty"`
 	CreatedAt       time.Time         `json:"created_at,omitempty"`
 }
 
@@ -92,6 +93,7 @@ type MedicalRecordInput struct {
 	Notes           *string           `json:"notes,omitempty"`
 	DoctorName      *string           `json:"doctor_name,omitempty"`
 	Recommendations *string           `json:"recommendations,omitempty"`
+	LinkedNoteID    *string           `json:"linked_note_id,omitempty"`
 }
 
 // MedicalRecordFile is one attached file (X-ray, lab PDF) on a record — the
