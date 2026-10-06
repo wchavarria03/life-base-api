@@ -276,7 +276,7 @@ func (s *MedicalAttributeDefService) Upsert(ctx context.Context, input models.Me
 		return nil, fmt.Errorf("attr_key is required")
 	}
 	def, err := s.repo.Upsert(ctx, &models.MedicalAttributeDef{
-		UserID: userID, AttrKey: input.AttrKey, Label: input.Label, Description: input.Description,
+		UserID: userID, AttrKey: input.AttrKey, Label: input.Label, Description: input.Description, ReferenceRange: input.ReferenceRange,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("upsert attribute def: %w", err)
