@@ -126,6 +126,11 @@ type MedicalAttributeDefHandler struct {
 	svc MedicalAttributeDefManager
 }
 
+// MedicalMedicationHandler serves the medical-medications endpoints.
+type MedicalMedicationHandler struct {
+	svc MedicalMedicationManager
+}
+
 // ExportHandler serves a single JSON dump of everything the caller owns.
 type ExportHandler struct {
 	accounts     AccountLister

@@ -166,6 +166,14 @@ type MedicalAttributeDefManager interface {
 	Upsert(ctx context.Context, input models.MedicalAttributeDefInput) (*models.MedicalAttributeDef, error)
 }
 
+// MedicalMedicationManager is the subset of MedicalMedicationService the handler needs.
+type MedicalMedicationManager interface {
+	ListByProfile(ctx context.Context, profileID string) ([]*models.MedicalMedication, error)
+	Create(ctx context.Context, input models.MedicalMedicationInput) (*models.MedicalMedication, error)
+	Update(ctx context.Context, id string, fields map[string]any) (*models.MedicalMedication, error)
+	Delete(ctx context.Context, id string) error
+}
+
 // HouseTimerManager is the subset of HouseTimerService the handler needs.
 type HouseTimerManager interface {
 	List(ctx context.Context) ([]*models.HouseTimer, error)

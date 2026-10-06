@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"regexp"
+	"strings"
 	"time"
 
 	"life-base-api/app/internal/auth"
@@ -282,4 +284,75 @@ func (s *MedicalAttributeDefService) Upsert(ctx context.Context, input models.Me
 		return nil, fmt.Errorf("upsert attribute def: %w", err)
 	}
 	return def, nil
+}
+
+// MedicalMedicationService manages ongoing medications for a profile.
+type MedicalMedicationService struct {
+	repo *supabaserepo.MedicalMedicationRepository
+}
+
+// NewMedicalMedicationService constructs a MedicalMedicationService.
+func NewMedicalMedicationService(repo *supabaserepo.MedicalMedicationRepository) *MedicalMedicationService {
+	return &MedicalMedicationService{repo: repo}
+}
+
+// ListByProfile returns a profile's medications.
+func (s *MedicalMedicationService) ListByProfile(ctx context.Context, profileID string) ([]*models.MedicalMedication, error) {
+	return s.repo.ListByProfile(ctx, profileID)
+}
+
+// Create adds a new medication.
+func (s *MedicalMedicationService) Create(ctx context.Context, input models.MedicalMedicationInput) (*models.MedicalMedication, error) {
+	if input.ProfileID == "" || input.Name == "" {
+		return nil, fmt.Errorf("profile_id and name are required")
+	}
+	med, err := s.repo.Create(ctx, input)
+	if err != nil {
+		return nil, fmt.Errorf("create medication: %w", err)
+	}
+	return med, nil
+}
+
+// Update patches a medication.
+func (s *MedicalMedicationService) Update(ctx context.Context, id string, fields map[string]any) (*models.MedicalMedication, error) {
+	med, err := s.repo.Update(ctx, id, fields)
+	if err != nil {
+		return nil, fmt.Errorf("update medication: %w", err)
+	}
+	return med, nil
+}
+
+// Delete removes a medication.
+func (s *MedicalMedicationService) Delete(ctx context.Context, id string) error {
+	return s.repo.Delete(ctx, id)
+}
+
+// labLineRE matches a lab report line ending in "<label> <value> <optional
+// range>", e.g. "Hemoglobina 14.80 g/dL 13.50 - 17.90" or
+// "Colesterol LDL 125.20 mg/dL Deseable: <100.00". Deliberately permissive
+// — this feeds a review step, not a direct save.
+var labLineRE = regexp.MustCompile(`^([A-Za-zÁÉÍÓÚÑáéíóúñ() /%-]{3,60}?)\s+(\d+\.\d+|\d+)\s*(?:\*\*|\+|-)?\s*([A-Za-z/%^0-9]*)\s*(.*)$`)
+
+// ParseLabAttributes best-effort-parses lines of an extracted lab PDF's
+// text into {label, value, range} suggestions for the user to review and
+// rename before adding to a record. Never persisted directly.
+func ParseLabAttributes(text string) []models.SuggestedAttribute {
+	var out []models.SuggestedAttribute
+	for _, line := range strings.Split(text, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		m := labLineRE.FindStringSubmatch(line)
+		if m == nil {
+			continue
+		}
+		label := strings.TrimSpace(m[1])
+		if label == "" {
+			continue
+		}
+		rangePart := strings.TrimSpace(m[4])
+		out = append(out, models.SuggestedAttribute{Label: label, Value: m[2], Range: rangePart})
+	}
+	return out
 }

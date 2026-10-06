@@ -50,6 +50,7 @@ type Registry struct {
 	MedicalProfile      *MedicalProfileHandler
 	MedicalRecord       *MedicalRecordHandler
 	MedicalAttributeDef *MedicalAttributeDefHandler
+	MedicalMedication   *MedicalMedicationHandler
 }
 
 func NewRegistry(svc *services.Registry) (*Registry, error) {
@@ -100,6 +101,7 @@ func NewRegistry(svc *services.Registry) (*Registry, error) {
 		MedicalProfile:      NewMedicalProfileHandler(svc.MedicalProfile),
 		MedicalRecord:       NewMedicalRecordHandler(svc.MedicalRecord),
 		MedicalAttributeDef: NewMedicalAttributeDefHandler(svc.MedicalAttributeDef),
+		MedicalMedication:   NewMedicalMedicationHandler(svc.MedicalMedication),
 	}, nil
 }
 

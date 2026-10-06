@@ -240,3 +240,49 @@ func (r *MedicalAttributeDefRepository) Upsert(ctx context.Context, d *models.Me
 	}
 	return rows[0], nil
 }
+
+// MedicalMedicationRepository persists medical_medications rows.
+type MedicalMedicationRepository struct {
+	client *databases.SupabaseClient
+}
+
+// NewMedicalMedicationRepository constructs a MedicalMedicationRepository.
+func NewMedicalMedicationRepository(client *databases.SupabaseClient) *MedicalMedicationRepository {
+	return &MedicalMedicationRepository{client: client}
+}
+
+// ListByProfile returns a profile's medications.
+func (r *MedicalMedicationRepository) ListByProfile(ctx context.Context, profileID string) ([]*models.MedicalMedication, error) {
+	return databases.Get[[]*models.MedicalMedication](ctx, r.client, "/rest/v1/medical_medications", url.Values{
+		"profile_id": []string{"eq." + profileID}, "order": []string{"created_at.asc"},
+	})
+}
+
+// Create inserts a new medication.
+func (r *MedicalMedicationRepository) Create(ctx context.Context, input models.MedicalMedicationInput) (*models.MedicalMedication, error) {
+	rows, err := databases.Post[[]*models.MedicalMedication](ctx, r.client, "/rest/v1/medical_medications", input, "return=representation")
+	if err != nil {
+		return nil, err
+	}
+	if len(rows) == 0 {
+		return nil, nil
+	}
+	return rows[0], nil
+}
+
+// Update patches a medication.
+func (r *MedicalMedicationRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.MedicalMedication, error) {
+	rows, err := databases.Patch[[]*models.MedicalMedication](ctx, r.client, "/rest/v1/medical_medications", databases.EqID(id), fields, "return=representation")
+	if err != nil {
+		return nil, err
+	}
+	if len(rows) == 0 {
+		return nil, nil
+	}
+	return rows[0], nil
+}
+
+// Delete removes a medication.
+func (r *MedicalMedicationRepository) Delete(ctx context.Context, id string) error {
+	return databases.Delete(ctx, r.client, "/rest/v1/medical_medications", databases.EqID(id))
+}

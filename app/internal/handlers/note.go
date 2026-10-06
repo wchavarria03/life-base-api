@@ -15,6 +15,7 @@ type NoteManager interface {
 	Create(ctx context.Context, input models.NoteInput) (*models.Note, error)
 	Update(ctx context.Context, id string, fields map[string]any) (*models.Note, error)
 	Delete(ctx context.Context, id string) error
+	ListVersions(ctx context.Context, noteID string) ([]*models.NoteVersion, error)
 }
 
 type NoteHandler struct {
@@ -81,4 +82,14 @@ func (h *NoteHandler) Delete(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusNoContent)
+}
+
+// ListVersions handles GET /v1/notes/:id/versions.
+func (h *NoteHandler) ListVersions(c *gin.Context) {
+	versions, err := h.svc.ListVersions(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		internalError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, versions)
 }

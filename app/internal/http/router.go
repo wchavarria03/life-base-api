@@ -279,6 +279,7 @@ func setupMedicalRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	records := rg.Group("/medical-records")
 	records.GET("", hdlrs.MedicalRecord.List)
 	records.POST("", hdlrs.MedicalRecord.Create)
+	records.POST("/extract", hdlrs.MedicalRecord.Extract)
 	records.PATCH("/:id", hdlrs.MedicalRecord.Update)
 	records.DELETE("/:id", hdlrs.MedicalRecord.Delete)
 	records.GET("/:id/files", hdlrs.MedicalRecord.ListFiles)
@@ -289,6 +290,12 @@ func setupMedicalRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	attrDefs := rg.Group("/medical-attribute-defs")
 	attrDefs.GET("", hdlrs.MedicalAttributeDef.List)
 	attrDefs.PUT("", hdlrs.MedicalAttributeDef.Upsert)
+
+	medications := rg.Group("/medical-medications")
+	medications.GET("", hdlrs.MedicalMedication.List)
+	medications.POST("", hdlrs.MedicalMedication.Create)
+	medications.PATCH("/:id", hdlrs.MedicalMedication.Update)
+	medications.DELETE("/:id", hdlrs.MedicalMedication.Delete)
 }
 
 func setupNoteRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
@@ -298,6 +305,7 @@ func setupNoteRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	notes.GET("/:id", hdlrs.Note.Get)
 	notes.PATCH("/:id", hdlrs.Note.Update)
 	notes.DELETE("/:id", hdlrs.Note.Delete)
+	notes.GET("/:id/versions", hdlrs.Note.ListVersions)
 }
 
 func setupEnvelopeRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {

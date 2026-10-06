@@ -50,6 +50,7 @@ type Registry struct {
 	Tasks           *supabaserepo.TaskRepository
 	TaskLists       *supabaserepo.TaskListRepository
 	Notes           *supabaserepo.NoteRepository
+	NoteVersions    *supabaserepo.NoteVersionRepository
 	SharedTaskLists *supabaserepo.SharedTaskListRepository
 	ShareLinks      *supabaserepo.ShareLinkRepository
 	Documents       *supabaserepo.DocumentRepository
@@ -60,6 +61,7 @@ type Registry struct {
 	MedicalRecords       *supabaserepo.MedicalRecordRepository
 	MedicalRecordFiles   *supabaserepo.MedicalRecordFileRepository
 	MedicalAttributeDefs *supabaserepo.MedicalAttributeDefRepository
+	MedicalMedications   *supabaserepo.MedicalMedicationRepository
 }
 
 func NewRegistry(dbs *databases.Registry) *Registry {
@@ -108,6 +110,7 @@ func NewRegistry(dbs *databases.Registry) *Registry {
 		Tasks:           supabaserepo.NewTaskRepository(dbs.Supabase),
 		TaskLists:       supabaserepo.NewTaskListRepository(dbs.Supabase),
 		Notes:           supabaserepo.NewNoteRepository(dbs.Supabase),
+		NoteVersions:    supabaserepo.NewNoteVersionRepository(dbs.Supabase),
 		SharedTaskLists: supabaserepo.NewSharedTaskListRepository(dbs.Supabase),
 		ShareLinks:      supabaserepo.NewShareLinkRepository(dbs.Supabase),
 		Documents:       supabaserepo.NewDocumentRepository(dbs.Supabase),
@@ -118,5 +121,6 @@ func NewRegistry(dbs *databases.Registry) *Registry {
 		MedicalRecords:       supabaserepo.NewMedicalRecordRepository(dbs.Supabase),
 		MedicalRecordFiles:   supabaserepo.NewMedicalRecordFileRepository(dbs.Supabase),
 		MedicalAttributeDefs: supabaserepo.NewMedicalAttributeDefRepository(dbs.Supabase),
+		MedicalMedications:   supabaserepo.NewMedicalMedicationRepository(dbs.Supabase),
 	}
 }

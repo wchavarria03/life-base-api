@@ -2,11 +2,14 @@ package handlers
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
 	"life-base-api/app/internal/models"
+	"life-base-api/app/internal/pdf"
+	"life-base-api/app/internal/services"
 )
 
 const maxMedicalFileBytes = 25 << 20 // 25 MB
@@ -226,6 +229,91 @@ func (h *MedicalRecordHandler) DownloadFile(c *gin.Context) {
 // DeleteFile handles DELETE /v1/medical-records/:id/files/:fileId.
 func (h *MedicalRecordHandler) DeleteFile(c *gin.Context) {
 	if err := h.svc.DeleteFile(c.Request.Context(), c.Param("fileId")); err != nil {
+		internalError(c, err)
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+// Extract handles POST /v1/medical-records/extract — multipart upload with
+// a "file" field, returns best-effort attribute suggestions parsed from the
+// PDF's text. Never persisted; the caller reviews/renames before saving.
+func (h *MedicalRecordHandler) Extract(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxMedicalFileBytes)
+
+	file, _, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file field is required"})
+		return
+	}
+	defer func() { _ = file.Close() }()
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read file"})
+		return
+	}
+
+	text, err := pdf.ExtractTextFromBytes(data)
+	if err != nil {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "failed to extract PDF text"})
+		return
+	}
+
+	c.JSON(http.StatusOK, services.ParseLabAttributes(text))
+}
+
+// NewMedicalMedicationHandler constructs a MedicalMedicationHandler.
+func NewMedicalMedicationHandler(svc MedicalMedicationManager) *MedicalMedicationHandler {
+	return &MedicalMedicationHandler{svc: svc}
+}
+
+// List handles GET /v1/medical-medications?profile_id=.
+func (h *MedicalMedicationHandler) List(c *gin.Context) {
+	profileID := c.Query("profile_id")
+	if profileID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "profile_id query param is required"})
+		return
+	}
+	meds, err := h.svc.ListByProfile(c.Request.Context(), profileID)
+	if err != nil {
+		internalError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, meds)
+}
+
+// Create handles POST /v1/medical-medications.
+func (h *MedicalMedicationHandler) Create(c *gin.Context) {
+	input, ok := bindJSON[models.MedicalMedicationInput](c)
+	if !ok {
+		return
+	}
+	med, err := h.svc.Create(c.Request.Context(), input)
+	if err != nil {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, med)
+}
+
+// Update handles PATCH /v1/medical-medications/:id.
+func (h *MedicalMedicationHandler) Update(c *gin.Context) {
+	fields, ok := bindJSON[map[string]any](c)
+	if !ok {
+		return
+	}
+	med, err := h.svc.Update(c.Request.Context(), c.Param("id"), fields)
+	if err != nil {
+		internalError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, med)
+}
+
+// Delete handles DELETE /v1/medical-medications/:id.
+func (h *MedicalMedicationHandler) Delete(c *gin.Context) {
+	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
 		internalError(c, err)
 		return
 	}

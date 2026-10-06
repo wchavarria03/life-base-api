@@ -30,15 +30,19 @@ type MedicalProfile struct {
 	Name         string    `json:"name"`
 	Relationship *string   `json:"relationship,omitempty"`
 	DOB          *string   `json:"dob,omitempty"`
+	Allergies    []string  `json:"allergies"`
+	Conditions   []string  `json:"conditions"`
 	CreatedAt    time.Time `json:"created_at,omitempty"`
 }
 
 // MedicalProfileInput is the write shape for create/update.
 type MedicalProfileInput struct {
-	OwnerUserID  string  `json:"owner_user_id,omitempty"`
-	Name         string  `json:"name,omitempty"`
-	Relationship *string `json:"relationship,omitempty"`
-	DOB          *string `json:"dob,omitempty"`
+	OwnerUserID  string   `json:"owner_user_id,omitempty"`
+	Name         string   `json:"name,omitempty"`
+	Allergies    []string `json:"allergies,omitempty"`
+	Conditions   []string `json:"conditions,omitempty"`
+	Relationship *string  `json:"relationship,omitempty"`
+	DOB          *string  `json:"dob,omitempty"`
 }
 
 // MedicalProfileAccess is a grant of viewer/editor access to another gmail
@@ -135,4 +139,38 @@ type MedicalAttributeDefInput struct {
 	Label          *string `json:"label,omitempty"`
 	Description    *string `json:"description,omitempty"`
 	ReferenceRange *string `json:"reference_range,omitempty"`
+}
+
+// MedicalMedication is an ongoing medication for a profile — distinct from
+// a dated MedicalRecord, which is a point-in-time observation.
+type MedicalMedication struct {
+	ID        string    `json:"id,omitempty"`
+	ProfileID string    `json:"profile_id,omitempty"`
+	Name      string    `json:"name"`
+	Dose      *string   `json:"dose,omitempty"`
+	Schedule  *string   `json:"schedule,omitempty"`
+	StartDate *string   `json:"start_date,omitempty"`
+	EndDate   *string   `json:"end_date,omitempty"`
+	Notes     *string   `json:"notes,omitempty"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
+}
+
+// MedicalMedicationInput is the write shape for create/update.
+type MedicalMedicationInput struct {
+	ProfileID string  `json:"profile_id,omitempty"`
+	Name      string  `json:"name,omitempty"`
+	Dose      *string `json:"dose,omitempty"`
+	Schedule  *string `json:"schedule,omitempty"`
+	StartDate *string `json:"start_date,omitempty"`
+	EndDate   *string `json:"end_date,omitempty"`
+	Notes     *string `json:"notes,omitempty"`
+}
+
+// SuggestedAttribute is one best-effort {label, value, range} guess parsed
+// from an uploaded lab PDF's text — never persisted directly, just offered
+// to the user to review/rename before adding to a record's attributes.
+type SuggestedAttribute struct {
+	Label string `json:"label"`
+	Value string `json:"value"`
+	Range string `json:"range,omitempty"`
 }
