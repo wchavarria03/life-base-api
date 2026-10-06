@@ -2,11 +2,17 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"log"
+	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
+
+	webpush "github.com/SherClockHolmes/webpush-go"
 
 	"life-base-api/app/internal/auth"
 	"life-base-api/app/internal/models"
@@ -119,11 +125,14 @@ type MedicalRecordService struct {
 	records *supabaserepo.MedicalRecordRepository
 	files   *supabaserepo.MedicalRecordFileRepository
 	storage *supabaserepo.StorageRepository
+	defs    *supabaserepo.MedicalAttributeDefRepository
+	push    *PushService
+	cfg     HouseTimerConfig // VAPID keys — same config shape as HouseTimerService, no email fields needed
 }
 
 // NewMedicalRecordService constructs a MedicalRecordService.
-func NewMedicalRecordService(records *supabaserepo.MedicalRecordRepository, files *supabaserepo.MedicalRecordFileRepository, storage *supabaserepo.StorageRepository) *MedicalRecordService {
-	return &MedicalRecordService{records: records, files: files, storage: storage}
+func NewMedicalRecordService(records *supabaserepo.MedicalRecordRepository, files *supabaserepo.MedicalRecordFileRepository, storage *supabaserepo.StorageRepository, defs *supabaserepo.MedicalAttributeDefRepository, push *PushService, cfg HouseTimerConfig) *MedicalRecordService {
+	return &MedicalRecordService{records: records, files: files, storage: storage, defs: defs, push: push, cfg: cfg}
 }
 
 // ListByProfile returns a profile's records in date order.
@@ -157,7 +166,123 @@ func (s *MedicalRecordService) Create(ctx context.Context, input models.MedicalR
 	if err != nil {
 		return nil, fmt.Errorf("create medical record: %w", err)
 	}
+	s.notifyOutOfRange(ctx, userID, record)
 	return record, nil
+}
+
+// rangeRE matches "low - high" reference ranges; boundRE matches a single
+// bound like "<100.00" or ">=126.00" — same shapes the frontend parses.
+var rangeRE = regexp.MustCompile(`^(-?\d+(?:\.\d+)?)\s*-\s*(-?\d+(?:\.\d+)?)$`)
+var boundRE = regexp.MustCompile(`^(<=|>=|<|>)\s*(-?\d+(?:\.\d+)?)$`)
+
+// isOutOfRange reports whether value falls outside a reference_range
+// string, or nil if the range isn't in a recognized shape.
+func isOutOfRange(value any, rangeStr string) *bool {
+	if rangeStr == "" {
+		return nil
+	}
+	var num float64
+	switch v := value.(type) {
+	case float64:
+		num = v
+	case string:
+		n, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return nil
+		}
+		num = n
+	default:
+		return nil
+	}
+
+	if m := rangeRE.FindStringSubmatch(rangeStr); m != nil {
+		lo, _ := strconv.ParseFloat(m[1], 64)
+		hi, _ := strconv.ParseFloat(m[2], 64)
+		out := num < lo || num > hi
+		return &out
+	}
+	if m := boundRE.FindStringSubmatch(rangeStr); m != nil {
+		limit, _ := strconv.ParseFloat(m[2], 64)
+		var out bool
+		switch m[1] {
+		case "<":
+			out = !(num < limit)
+		case "<=":
+			out = !(num <= limit)
+		case ">":
+			out = !(num > limit)
+		default:
+			out = !(num >= limit)
+		}
+		return &out
+	}
+	return nil
+}
+
+// notifyOutOfRange best-effort push-notifies the record's owner when any of
+// its attributes falls outside that attribute's known reference range.
+// Never fails the Create — logs and returns on any error.
+func (s *MedicalRecordService) notifyOutOfRange(ctx context.Context, userID string, record *models.MedicalRecord) {
+	if s.cfg.VAPIDPublicKey == "" || s.cfg.VAPIDPrivateKey == "" || len(record.Attributes) == 0 {
+		return
+	}
+	defs, err := s.defs.List(ctx)
+	if err != nil {
+		log.Printf("medical: list attribute defs for push check: %v", err)
+		return
+	}
+	defByKey := make(map[string]*models.MedicalAttributeDef, len(defs))
+	for _, d := range defs {
+		defByKey[d.AttrKey] = d
+	}
+
+	var flagged []string
+	for key, value := range record.Attributes {
+		def := defByKey[key]
+		if def == nil || def.ReferenceRange == nil {
+			continue
+		}
+		if out := isOutOfRange(value, *def.ReferenceRange); out != nil && *out {
+			label := key
+			if def.Label != nil && *def.Label != "" {
+				label = *def.Label
+			}
+			flagged = append(flagged, label)
+		}
+	}
+	if len(flagged) == 0 {
+		return
+	}
+
+	subs, err := s.push.ListByUserID(ctx, userID)
+	if err != nil {
+		log.Printf("medical: list push subscriptions: %v", err)
+		return
+	}
+	body := fmt.Sprintf("%s: %s out of range", record.Title, strings.Join(flagged, ", "))
+	payload, err := json.Marshal(map[string]string{"title": "Lab value out of range", "body": body})
+	if err != nil {
+		return
+	}
+	for _, sub := range subs {
+		resp, err := webpush.SendNotificationWithContext(ctx, payload, &webpush.Subscription{
+			Endpoint: sub.Endpoint,
+			Keys:     webpush.Keys{P256dh: sub.P256dh, Auth: sub.AuthKey},
+		}, &webpush.Options{
+			VAPIDPublicKey:  s.cfg.VAPIDPublicKey,
+			VAPIDPrivateKey: s.cfg.VAPIDPrivateKey,
+			Subscriber:      s.cfg.VAPIDSubject,
+			TTL:             3600,
+		})
+		if err != nil {
+			log.Printf("medical: send push: %v", err)
+			continue
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusGone {
+			_ = s.push.Delete(ctx, sub.ID)
+		}
+	}
 }
 
 // Update patches a record.

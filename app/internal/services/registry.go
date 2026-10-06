@@ -105,7 +105,11 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 		VAPIDPrivateKey: digest.VAPIDPrivateKey,
 		VAPIDSubject:    digest.VAPIDSubject,
 	})
-	r.MedicalRecord = NewMedicalRecordService(repos.MedicalRecords, repos.MedicalRecordFiles, repos.Storage)
+	r.MedicalRecord = NewMedicalRecordService(repos.MedicalRecords, repos.MedicalRecordFiles, repos.Storage, repos.MedicalAttributeDefs, push, HouseTimerConfig{
+		VAPIDPublicKey:  digest.VAPIDPublicKey,
+		VAPIDPrivateKey: digest.VAPIDPrivateKey,
+		VAPIDSubject:    digest.VAPIDSubject,
+	})
 	r.MedicalProfile = NewMedicalProfileService(repos.MedicalProfiles, repos.MedicalAccess, repos.MedicalRecords)
 	r.MedicalAttributeDef = NewMedicalAttributeDefService(repos.MedicalAttributeDefs)
 	r.MedicalMedication = NewMedicalMedicationService(repos.MedicalMedications)

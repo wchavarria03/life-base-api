@@ -8,6 +8,7 @@ type Note struct {
 	UserID    string    `json:"user_id,omitempty"`
 	Title     string    `json:"title"`
 	Content   *string   `json:"content,omitempty"`
+	Pinned    bool      `json:"pinned"`
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 }
@@ -16,6 +17,7 @@ type Note struct {
 type NoteInput struct {
 	Title   string  `json:"title,omitempty"`
 	Content *string `json:"content,omitempty"`
+	Pinned  *bool   `json:"pinned,omitempty"`
 }
 
 // NoteVersion is an archived prior title/content of a note, snapshotted
