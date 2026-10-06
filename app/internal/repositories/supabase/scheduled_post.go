@@ -27,27 +27,13 @@ func (r *ScheduledPostRepository) List(ctx context.Context) ([]*models.Scheduled
 
 // FindByID returns a scheduled post by id, or nil if not found.
 func (r *ScheduledPostRepository) FindByID(ctx context.Context, id string) (*models.ScheduledPost, error) {
-	rows, err := databases.Get[[]*models.ScheduledPost](ctx, r.client, "/rest/v1/scheduled_posts",
-		url.Values{"id": []string{"eq." + id}, "limit": []string{"1"}})
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Get[[]*models.ScheduledPost](ctx, r.client, "/rest/v1/scheduled_posts",
+		url.Values{"id": []string{"eq." + id}, "limit": []string{"1"}}))
 }
 
 // Create inserts a new scheduled post.
 func (r *ScheduledPostRepository) Create(ctx context.Context, input models.ScheduledPostInput) (*models.ScheduledPost, error) {
-	rows, err := databases.Post[[]*models.ScheduledPost](ctx, r.client, "/rest/v1/scheduled_posts", input, "return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.ScheduledPost](ctx, r.client, "/rest/v1/scheduled_posts", input, "return=representation"))
 }
 
 // Update patches a scheduled post's fields.

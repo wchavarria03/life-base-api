@@ -20,42 +20,21 @@ func (r *CategoryRepository) FindAll(ctx context.Context) ([]*models.Category, e
 }
 
 func (r *CategoryRepository) FindByID(ctx context.Context, id string) (*models.Category, error) {
-	results, err := databases.Get[[]*models.Category](ctx, r.client, "/rest/v1/categories", url.Values{
+	return databases.First(databases.Get[[]*models.Category](ctx, r.client, "/rest/v1/categories", url.Values{
 		"id":    []string{"eq." + id},
 		"limit": []string{"1"},
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(results) == 0 {
-		return nil, nil
-	}
-	return results[0], nil
+	}))
 }
 
 func (r *CategoryRepository) Create(ctx context.Context, c *models.Category) (*models.Category, error) {
-	results, err := databases.Post[[]*models.Category](ctx, r.client, "/rest/v1/categories", c, "return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(results) == 0 {
-		return nil, nil
-	}
-	return results[0], nil
+	return databases.First(databases.Post[[]*models.Category](ctx, r.client, "/rest/v1/categories", c, "return=representation"))
 }
 
 func (r *CategoryRepository) Update(ctx context.Context, id string, fields map[string]string) (*models.Category, error) {
-	results, err := databases.Patch[[]*models.Category](ctx, r.client,
+	return databases.First(databases.Patch[[]*models.Category](ctx, r.client,
 		"/rest/v1/categories",
 		databases.EqID(id),
-		fields, "return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(results) == 0 {
-		return nil, nil
-	}
-	return results[0], nil
+		fields, "return=representation"))
 }
 
 func (r *CategoryRepository) SoftDelete(ctx context.Context, id string) error {
@@ -80,17 +59,10 @@ func (r *CategoryRuleRepository) FindAll(ctx context.Context) ([]*models.Categor
 }
 
 func (r *CategoryRuleRepository) FindByID(ctx context.Context, id string) (*models.CategoryRule, error) {
-	results, err := databases.Get[[]*models.CategoryRule](ctx, r.client, "/rest/v1/category_rules", url.Values{
+	return databases.First(databases.Get[[]*models.CategoryRule](ctx, r.client, "/rest/v1/category_rules", url.Values{
 		"id":    []string{"eq." + id},
 		"limit": []string{"1"},
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(results) == 0 {
-		return nil, nil
-	}
-	return results[0], nil
+	}))
 }
 
 func (r *CategoryRuleRepository) FindByAccountID(ctx context.Context, accountID string) ([]*models.CategoryRule, error) {
@@ -101,14 +73,7 @@ func (r *CategoryRuleRepository) FindByAccountID(ctx context.Context, accountID 
 }
 
 func (r *CategoryRuleRepository) Create(ctx context.Context, rule *models.CategoryRule) (*models.CategoryRule, error) {
-	results, err := databases.Post[[]*models.CategoryRule](ctx, r.client, "/rest/v1/category_rules", rule, "return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(results) == 0 {
-		return nil, nil
-	}
-	return results[0], nil
+	return databases.First(databases.Post[[]*models.CategoryRule](ctx, r.client, "/rest/v1/category_rules", rule, "return=representation"))
 }
 
 func (r *CategoryRuleRepository) Delete(ctx context.Context, id string) error {

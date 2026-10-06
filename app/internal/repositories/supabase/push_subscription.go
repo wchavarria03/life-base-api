@@ -21,16 +21,9 @@ func NewPushSubscriptionRepository(client *databases.SupabaseClient) *PushSubscr
 // Upsert registers or refreshes a subscription — endpoint is unique, so
 // re-subscribing the same device replaces its keys instead of duplicating.
 func (r *PushSubscriptionRepository) Upsert(ctx context.Context, s *models.PushSubscription) (*models.PushSubscription, error) {
-	rows, err := databases.Post[[]*models.PushSubscription](ctx, r.client,
+	return databases.First(databases.Post[[]*models.PushSubscription](ctx, r.client,
 		"/rest/v1/push_subscriptions?on_conflict=endpoint", s,
-		"resolution=merge-duplicates,return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+		"resolution=merge-duplicates,return=representation"))
 }
 
 // DeleteByEndpoint removes a subscription by its endpoint URL.

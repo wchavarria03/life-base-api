@@ -23,17 +23,10 @@ func (r *GearRepository) List(ctx context.Context) ([]*models.Gear, error) {
 }
 
 func (r *GearRepository) FindByID(ctx context.Context, id string) (*models.Gear, error) {
-	rows, err := databases.Get[[]*models.Gear](ctx, r.client, "/rest/v1/gear", url.Values{
+	return databases.First(databases.Get[[]*models.Gear](ctx, r.client, "/rest/v1/gear", url.Values{
 		"id":    []string{"eq." + id},
 		"limit": []string{"1"},
-	}, bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	}, bikesSchema))
 }
 
 // ListActiveByBikeID returns active gear linked to a bike — used when an
@@ -46,25 +39,11 @@ func (r *GearRepository) ListActiveByBikeID(ctx context.Context, bikeID string) 
 }
 
 func (r *GearRepository) Create(ctx context.Context, input models.GearInput) (*models.Gear, error) {
-	rows, err := databases.Post[[]*models.Gear](ctx, r.client, "/rest/v1/gear", input, "return=representation", bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.Gear](ctx, r.client, "/rest/v1/gear", input, "return=representation", bikesSchema))
 }
 
 func (r *GearRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.Gear, error) {
-	rows, err := databases.Patch[[]*models.Gear](ctx, r.client, "/rest/v1/gear", databases.EqID(id), fields, "return=representation", bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Patch[[]*models.Gear](ctx, r.client, "/rest/v1/gear", databases.EqID(id), fields, "return=representation", bikesSchema))
 }
 
 func (r *GearRepository) Delete(ctx context.Context, id string) error {
@@ -86,25 +65,11 @@ func (r *BottleRepository) List(ctx context.Context) ([]*models.Bottle, error) {
 }
 
 func (r *BottleRepository) Create(ctx context.Context, input models.BottleInput) (*models.Bottle, error) {
-	rows, err := databases.Post[[]*models.Bottle](ctx, r.client, "/rest/v1/bottles", input, "return=representation", bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.Bottle](ctx, r.client, "/rest/v1/bottles", input, "return=representation", bikesSchema))
 }
 
 func (r *BottleRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.Bottle, error) {
-	rows, err := databases.Patch[[]*models.Bottle](ctx, r.client, "/rest/v1/bottles", databases.EqID(id), fields, "return=representation", bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Patch[[]*models.Bottle](ctx, r.client, "/rest/v1/bottles", databases.EqID(id), fields, "return=representation", bikesSchema))
 }
 
 func (r *BottleRepository) Delete(ctx context.Context, id string) error {
@@ -126,39 +91,18 @@ func (r *SupplyRepository) List(ctx context.Context) ([]*models.Supply, error) {
 }
 
 func (r *SupplyRepository) FindByID(ctx context.Context, id string) (*models.Supply, error) {
-	rows, err := databases.Get[[]*models.Supply](ctx, r.client, "/rest/v1/supplies", url.Values{
+	return databases.First(databases.Get[[]*models.Supply](ctx, r.client, "/rest/v1/supplies", url.Values{
 		"id":    []string{"eq." + id},
 		"limit": []string{"1"},
-	}, bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	}, bikesSchema))
 }
 
 func (r *SupplyRepository) Create(ctx context.Context, input models.SupplyInput) (*models.Supply, error) {
-	rows, err := databases.Post[[]*models.Supply](ctx, r.client, "/rest/v1/supplies", input, "return=representation", bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.Supply](ctx, r.client, "/rest/v1/supplies", input, "return=representation", bikesSchema))
 }
 
 func (r *SupplyRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.Supply, error) {
-	rows, err := databases.Patch[[]*models.Supply](ctx, r.client, "/rest/v1/supplies", databases.EqID(id), fields, "return=representation", bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Patch[[]*models.Supply](ctx, r.client, "/rest/v1/supplies", databases.EqID(id), fields, "return=representation", bikesSchema))
 }
 
 func (r *SupplyRepository) Delete(ctx context.Context, id string) error {
@@ -180,12 +124,5 @@ func (r *SupplyHistoryRepository) List(ctx context.Context) ([]*models.SupplyHis
 }
 
 func (r *SupplyHistoryRepository) Create(ctx context.Context, input models.SupplyHistoryInput) (*models.SupplyHistory, error) {
-	rows, err := databases.Post[[]*models.SupplyHistory](ctx, r.client, "/rest/v1/supply_history", input, "return=representation", bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.SupplyHistory](ctx, r.client, "/rest/v1/supply_history", input, "return=representation", bikesSchema))
 }

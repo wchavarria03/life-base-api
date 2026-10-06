@@ -25,39 +25,18 @@ func (r *NoteRepository) List(ctx context.Context) ([]*models.Note, error) {
 }
 
 func (r *NoteRepository) FindByID(ctx context.Context, id string) (*models.Note, error) {
-	rows, err := databases.Get[[]*models.Note](ctx, r.client, "/rest/v1/notes", url.Values{
+	return databases.First(databases.Get[[]*models.Note](ctx, r.client, "/rest/v1/notes", url.Values{
 		"id":    []string{"eq." + id},
 		"limit": []string{"1"},
-	}, notesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	}, notesSchema))
 }
 
 func (r *NoteRepository) Create(ctx context.Context, input models.NoteInput) (*models.Note, error) {
-	rows, err := databases.Post[[]*models.Note](ctx, r.client, "/rest/v1/notes", input, "return=representation", notesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.Note](ctx, r.client, "/rest/v1/notes", input, "return=representation", notesSchema))
 }
 
 func (r *NoteRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.Note, error) {
-	rows, err := databases.Patch[[]*models.Note](ctx, r.client, "/rest/v1/notes", databases.EqID(id), fields, "return=representation", notesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Patch[[]*models.Note](ctx, r.client, "/rest/v1/notes", databases.EqID(id), fields, "return=representation", notesSchema))
 }
 
 func (r *NoteRepository) Delete(ctx context.Context, id string) error {
@@ -83,12 +62,5 @@ func (r *NoteVersionRepository) ListByNote(ctx context.Context, noteID string) (
 
 // Create archives a version.
 func (r *NoteVersionRepository) Create(ctx context.Context, v *models.NoteVersion) (*models.NoteVersion, error) {
-	rows, err := databases.Post[[]*models.NoteVersion](ctx, r.client, "/rest/v1/note_versions", v, "return=representation", notesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.NoteVersion](ctx, r.client, "/rest/v1/note_versions", v, "return=representation", notesSchema))
 }

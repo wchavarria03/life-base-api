@@ -124,17 +124,10 @@ func (r *BudgetRepository) Acknowledge(ctx context.Context, budgetID, month, act
 		Action:     action,
 		TransferID: transferID,
 	}
-	rows, err := databases.Post[[]*models.BudgetAcknowledgment](ctx, r.client,
+	return databases.First(databases.Post[[]*models.BudgetAcknowledgment](ctx, r.client,
 		"/rest/v1/budget_acknowledgments?on_conflict=budget_id,month",
 		body,
-		"resolution=merge-duplicates,return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+		"resolution=merge-duplicates,return=representation"))
 }
 
 func (r *BudgetRepository) ListAcknowledgments(ctx context.Context, budgetIDs []string, month string) ([]*models.BudgetAcknowledgment, error) {

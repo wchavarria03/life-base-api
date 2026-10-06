@@ -28,27 +28,13 @@ func (r *CaptionRepository) ListCategories(ctx context.Context) ([]*models.Capti
 
 // CreateCategory inserts a new caption category.
 func (r *CaptionRepository) CreateCategory(ctx context.Context, c *models.CaptionCategory) (*models.CaptionCategory, error) {
-	rows, err := databases.Post[[]*models.CaptionCategory](ctx, r.client, "/rest/v1/caption_categories", c, "return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.CaptionCategory](ctx, r.client, "/rest/v1/caption_categories", c, "return=representation"))
 }
 
 // UpdateCategory renames a caption category.
 func (r *CaptionRepository) UpdateCategory(ctx context.Context, id, name string) (*models.CaptionCategory, error) {
-	rows, err := databases.Patch[[]*models.CaptionCategory](ctx, r.client, "/rest/v1/caption_categories",
-		databases.EqID(id), map[string]string{"name": name}, "return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Patch[[]*models.CaptionCategory](ctx, r.client, "/rest/v1/caption_categories",
+		databases.EqID(id), map[string]string{"name": name}, "return=representation"))
 }
 
 // DeleteCategory removes a caption category.
@@ -76,15 +62,8 @@ func (r *CaptionRepository) ListTemplates(ctx context.Context) ([]*TemplateRow, 
 
 // CreateTemplate inserts a new template row (without a version yet).
 func (r *CaptionRepository) CreateTemplate(ctx context.Context, userID, title string) (*TemplateRow, error) {
-	rows, err := databases.Post[[]*TemplateRow](ctx, r.client, "/rest/v1/caption_templates",
-		map[string]string{"user_id": userID, "title": title}, "return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*TemplateRow](ctx, r.client, "/rest/v1/caption_templates",
+		map[string]string{"user_id": userID, "title": title}, "return=representation"))
 }
 
 // UpdateTemplateTitle renames a template.
@@ -119,29 +98,15 @@ func (r *CaptionRepository) ListVersions(ctx context.Context, templateID string)
 
 // GetVersion returns a single version by id.
 func (r *CaptionRepository) GetVersion(ctx context.Context, id string) (*models.CaptionTemplateVersion, error) {
-	rows, err := databases.Get[[]*models.CaptionTemplateVersion](ctx, r.client, "/rest/v1/caption_template_versions",
-		url.Values{"id": []string{"eq." + id}, "limit": []string{"1"}})
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Get[[]*models.CaptionTemplateVersion](ctx, r.client, "/rest/v1/caption_template_versions",
+		url.Values{"id": []string{"eq." + id}, "limit": []string{"1"}}))
 }
 
 // AddVersion inserts a new version at nextVersionNumber and returns it.
 func (r *CaptionRepository) AddVersion(ctx context.Context, templateID, body string, nextVersionNumber int) (*models.CaptionTemplateVersion, error) {
-	rows, err := databases.Post[[]*models.CaptionTemplateVersion](ctx, r.client, "/rest/v1/caption_template_versions",
+	return databases.First(databases.Post[[]*models.CaptionTemplateVersion](ctx, r.client, "/rest/v1/caption_template_versions",
 		map[string]any{"template_id": templateID, "body": body, "version_number": nextVersionNumber},
-		"return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+		"return=representation"))
 }
 
 // ── Template <-> category junction ──────────────────────────────────────────

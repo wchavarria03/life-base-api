@@ -26,14 +26,7 @@ func (r *MenuPreferencesRepository) ListByUserID(ctx context.Context, userID str
 
 // Upsert creates or replaces a user's preference row for one page_key.
 func (r *MenuPreferencesRepository) Upsert(ctx context.Context, p *models.UserMenuPreference) (*models.UserMenuPreference, error) {
-	rows, err := databases.Post[[]*models.UserMenuPreference](ctx, r.client,
+	return databases.First(databases.Post[[]*models.UserMenuPreference](ctx, r.client,
 		"/rest/v1/user_menu_preferences?on_conflict=user_id,page_key", p,
-		"resolution=merge-duplicates,return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+		"resolution=merge-duplicates,return=representation"))
 }

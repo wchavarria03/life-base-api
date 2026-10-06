@@ -24,17 +24,10 @@ func (r *ComponentRepository) ListByBikeID(ctx context.Context, bikeID string) (
 }
 
 func (r *ComponentRepository) FindByID(ctx context.Context, id string) (*models.Component, error) {
-	rows, err := databases.Get[[]*models.Component](ctx, r.client, "/rest/v1/components", url.Values{
+	return databases.First(databases.Get[[]*models.Component](ctx, r.client, "/rest/v1/components", url.Values{
 		"id":    []string{"eq." + id},
 		"limit": []string{"1"},
-	}, bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	}, bikesSchema))
 }
 
 // ListActiveByBikeID returns active components for a bike — used when an
@@ -47,25 +40,11 @@ func (r *ComponentRepository) ListActiveByBikeID(ctx context.Context, bikeID str
 }
 
 func (r *ComponentRepository) Create(ctx context.Context, input models.ComponentInput) (*models.Component, error) {
-	rows, err := databases.Post[[]*models.Component](ctx, r.client, "/rest/v1/components", input, "return=representation", bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.Component](ctx, r.client, "/rest/v1/components", input, "return=representation", bikesSchema))
 }
 
 func (r *ComponentRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.Component, error) {
-	rows, err := databases.Patch[[]*models.Component](ctx, r.client, "/rest/v1/components", databases.EqID(id), fields, "return=representation", bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Patch[[]*models.Component](ctx, r.client, "/rest/v1/components", databases.EqID(id), fields, "return=representation", bikesSchema))
 }
 
 func (r *ComponentRepository) Delete(ctx context.Context, id string) error {
@@ -88,12 +67,5 @@ func (r *ComponentHistoryRepository) ListByComponentID(ctx context.Context, comp
 }
 
 func (r *ComponentHistoryRepository) Create(ctx context.Context, input models.ComponentHistoryInput) (*models.ComponentHistory, error) {
-	rows, err := databases.Post[[]*models.ComponentHistory](ctx, r.client, "/rest/v1/component_history", input, "return=representation", bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.ComponentHistory](ctx, r.client, "/rest/v1/component_history", input, "return=representation", bikesSchema))
 }

@@ -27,29 +27,15 @@ func (r *DocumentRepository) List(ctx context.Context) ([]*models.Document, erro
 
 // FindByID looks up one document (RLS-scoped).
 func (r *DocumentRepository) FindByID(ctx context.Context, id string) (*models.Document, error) {
-	rows, err := databases.Get[[]*models.Document](ctx, r.client, "/rest/v1/documents", url.Values{
+	return databases.First(databases.Get[[]*models.Document](ctx, r.client, "/rest/v1/documents", url.Values{
 		"id":    []string{"eq." + id},
 		"limit": []string{"1"},
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	}))
 }
 
 // Create inserts a new document row.
 func (r *DocumentRepository) Create(ctx context.Context, input models.DocumentInput) (*models.Document, error) {
-	rows, err := databases.Post[[]*models.Document](ctx, r.client, "/rest/v1/documents", input, "return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.Document](ctx, r.client, "/rest/v1/documents", input, "return=representation"))
 }
 
 // Delete removes a document row (RLS-scoped).

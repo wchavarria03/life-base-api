@@ -27,39 +27,18 @@ func (r *BikeRepository) List(ctx context.Context) ([]*models.Bike, error) {
 }
 
 func (r *BikeRepository) FindByID(ctx context.Context, id string) (*models.Bike, error) {
-	rows, err := databases.Get[[]*models.Bike](ctx, r.client, "/rest/v1/bikes", url.Values{
+	return databases.First(databases.Get[[]*models.Bike](ctx, r.client, "/rest/v1/bikes", url.Values{
 		"id":    []string{"eq." + id},
 		"limit": []string{"1"},
-	}, bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	}, bikesSchema))
 }
 
 func (r *BikeRepository) Create(ctx context.Context, input models.BikeInput) (*models.Bike, error) {
-	rows, err := databases.Post[[]*models.Bike](ctx, r.client, "/rest/v1/bikes", input, "return=representation", bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.Bike](ctx, r.client, "/rest/v1/bikes", input, "return=representation", bikesSchema))
 }
 
 func (r *BikeRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.Bike, error) {
-	rows, err := databases.Patch[[]*models.Bike](ctx, r.client, "/rest/v1/bikes", databases.EqID(id), fields, "return=representation", bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Patch[[]*models.Bike](ctx, r.client, "/rest/v1/bikes", databases.EqID(id), fields, "return=representation", bikesSchema))
 }
 
 func (r *BikeRepository) Delete(ctx context.Context, id string) error {
@@ -97,14 +76,7 @@ func (r *BikeFitHistoryRepository) ListByBikeID(ctx context.Context, bikeID stri
 }
 
 func (r *BikeFitHistoryRepository) Create(ctx context.Context, input models.BikeFitHistoryInput) (*models.BikeFitHistory, error) {
-	rows, err := databases.Post[[]*models.BikeFitHistory](ctx, r.client, "/rest/v1/bike_fit_history", input, "return=representation", bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.BikeFitHistory](ctx, r.client, "/rest/v1/bike_fit_history", input, "return=representation", bikesSchema))
 }
 
 func (r *BikeFitHistoryRepository) Delete(ctx context.Context, id string) error {

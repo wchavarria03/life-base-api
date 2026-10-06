@@ -26,40 +26,19 @@ func (r *MedicalProfileRepository) List(ctx context.Context) ([]*models.MedicalP
 
 // FindByID looks up one profile (RLS-scoped).
 func (r *MedicalProfileRepository) FindByID(ctx context.Context, id string) (*models.MedicalProfile, error) {
-	rows, err := databases.Get[[]*models.MedicalProfile](ctx, r.client, "/rest/v1/medical_profiles", url.Values{
+	return databases.First(databases.Get[[]*models.MedicalProfile](ctx, r.client, "/rest/v1/medical_profiles", url.Values{
 		"id": []string{"eq." + id}, "limit": []string{"1"},
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	}))
 }
 
 // Create inserts a new profile.
 func (r *MedicalProfileRepository) Create(ctx context.Context, input models.MedicalProfileInput) (*models.MedicalProfile, error) {
-	rows, err := databases.Post[[]*models.MedicalProfile](ctx, r.client, "/rest/v1/medical_profiles", input, "return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.MedicalProfile](ctx, r.client, "/rest/v1/medical_profiles", input, "return=representation"))
 }
 
 // Update patches a profile.
 func (r *MedicalProfileRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.MedicalProfile, error) {
-	rows, err := databases.Patch[[]*models.MedicalProfile](ctx, r.client, "/rest/v1/medical_profiles", databases.EqID(id), fields, "return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Patch[[]*models.MedicalProfile](ctx, r.client, "/rest/v1/medical_profiles", databases.EqID(id), fields, "return=representation"))
 }
 
 // Delete removes a profile (and, via cascade, its records/access grants).
@@ -86,16 +65,9 @@ func (r *MedicalAccessRepository) ListByProfile(ctx context.Context, profileID s
 
 // Grant inserts or replaces a grant (unique on profile_id+email).
 func (r *MedicalAccessRepository) Grant(ctx context.Context, a *models.MedicalProfileAccess) (*models.MedicalProfileAccess, error) {
-	rows, err := databases.Post[[]*models.MedicalProfileAccess](ctx, r.client,
+	return databases.First(databases.Post[[]*models.MedicalProfileAccess](ctx, r.client,
 		"/rest/v1/medical_profile_access?on_conflict=profile_id,email", a,
-		"resolution=merge-duplicates,return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+		"resolution=merge-duplicates,return=representation"))
 }
 
 // Revoke removes a grant.
@@ -122,40 +94,19 @@ func (r *MedicalRecordRepository) ListByProfile(ctx context.Context, profileID s
 
 // FindByID looks up one record (RLS-scoped).
 func (r *MedicalRecordRepository) FindByID(ctx context.Context, id string) (*models.MedicalRecord, error) {
-	rows, err := databases.Get[[]*models.MedicalRecord](ctx, r.client, "/rest/v1/medical_records", url.Values{
+	return databases.First(databases.Get[[]*models.MedicalRecord](ctx, r.client, "/rest/v1/medical_records", url.Values{
 		"id": []string{"eq." + id}, "limit": []string{"1"},
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	}))
 }
 
 // Create inserts a new record.
 func (r *MedicalRecordRepository) Create(ctx context.Context, input models.MedicalRecordInput) (*models.MedicalRecord, error) {
-	rows, err := databases.Post[[]*models.MedicalRecord](ctx, r.client, "/rest/v1/medical_records", input, "return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.MedicalRecord](ctx, r.client, "/rest/v1/medical_records", input, "return=representation"))
 }
 
 // Update patches a record.
 func (r *MedicalRecordRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.MedicalRecord, error) {
-	rows, err := databases.Patch[[]*models.MedicalRecord](ctx, r.client, "/rest/v1/medical_records", databases.EqID(id), fields, "return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Patch[[]*models.MedicalRecord](ctx, r.client, "/rest/v1/medical_records", databases.EqID(id), fields, "return=representation"))
 }
 
 // Delete removes a record (and, via cascade, its attached files).
@@ -182,28 +133,14 @@ func (r *MedicalRecordFileRepository) ListByRecord(ctx context.Context, recordID
 
 // FindByID looks up one file row (RLS-scoped).
 func (r *MedicalRecordFileRepository) FindByID(ctx context.Context, id string) (*models.MedicalRecordFile, error) {
-	rows, err := databases.Get[[]*models.MedicalRecordFile](ctx, r.client, "/rest/v1/medical_record_files", url.Values{
+	return databases.First(databases.Get[[]*models.MedicalRecordFile](ctx, r.client, "/rest/v1/medical_record_files", url.Values{
 		"id": []string{"eq." + id}, "limit": []string{"1"},
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	}))
 }
 
 // Create inserts a new file row.
 func (r *MedicalRecordFileRepository) Create(ctx context.Context, f *models.MedicalRecordFile) (*models.MedicalRecordFile, error) {
-	rows, err := databases.Post[[]*models.MedicalRecordFile](ctx, r.client, "/rest/v1/medical_record_files", f, "return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.MedicalRecordFile](ctx, r.client, "/rest/v1/medical_record_files", f, "return=representation"))
 }
 
 // Delete removes a file row.
@@ -229,16 +166,9 @@ func (r *MedicalAttributeDefRepository) List(ctx context.Context) ([]*models.Med
 
 // Upsert creates or replaces a def (unique on user_id+attr_key).
 func (r *MedicalAttributeDefRepository) Upsert(ctx context.Context, d *models.MedicalAttributeDef) (*models.MedicalAttributeDef, error) {
-	rows, err := databases.Post[[]*models.MedicalAttributeDef](ctx, r.client,
+	return databases.First(databases.Post[[]*models.MedicalAttributeDef](ctx, r.client,
 		"/rest/v1/medical_attribute_defs?on_conflict=user_id,attr_key", d,
-		"resolution=merge-duplicates,return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+		"resolution=merge-duplicates,return=representation"))
 }
 
 // MedicalMedicationRepository persists medical_medications rows.
@@ -260,26 +190,12 @@ func (r *MedicalMedicationRepository) ListByProfile(ctx context.Context, profile
 
 // Create inserts a new medication.
 func (r *MedicalMedicationRepository) Create(ctx context.Context, input models.MedicalMedicationInput) (*models.MedicalMedication, error) {
-	rows, err := databases.Post[[]*models.MedicalMedication](ctx, r.client, "/rest/v1/medical_medications", input, "return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.MedicalMedication](ctx, r.client, "/rest/v1/medical_medications", input, "return=representation"))
 }
 
 // Update patches a medication.
 func (r *MedicalMedicationRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.MedicalMedication, error) {
-	rows, err := databases.Patch[[]*models.MedicalMedication](ctx, r.client, "/rest/v1/medical_medications", databases.EqID(id), fields, "return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Patch[[]*models.MedicalMedication](ctx, r.client, "/rest/v1/medical_medications", databases.EqID(id), fields, "return=representation"))
 }
 
 // Delete removes a medication.

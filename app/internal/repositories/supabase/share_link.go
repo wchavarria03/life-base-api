@@ -28,14 +28,7 @@ func (r *ShareLinkRepository) List(ctx context.Context) ([]*models.ShareLink, er
 
 // Create inserts a new share link row.
 func (r *ShareLinkRepository) Create(ctx context.Context, input models.ShareLinkInput) (*models.ShareLink, error) {
-	rows, err := databases.Post[[]*models.ShareLink](ctx, r.client, "/rest/v1/share_links", input, "return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.ShareLink](ctx, r.client, "/rest/v1/share_links", input, "return=representation"))
 }
 
 // FindByToken looks up a share link by its raw token. Called from the
@@ -45,17 +38,10 @@ func (r *ShareLinkRepository) Create(ctx context.Context, input models.ShareLink
 // because resource_id was only ever stored after an RLS-scoped ownership
 // check at creation time, never taken from an unauthenticated caller.
 func (r *ShareLinkRepository) FindByToken(ctx context.Context, token string) (*models.ShareLink, error) {
-	rows, err := databases.Get[[]*models.ShareLink](ctx, r.client, "/rest/v1/share_links", url.Values{
+	return databases.First(databases.Get[[]*models.ShareLink](ctx, r.client, "/rest/v1/share_links", url.Values{
 		"token": []string{"eq." + token},
 		"limit": []string{"1"},
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	}))
 }
 
 // Update patches arbitrary fields (owner-scoped by RLS when called with a

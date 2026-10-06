@@ -28,14 +28,7 @@ func (r *SharedTaskListRepository) List(ctx context.Context) ([]*models.SharedTa
 
 // Create inserts a new share row.
 func (r *SharedTaskListRepository) Create(ctx context.Context, input models.SharedTaskListInput) (*models.SharedTaskList, error) {
-	rows, err := databases.Post[[]*models.SharedTaskList](ctx, r.client, "/rest/v1/shared_task_lists", input, "return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.SharedTaskList](ctx, r.client, "/rest/v1/shared_task_lists", input, "return=representation"))
 }
 
 // FindByToken looks up a share row by its raw token. Called from the public
@@ -43,17 +36,10 @@ func (r *SharedTaskListRepository) Create(ctx context.Context, input models.Shar
 // with the service-role key (see databases.resolveKeys), so it deliberately
 // bypasses RLS; the token itself is the access check.
 func (r *SharedTaskListRepository) FindByToken(ctx context.Context, token string) (*models.SharedTaskList, error) {
-	rows, err := databases.Get[[]*models.SharedTaskList](ctx, r.client, "/rest/v1/shared_task_lists", url.Values{
+	return databases.First(databases.Get[[]*models.SharedTaskList](ctx, r.client, "/rest/v1/shared_task_lists", url.Values{
 		"token": []string{"eq." + token},
 		"limit": []string{"1"},
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	}))
 }
 
 // Revoke soft-deletes a share row by id (owner-scoped by RLS).

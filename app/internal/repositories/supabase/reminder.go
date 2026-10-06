@@ -41,46 +41,25 @@ func (r *ReminderRepository) ListByAccountID(ctx context.Context, accountID stri
 }
 
 func (r *ReminderRepository) FindByID(ctx context.Context, id string) (*models.Reminder, error) {
-	rows, err := databases.Get[[]*models.Reminder](ctx, r.client, "/rest/v1/payment_reminders", url.Values{
+	return databases.First(databases.Get[[]*models.Reminder](ctx, r.client, "/rest/v1/payment_reminders", url.Values{
 		"id":    []string{"eq." + id},
 		"limit": []string{"1"},
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	}))
 }
 
 func (r *ReminderRepository) Create(ctx context.Context, input models.ReminderInput) (*models.Reminder, error) {
-	rows, err := databases.Post[[]*models.Reminder](ctx, r.client,
+	return databases.First(databases.Post[[]*models.Reminder](ctx, r.client,
 		"/rest/v1/payment_reminders",
 		input,
-		"return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+		"return=representation"))
 }
 
 func (r *ReminderRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.Reminder, error) {
-	rows, err := databases.Patch[[]*models.Reminder](ctx, r.client,
+	return databases.First(databases.Patch[[]*models.Reminder](ctx, r.client,
 		"/rest/v1/payment_reminders",
 		databases.EqID(id),
 		fields,
-		"return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+		"return=representation"))
 }
 
 func (r *ReminderRepository) Delete(ctx context.Context, id string) error {

@@ -41,39 +41,18 @@ func (r *TaskRepository) ListByUserAndCategory(ctx context.Context, userID strin
 }
 
 func (r *TaskRepository) FindByID(ctx context.Context, id string) (*models.Task, error) {
-	rows, err := databases.Get[[]*models.Task](ctx, r.client, "/rest/v1/tasks", url.Values{
+	return databases.First(databases.Get[[]*models.Task](ctx, r.client, "/rest/v1/tasks", url.Values{
 		"id":    []string{"eq." + id},
 		"limit": []string{"1"},
-	}, tasksSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	}, tasksSchema))
 }
 
 func (r *TaskRepository) Create(ctx context.Context, input models.TaskInput) (*models.Task, error) {
-	rows, err := databases.Post[[]*models.Task](ctx, r.client, "/rest/v1/tasks", input, "return=representation", tasksSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.Task](ctx, r.client, "/rest/v1/tasks", input, "return=representation", tasksSchema))
 }
 
 func (r *TaskRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.Task, error) {
-	rows, err := databases.Patch[[]*models.Task](ctx, r.client, "/rest/v1/tasks", databases.EqID(id), fields, "return=representation", tasksSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Patch[[]*models.Task](ctx, r.client, "/rest/v1/tasks", databases.EqID(id), fields, "return=representation", tasksSchema))
 }
 
 func (r *TaskRepository) Delete(ctx context.Context, id string) error {

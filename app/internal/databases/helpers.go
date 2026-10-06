@@ -142,6 +142,22 @@ func Delete(ctx context.Context, c *SupabaseClient, path string, params url.Valu
 	return err
 }
 
+// First unwraps the common "single-row Post/Patch" pattern: PostgREST always
+// returns a slice even for a single-row insert/update (when the caller asked
+// for return=representation), so every repository that creates or updates
+// one row needs to pick off element 0 or return nil if nothing came back.
+// Wrap the Post/Patch call directly: `return databases.First(databases.Post[[]*models.X](...))`.
+func First[T any](rows []T, err error) (T, error) {
+	var zero T
+	if err != nil {
+		return zero, err
+	}
+	if len(rows) == 0 {
+		return zero, nil
+	}
+	return rows[0], nil
+}
+
 // decode reads the HTTP response, checks for PostgREST errors, and unmarshals the body into T.
 // It is shared by Get and Post to avoid duplicating response-handling logic.
 func decode[T any](resp *http.Response, err error) (T, error) {

@@ -37,17 +37,10 @@ func (r *SocialPostRepository) List(ctx context.Context, limit, offset int, stat
 }
 
 func (r *SocialPostRepository) FindByID(ctx context.Context, id string) (*models.SocialPost, error) {
-	rows, err := databases.Get[[]*models.SocialPost](ctx, r.client, "/rest/v1/social_posts", url.Values{
+	return databases.First(databases.Get[[]*models.SocialPost](ctx, r.client, "/rest/v1/social_posts", url.Values{
 		"id":    []string{"eq." + id},
 		"limit": []string{"1"},
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	}))
 }
 
 // FindRecentByFilename returns posts with this exact filename created at or
@@ -61,32 +54,18 @@ func (r *SocialPostRepository) FindRecentByFilename(ctx context.Context, filenam
 }
 
 func (r *SocialPostRepository) Create(ctx context.Context, input models.SocialPostInput) (*models.SocialPost, error) {
-	rows, err := databases.Post[[]*models.SocialPost](ctx, r.client,
+	return databases.First(databases.Post[[]*models.SocialPost](ctx, r.client,
 		"/rest/v1/social_posts",
 		input,
-		"return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+		"return=representation"))
 }
 
 func (r *SocialPostRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.SocialPost, error) {
-	rows, err := databases.Patch[[]*models.SocialPost](ctx, r.client,
+	return databases.First(databases.Patch[[]*models.SocialPost](ctx, r.client,
 		"/rest/v1/social_posts",
 		databases.EqID(id),
 		fields,
-		"return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+		"return=representation"))
 }
 
 func (r *SocialPostRepository) Delete(ctx context.Context, id string) error {

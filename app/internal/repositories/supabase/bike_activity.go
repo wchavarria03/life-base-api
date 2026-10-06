@@ -25,45 +25,24 @@ func (r *ActivityRepository) ListByBikeID(ctx context.Context, bikeID string) ([
 }
 
 func (r *ActivityRepository) FindByID(ctx context.Context, id string) (*models.Activity, error) {
-	rows, err := databases.Get[[]*models.Activity](ctx, r.client, "/rest/v1/activities", url.Values{
+	return databases.First(databases.Get[[]*models.Activity](ctx, r.client, "/rest/v1/activities", url.Values{
 		"id":    []string{"eq." + id},
 		"limit": []string{"1"},
-	}, bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	}, bikesSchema))
 }
 
 // FindByStravaActivityID looks for an existing activity on this bike already
 // imported from the same Strava activity, to guard against double-import.
 func (r *ActivityRepository) FindByStravaActivityID(ctx context.Context, bikeID string, stravaActivityID int64) (*models.Activity, error) {
-	rows, err := databases.Get[[]*models.Activity](ctx, r.client, "/rest/v1/activities", url.Values{
+	return databases.First(databases.Get[[]*models.Activity](ctx, r.client, "/rest/v1/activities", url.Values{
 		"bike_id":            []string{"eq." + bikeID},
 		"strava_activity_id": []string{"eq." + strconv.FormatInt(stravaActivityID, 10)},
 		"limit":              []string{"1"},
-	}, bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	}, bikesSchema))
 }
 
 func (r *ActivityRepository) Create(ctx context.Context, input models.ActivityInput) (*models.Activity, error) {
-	rows, err := databases.Post[[]*models.Activity](ctx, r.client, "/rest/v1/activities", input, "return=representation", bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.Activity](ctx, r.client, "/rest/v1/activities", input, "return=representation", bikesSchema))
 }
 
 func (r *ActivityRepository) Delete(ctx context.Context, id string) error {

@@ -13,17 +13,10 @@ func NewSalaryProfileRepository(client *databases.SupabaseClient) *SalaryProfile
 }
 
 func (r *SalaryProfileRepository) FindByUserID(ctx context.Context, userID string) (*models.SalaryProfile, error) {
-	results, err := databases.Get[[]*models.SalaryProfile](ctx, r.client, "/rest/v1/salary_profiles", url.Values{
+	return databases.First(databases.Get[[]*models.SalaryProfile](ctx, r.client, "/rest/v1/salary_profiles", url.Values{
 		"user_id": []string{"eq." + userID},
 		"limit":   []string{"1"},
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(results) == 0 {
-		return nil, nil
-	}
-	return results[0], nil
+	}))
 }
 
 // Upsert creates or replaces the caller's salary profile. One profile per

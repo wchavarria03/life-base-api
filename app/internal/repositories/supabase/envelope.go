@@ -29,46 +29,25 @@ func (r *EnvelopeRepository) ListByAccountID(ctx context.Context, accountID stri
 }
 
 func (r *EnvelopeRepository) FindByID(ctx context.Context, id string) (*models.Envelope, error) {
-	rows, err := databases.Get[[]*models.Envelope](ctx, r.client, "/rest/v1/envelopes", url.Values{
+	return databases.First(databases.Get[[]*models.Envelope](ctx, r.client, "/rest/v1/envelopes", url.Values{
 		"id":    []string{"eq." + id},
 		"limit": []string{"1"},
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	}))
 }
 
 func (r *EnvelopeRepository) Create(ctx context.Context, input models.EnvelopeInput) (*models.Envelope, error) {
-	rows, err := databases.Post[[]*models.Envelope](ctx, r.client,
+	return databases.First(databases.Post[[]*models.Envelope](ctx, r.client,
 		"/rest/v1/envelopes",
 		input,
-		"return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+		"return=representation"))
 }
 
 func (r *EnvelopeRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.Envelope, error) {
-	rows, err := databases.Patch[[]*models.Envelope](ctx, r.client,
+	return databases.First(databases.Patch[[]*models.Envelope](ctx, r.client,
 		"/rest/v1/envelopes",
 		databases.EqID(id),
 		fields,
-		"return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+		"return=representation"))
 }
 
 func (r *EnvelopeRepository) Delete(ctx context.Context, id string) error {
@@ -88,17 +67,10 @@ func (r *EnvelopeRepository) Contribute(ctx context.Context, envelopeID string, 
 		Note:       input.Note,
 		Date:       input.Date,
 	}
-	rows, err := databases.Post[[]*models.EnvelopeContribution](ctx, r.client,
+	return databases.First(databases.Post[[]*models.EnvelopeContribution](ctx, r.client,
 		"/rest/v1/envelope_contributions",
 		body,
-		"return=representation")
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+		"return=representation"))
 }
 
 // GetBalances returns the current balance (sum of contributions) for each envelope ID.

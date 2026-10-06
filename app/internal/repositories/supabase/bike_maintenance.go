@@ -24,14 +24,7 @@ func (r *ServiceLogRepository) ListByBikeID(ctx context.Context, bikeID string) 
 }
 
 func (r *ServiceLogRepository) Create(ctx context.Context, input models.ServiceLogInput) (*models.ServiceLog, error) {
-	rows, err := databases.Post[[]*models.ServiceLog](ctx, r.client, "/rest/v1/service_logs", input, "return=representation", bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.ServiceLog](ctx, r.client, "/rest/v1/service_logs", input, "return=representation", bikesSchema))
 }
 
 func (r *ServiceLogRepository) Delete(ctx context.Context, id string) error {
@@ -54,25 +47,11 @@ func (r *MaintenanceTaskRepository) ListByBikeID(ctx context.Context, bikeID str
 }
 
 func (r *MaintenanceTaskRepository) Create(ctx context.Context, input models.MaintenanceTaskInput) (*models.MaintenanceTask, error) {
-	rows, err := databases.Post[[]*models.MaintenanceTask](ctx, r.client, "/rest/v1/maintenance_tasks", input, "return=representation", bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Post[[]*models.MaintenanceTask](ctx, r.client, "/rest/v1/maintenance_tasks", input, "return=representation", bikesSchema))
 }
 
 func (r *MaintenanceTaskRepository) Update(ctx context.Context, id string, fields map[string]any) (*models.MaintenanceTask, error) {
-	rows, err := databases.Patch[[]*models.MaintenanceTask](ctx, r.client, "/rest/v1/maintenance_tasks", databases.EqID(id), fields, "return=representation", bikesSchema)
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
-	return rows[0], nil
+	return databases.First(databases.Patch[[]*models.MaintenanceTask](ctx, r.client, "/rest/v1/maintenance_tasks", databases.EqID(id), fields, "return=representation", bikesSchema))
 }
 
 func (r *MaintenanceTaskRepository) Delete(ctx context.Context, id string) error {
