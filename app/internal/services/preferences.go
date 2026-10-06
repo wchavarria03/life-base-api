@@ -27,18 +27,25 @@ func (s *PreferencesService) Get(ctx context.Context, userID string) (*models.Us
 		return nil, fmt.Errorf("get preferences: %w", err)
 	}
 	if prefs == nil {
-		return &models.UserPreferences{UserID: userID}, nil
+		return &models.UserPreferences{UserID: userID, Language: "en"}, nil
 	}
 	return prefs, nil
 }
 
 // Set updates the caller's notification preferences.
-func (s *PreferencesService) Set(ctx context.Context, userID string, pushEnabled, emailDigestEnabled bool, defaultPage string) (*models.UserPreferences, error) {
+func (s *PreferencesService) Set(ctx context.Context, userID string, pushEnabled, emailDigestEnabled bool, defaultPage, language string) (*models.UserPreferences, error) {
+	if language == "" {
+		language = "en"
+	}
+	if language != "en" && language != "es" {
+		return nil, fmt.Errorf("invalid language: %s", language)
+	}
 	return s.repo.Upsert(ctx, &models.UserPreferences{
 		UserID:             userID,
 		PushEnabled:        pushEnabled,
 		EmailDigestEnabled: emailDigestEnabled,
 		DefaultPage:        defaultPage,
+		Language:           language,
 	})
 }
 

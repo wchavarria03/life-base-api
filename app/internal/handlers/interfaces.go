@@ -203,7 +203,7 @@ type PushManager interface {
 // PreferenceManager reads and writes per-user notification preferences.
 type PreferenceManager interface {
 	Get(ctx context.Context, userID string) (*models.UserPreferences, error)
-	Set(ctx context.Context, userID string, pushEnabled, emailDigestEnabled bool, defaultPage string) (*models.UserPreferences, error)
+	Set(ctx context.Context, userID string, pushEnabled, emailDigestEnabled bool, defaultPage, language string) (*models.UserPreferences, error)
 }
 
 // MenuPreferenceManager reads and writes per-user hidden-nav-page preferences.
