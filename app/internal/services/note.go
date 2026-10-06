@@ -22,6 +22,7 @@ type NoteService struct {
 	versions *supabaserepo.NoteVersionRepository
 }
 
+// NewNoteService constructs a NoteService.
 func NewNoteService(notes NoteRepository, versions *supabaserepo.NoteVersionRepository) *NoteService {
 	return &NoteService{notes: notes, versions: versions}
 }
