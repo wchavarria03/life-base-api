@@ -136,6 +136,30 @@ type DocumentManager interface {
 	Delete(ctx context.Context, id string) error
 }
 
+// MedicalProfileManager is the subset of MedicalProfileService the handler needs.
+type MedicalProfileManager interface {
+	List(ctx context.Context) ([]*models.MedicalProfile, error)
+	Create(ctx context.Context, input models.MedicalProfileInput) (*models.MedicalProfile, error)
+	Update(ctx context.Context, id string, fields map[string]any) (*models.MedicalProfile, error)
+	Delete(ctx context.Context, id string) error
+	ListAccess(ctx context.Context, profileID string) ([]*models.MedicalProfileAccess, error)
+	GrantAccess(ctx context.Context, profileID, email string, role models.MedicalAccessRole) (*models.MedicalProfileAccess, error)
+	RevokeAccess(ctx context.Context, grantID string) error
+	Timeline(ctx context.Context, profileID, attributeKey string) ([]models.MedicalTimelinePoint, error)
+}
+
+// MedicalRecordManager is the subset of MedicalRecordService the handler needs.
+type MedicalRecordManager interface {
+	ListByProfile(ctx context.Context, profileID string) ([]*models.MedicalRecord, error)
+	Create(ctx context.Context, input models.MedicalRecordInput) (*models.MedicalRecord, error)
+	Update(ctx context.Context, id string, fields map[string]any) (*models.MedicalRecord, error)
+	Delete(ctx context.Context, id string) error
+	ListFiles(ctx context.Context, recordID string) ([]*models.MedicalRecordFile, error)
+	UploadFile(ctx context.Context, recordID string, file io.Reader, fileName, contentType string) (*models.MedicalRecordFile, error)
+	DownloadFile(ctx context.Context, fileID string) (*models.MedicalRecordFile, []byte, error)
+	DeleteFile(ctx context.Context, fileID string) error
+}
+
 // HouseTimerManager is the subset of HouseTimerService the handler needs.
 type HouseTimerManager interface {
 	List(ctx context.Context) ([]*models.HouseTimer, error)

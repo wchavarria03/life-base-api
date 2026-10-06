@@ -69,6 +69,7 @@ func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL, issuer s
 	setupShareLinkRoutes(v1, hdlrs)
 	setupDocumentRoutes(v1, hdlrs)
 	setupHouseTimerRoutes(v1, hdlrs)
+	setupMedicalRoutes(v1, hdlrs)
 	setupAccountRoutes(v1, hdlrs)
 	setupBudgetRoutes(v1, hdlrs)
 	setupEnvelopeRoutes(v1, hdlrs)
@@ -262,6 +263,28 @@ func setupHouseTimerRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	timers.POST("", hdlrs.HouseTimer.Create)
 	timers.POST("/:id/announced", hdlrs.HouseTimer.MarkAnnounced)
 	timers.DELETE("/:id", hdlrs.HouseTimer.Delete)
+}
+
+func setupMedicalRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
+	profiles := rg.Group("/medical-profiles")
+	profiles.GET("", hdlrs.MedicalProfile.List)
+	profiles.POST("", hdlrs.MedicalProfile.Create)
+	profiles.PATCH("/:id", hdlrs.MedicalProfile.Update)
+	profiles.DELETE("/:id", hdlrs.MedicalProfile.Delete)
+	profiles.GET("/:id/access", hdlrs.MedicalProfile.ListAccess)
+	profiles.POST("/:id/access", hdlrs.MedicalProfile.GrantAccess)
+	profiles.DELETE("/:id/access/:grantId", hdlrs.MedicalProfile.RevokeAccess)
+	profiles.GET("/:id/timeline", hdlrs.MedicalProfile.Timeline)
+
+	records := rg.Group("/medical-records")
+	records.GET("", hdlrs.MedicalRecord.List)
+	records.POST("", hdlrs.MedicalRecord.Create)
+	records.PATCH("/:id", hdlrs.MedicalRecord.Update)
+	records.DELETE("/:id", hdlrs.MedicalRecord.Delete)
+	records.GET("/:id/files", hdlrs.MedicalRecord.ListFiles)
+	records.POST("/:id/files", hdlrs.MedicalRecord.UploadFile)
+	records.GET("/:id/files/:fileId/download", hdlrs.MedicalRecord.DownloadFile)
+	records.DELETE("/:id/files/:fileId", hdlrs.MedicalRecord.DeleteFile)
 }
 
 func setupNoteRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {

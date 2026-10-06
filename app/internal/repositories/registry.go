@@ -54,6 +54,11 @@ type Registry struct {
 	ShareLinks      *supabaserepo.ShareLinkRepository
 	Documents       *supabaserepo.DocumentRepository
 	HouseTimers     *supabaserepo.HouseTimerRepository
+
+	MedicalProfiles    *supabaserepo.MedicalProfileRepository
+	MedicalAccess      *supabaserepo.MedicalAccessRepository
+	MedicalRecords     *supabaserepo.MedicalRecordRepository
+	MedicalRecordFiles *supabaserepo.MedicalRecordFileRepository
 }
 
 func NewRegistry(dbs *databases.Registry) *Registry {
@@ -106,5 +111,10 @@ func NewRegistry(dbs *databases.Registry) *Registry {
 		ShareLinks:      supabaserepo.NewShareLinkRepository(dbs.Supabase),
 		Documents:       supabaserepo.NewDocumentRepository(dbs.Supabase),
 		HouseTimers:     supabaserepo.NewHouseTimerRepository(dbs.Supabase),
+
+		MedicalProfiles:    supabaserepo.NewMedicalProfileRepository(dbs.Supabase),
+		MedicalAccess:      supabaserepo.NewMedicalAccessRepository(dbs.Supabase),
+		MedicalRecords:     supabaserepo.NewMedicalRecordRepository(dbs.Supabase),
+		MedicalRecordFiles: supabaserepo.NewMedicalRecordFileRepository(dbs.Supabase),
 	}
 }

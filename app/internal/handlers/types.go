@@ -111,6 +111,16 @@ type HouseTimerHandler struct {
 	svc HouseTimerManager
 }
 
+// MedicalProfileHandler serves the medical-profiles endpoints.
+type MedicalProfileHandler struct {
+	svc MedicalProfileManager
+}
+
+// MedicalRecordHandler serves the medical-records endpoints.
+type MedicalRecordHandler struct {
+	svc MedicalRecordManager
+}
+
 // ExportHandler serves a single JSON dump of everything the caller owns.
 type ExportHandler struct {
 	accounts     AccountLister

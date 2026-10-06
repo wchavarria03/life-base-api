@@ -44,6 +44,8 @@ type Registry struct {
 	ShareLink      *ShareLinkService
 	Document       *DocumentService
 	HouseTimer     *HouseTimerService
+	MedicalProfile *MedicalProfileService
+	MedicalRecord  *MedicalRecordService
 }
 
 // NewRegistry wires every service with its repository dependencies.
@@ -95,12 +97,14 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 		Note:     NewNoteService(repos.Notes),
 	}
 	r.SharedTaskList = NewSharedTaskListService(repos.SharedTaskLists, r.Task, sharedTaskLists)
-	r.ShareLink = NewShareLinkService(repos.ShareLinks, r.Note, r.Bike, r.Component)
 	r.Document = NewDocumentService(repos.Documents, repos.Storage)
 	r.HouseTimer = NewHouseTimerService(repos.HouseTimers, push, HouseTimerConfig{
 		VAPIDPublicKey:  digest.VAPIDPublicKey,
 		VAPIDPrivateKey: digest.VAPIDPrivateKey,
 		VAPIDSubject:    digest.VAPIDSubject,
 	})
+	r.MedicalRecord = NewMedicalRecordService(repos.MedicalRecords, repos.MedicalRecordFiles, repos.Storage)
+	r.MedicalProfile = NewMedicalProfileService(repos.MedicalProfiles, repos.MedicalAccess, repos.MedicalRecords)
+	r.ShareLink = NewShareLinkService(repos.ShareLinks, r.Note, r.Bike, r.Component, r.MedicalProfile, r.MedicalRecord)
 	return r
 }

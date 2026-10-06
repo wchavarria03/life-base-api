@@ -25,15 +25,17 @@ var ErrShareLinkNotFound = errors.New("share link not found")
 // ShareLinkService creates and resolves public, read-only share links for
 // notes and bikes.
 type ShareLinkService struct {
-	repo       *supabaserepo.ShareLinkRepository
-	notes      *NoteService
-	bikes      *BikeService
-	components *ComponentService
+	repo            *supabaserepo.ShareLinkRepository
+	notes           *NoteService
+	bikes           *BikeService
+	components      *ComponentService
+	medicalProfiles *MedicalProfileService
+	medicalRecords  *MedicalRecordService
 }
 
 // NewShareLinkService constructs a ShareLinkService.
-func NewShareLinkService(repo *supabaserepo.ShareLinkRepository, notes *NoteService, bikes *BikeService, components *ComponentService) *ShareLinkService {
-	return &ShareLinkService{repo: repo, notes: notes, bikes: bikes, components: components}
+func NewShareLinkService(repo *supabaserepo.ShareLinkRepository, notes *NoteService, bikes *BikeService, components *ComponentService, medicalProfiles *MedicalProfileService, medicalRecords *MedicalRecordService) *ShareLinkService {
+	return &ShareLinkService{repo: repo, notes: notes, bikes: bikes, components: components, medicalProfiles: medicalProfiles, medicalRecords: medicalRecords}
 }
 
 // List returns the caller's own share links, each enriched with the
@@ -90,6 +92,22 @@ func (s *ShareLinkService) Create(ctx context.Context, resourceType models.Share
 		}
 		if bike == nil {
 			return nil, fmt.Errorf("bike not found")
+		}
+	case models.ShareResourceMedicalProfile:
+		profile, err := s.medicalProfiles.FindByID(ctx, resourceID)
+		if err != nil {
+			return nil, fmt.Errorf("find medical profile: %w", err)
+		}
+		if profile == nil {
+			return nil, fmt.Errorf("medical profile not found")
+		}
+	case models.ShareResourceMedicalRecord:
+		record, err := s.medicalRecords.FindByID(ctx, resourceID)
+		if err != nil {
+			return nil, fmt.Errorf("find medical record: %w", err)
+		}
+		if record == nil {
+			return nil, fmt.Errorf("medical record not found")
 		}
 	default:
 		return nil, fmt.Errorf("unsupported resource_type %q", resourceType)
@@ -163,6 +181,39 @@ func (s *ShareLinkService) Resolve(ctx context.Context, token string) (*models.S
 			Bike: &models.SharedBikeView{
 				Name: bike.Name, Type: bike.Type, Model: bike.Model, Mileage: bike.Mileage,
 				Components: views,
+			},
+		}, nil
+
+	case models.ShareResourceMedicalProfile:
+		profile, err := s.medicalProfiles.FindByID(ctx, link.ResourceID)
+		if err != nil || profile == nil {
+			return nil, ErrShareLinkNotFound
+		}
+		records, err := s.medicalRecords.ListByProfile(ctx, link.ResourceID)
+		if err != nil {
+			records = nil // best-effort — a profile with no visible records is still a valid share
+		}
+		summaries := make([]models.SharedMedicalRecordSummary, 0, len(records))
+		for _, r := range records {
+			summaries = append(summaries, models.SharedMedicalRecordSummary{
+				Title: r.Title, RecordType: r.RecordType, RecordDate: r.RecordDate,
+			})
+		}
+		return &models.SharedResource{
+			ResourceType:   models.ShareResourceMedicalProfile,
+			MedicalProfile: &models.SharedMedicalProfileView{Name: profile.Name, Records: summaries},
+		}, nil
+
+	case models.ShareResourceMedicalRecord:
+		record, err := s.medicalRecords.FindByID(ctx, link.ResourceID)
+		if err != nil || record == nil {
+			return nil, ErrShareLinkNotFound
+		}
+		return &models.SharedResource{
+			ResourceType: models.ShareResourceMedicalRecord,
+			MedicalRecord: &models.SharedMedicalRecordView{
+				Title: record.Title, RecordType: record.RecordType, RecordDate: record.RecordDate,
+				Attributes: record.Attributes, Notes: record.Notes,
 			},
 		}, nil
 

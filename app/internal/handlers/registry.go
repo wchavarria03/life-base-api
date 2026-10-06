@@ -47,6 +47,8 @@ type Registry struct {
 	ShareLink      *ShareLinkHandler
 	Document       *DocumentHandler
 	HouseTimer     *HouseTimerHandler
+	MedicalProfile *MedicalProfileHandler
+	MedicalRecord  *MedicalRecordHandler
 }
 
 func NewRegistry(svc *services.Registry) (*Registry, error) {
@@ -94,6 +96,8 @@ func NewRegistry(svc *services.Registry) (*Registry, error) {
 		ShareLink:      NewShareLinkHandler(svc.ShareLink),
 		Document:       NewDocumentHandler(svc.Document),
 		HouseTimer:     NewHouseTimerHandler(svc.HouseTimer),
+		MedicalProfile: NewMedicalProfileHandler(svc.MedicalProfile),
+		MedicalRecord:  NewMedicalRecordHandler(svc.MedicalRecord),
 	}, nil
 }
 

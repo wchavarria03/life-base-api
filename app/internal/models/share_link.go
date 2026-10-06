@@ -10,6 +10,12 @@ const (
 	ShareResourceNote ShareResourceType = "note"
 	// ShareResourceBike shares a single bike (plus its components).
 	ShareResourceBike ShareResourceType = "bike"
+	// ShareResourceMedicalProfile shares a medical profile's record list
+	// (titles/dates/types only — no attributes, notes, or files).
+	ShareResourceMedicalProfile ShareResourceType = "medical_profile"
+	// ShareResourceMedicalRecord shares a single medical record's
+	// title/date/type/attributes/notes — no attached files.
+	ShareResourceMedicalRecord ShareResourceType = "medical_record"
 )
 
 // ShareLink is the stored shape from share_links.
@@ -63,10 +69,37 @@ type SharedNoteView struct {
 	Content *string `json:"content,omitempty"`
 }
 
+// SharedMedicalRecordSummary is one record's public, read-only listing
+// within a shared profile — no attributes, notes, or files.
+type SharedMedicalRecordSummary struct {
+	Title      string            `json:"title"`
+	RecordType MedicalRecordType `json:"record_type"`
+	RecordDate string            `json:"record_date"`
+}
+
+// SharedMedicalProfileView is the public, read-only projection of a medical
+// profile — its record list, summarized.
+type SharedMedicalProfileView struct {
+	Name    string                       `json:"name"`
+	Records []SharedMedicalRecordSummary `json:"records"`
+}
+
+// SharedMedicalRecordView is the public, read-only projection of a single
+// medical record — no attached files.
+type SharedMedicalRecordView struct {
+	Title      string            `json:"title"`
+	RecordType MedicalRecordType `json:"record_type"`
+	RecordDate string            `json:"record_date"`
+	Attributes map[string]any    `json:"attributes"`
+	Notes      *string           `json:"notes,omitempty"`
+}
+
 // SharedResource is the public resolver's response envelope — exactly one
-// of Note/Bike is set, matching ResourceType.
+// field is set, matching ResourceType.
 type SharedResource struct {
-	ResourceType ShareResourceType `json:"resource_type"`
-	Note         *SharedNoteView   `json:"note,omitempty"`
-	Bike         *SharedBikeView   `json:"bike,omitempty"`
+	ResourceType   ShareResourceType         `json:"resource_type"`
+	Note           *SharedNoteView           `json:"note,omitempty"`
+	Bike           *SharedBikeView           `json:"bike,omitempty"`
+	MedicalProfile *SharedMedicalProfileView `json:"medical_profile,omitempty"`
+	MedicalRecord  *SharedMedicalRecordView  `json:"medical_record,omitempty"`
 }
