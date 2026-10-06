@@ -64,6 +64,7 @@ func (s *ComponentService) Replace(ctx context.Context, componentID, replacedDat
 	return s.components.Update(ctx, componentID, map[string]any{
 		"last_replaced_date": replacedDate,
 		"accumulated_km":     0,
+		"reminder_sent":      false,
 	})
 }
 

@@ -17,8 +17,13 @@ type Component struct {
 	ReplacementIntervalDays *int      `json:"replacement_interval_days,omitempty"`
 	AccumulatedKm           float64   `json:"accumulated_km"`
 	Notes                   *string   `json:"notes,omitempty"`
-	CreatedAt               time.Time `json:"created_at,omitempty"`
-	UpdatedAt               time.Time `json:"updated_at,omitempty"`
+	// ReminderSent is set once a maintenance reminder Task has been created
+	// for this component's current due period, so crossing the threshold on
+	// a later activity log doesn't spam another reminder. Reset to false by
+	// Replace, which starts a new wear period.
+	ReminderSent bool      `json:"reminder_sent"`
+	CreatedAt    time.Time `json:"created_at,omitempty"`
+	UpdatedAt    time.Time `json:"updated_at,omitempty"`
 }
 
 // ComponentInput is the write shape for create/update.

@@ -59,6 +59,7 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 	push := NewPushService(repos.PushSubscriptions)
 	socialSvc := NewSocialService(repos.SocialPosts, repos.Storage, social)
 	captionSvc := NewCaptionService(repos.Caption)
+	taskSvc := NewTaskService(repos.Tasks)
 	r := &Registry{
 		Account:         NewAccountService(repos.Accounts, repos.Transactions),
 		Budget:          NewBudgetService(repos.Budgets, repos.Accounts, repos.Transactions),
@@ -91,10 +92,10 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 		Gear:            NewGearService(repos.Gear),
 		Bottle:          NewBottleService(repos.Bottles),
 		Supply:          NewSupplyService(repos.Supplies, repos.SupplyHistory),
-		Activity:        NewActivityService(repos.Activities, repos.Bikes, repos.Components, repos.Gear),
+		Activity:        NewActivityService(repos.Activities, repos.Bikes, repos.Components, repos.Gear, taskSvc),
 		Strava:          NewStravaService(repos.Strava, strava),
 
-		Task:     NewTaskService(repos.Tasks),
+		Task:     taskSvc,
 		TaskList: NewTaskListService(repos.TaskLists),
 		Note:     NewNoteService(repos.Notes, repos.NoteVersions),
 	}

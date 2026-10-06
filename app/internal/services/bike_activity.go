@@ -12,10 +12,11 @@ type ActivityService struct {
 	bikes      BikeRepository
 	components ComponentRepository
 	gear       GearRepository
+	tasks      *TaskService
 }
 
-func NewActivityService(activities ActivityRepository, bikes BikeRepository, components ComponentRepository, gear GearRepository) *ActivityService {
-	return &ActivityService{activities: activities, bikes: bikes, components: components, gear: gear}
+func NewActivityService(activities ActivityRepository, bikes BikeRepository, components ComponentRepository, gear GearRepository, tasks *TaskService) *ActivityService {
+	return &ActivityService{activities: activities, bikes: bikes, components: components, gear: gear, tasks: tasks}
 }
 
 func (s *ActivityService) ListByBikeID(ctx context.Context, bikeID string) ([]*models.Activity, error) {
@@ -88,9 +89,15 @@ func (s *ActivityService) applyWear(ctx context.Context, bikeID string, deltaKm 
 
 	if components, err := s.components.ListActiveByBikeID(ctx, bikeID); err == nil {
 		for _, c := range components {
-			_, _ = s.components.Update(ctx, c.ID, map[string]any{
-				"accumulated_km": c.AccumulatedKm + deltaKm,
-			})
+			newKm := c.AccumulatedKm + deltaKm
+			fields := map[string]any{"accumulated_km": newKm}
+			if deltaKm > 0 && !c.ReminderSent && crossesThreshold(c, newKm) {
+				fields["reminder_sent"] = true
+			}
+			updated, err := s.components.Update(ctx, c.ID, fields)
+			if err == nil && fields["reminder_sent"] == true {
+				s.maybeCreateReminder(ctx, bikeID, updated)
+			}
 		}
 	}
 
@@ -101,4 +108,30 @@ func (s *ActivityService) applyWear(ctx context.Context, bikeID string, deltaKm 
 			})
 		}
 	}
+}
+
+// crossesThreshold reports whether newKm pushes the component to or past
+// its mileage-based replacement interval.
+func crossesThreshold(c *models.Component, newKm float64) bool {
+	return c.ReplacementIntervalKm != nil && *c.ReplacementIntervalKm > 0 && newKm >= float64(*c.ReplacementIntervalKm)
+}
+
+// maybeCreateReminder creates a todo-category Task nudging a replacement,
+// once per wear period (see Component.ReminderSent) — mirrors the
+// out-of-range push pattern used for medical records, but as a Task since
+// there's no push-eligible "event" here, just a crossed threshold.
+func (s *ActivityService) maybeCreateReminder(ctx context.Context, bikeID string, component *models.Component) {
+	if s.tasks == nil || component == nil {
+		return
+	}
+	bike, err := s.bikes.FindByID(ctx, bikeID)
+	if err != nil || bike == nil {
+		return
+	}
+	title := fmt.Sprintf("Replace %s on %s", component.Name, bike.Name)
+	_, _ = s.tasks.Create(ctx, models.TaskInput{
+		Category: models.TaskTodo,
+		Title:    title,
+		Priority: string(models.TaskMajor),
+	})
 }
