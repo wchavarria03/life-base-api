@@ -27,12 +27,7 @@ func NewNoteHandler(svc NoteManager) *NoteHandler {
 }
 
 func (h *NoteHandler) List(c *gin.Context) {
-	notes, err := h.svc.List(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, notes)
+	listHandler(h.svc.List)(c)
 }
 
 func (h *NoteHandler) Get(c *gin.Context) {
@@ -49,39 +44,15 @@ func (h *NoteHandler) Get(c *gin.Context) {
 }
 
 func (h *NoteHandler) Create(c *gin.Context) {
-	var input models.NoteInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	note, err := h.svc.Create(c.Request.Context(), input)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusCreated, note)
+	createHandler(h.svc.Create)(c)
 }
 
 func (h *NoteHandler) Update(c *gin.Context) {
-	var fields map[string]any
-	if err := c.ShouldBindJSON(&fields); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	note, err := h.svc.Update(c.Request.Context(), c.Param("id"), fields)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, note)
+	updateHandler(h.svc.Update)(c)
 }
 
 func (h *NoteHandler) Delete(c *gin.Context) {
-	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.Delete)(c)
 }
 
 // ListVersions handles GET /v1/notes/:id/versions.

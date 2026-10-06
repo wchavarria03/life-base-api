@@ -15,12 +15,7 @@ func NewAdminHandler(svc AdminManager) *AdminHandler {
 
 // ListMembers handles GET /v1/admin/users.
 func (h *AdminHandler) ListMembers(c *gin.Context) {
-	members, err := h.svc.ListMembers(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, members)
+	listHandler(h.svc.ListMembers)(c)
 }
 
 type setRoleRequest struct {
@@ -43,12 +38,7 @@ func (h *AdminHandler) SetMemberRole(c *gin.Context) {
 
 // ListPageAccess handles GET /v1/admin/page-access.
 func (h *AdminHandler) ListPageAccess(c *gin.Context) {
-	entries, err := h.svc.ListPageAccess(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, entries)
+	listHandler(h.svc.ListPageAccess)(c)
 }
 
 // SetPageAccess handles PUT /v1/admin/page-access.

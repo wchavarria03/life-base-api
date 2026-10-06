@@ -21,12 +21,7 @@ func NewMedicalProfileHandler(svc MedicalProfileManager) *MedicalProfileHandler 
 
 // List handles GET /v1/medical-profiles.
 func (h *MedicalProfileHandler) List(c *gin.Context) {
-	profiles, err := h.svc.List(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, profiles)
+	listHandler(h.svc.List)(c)
 }
 
 // Create handles POST /v1/medical-profiles.
@@ -59,11 +54,7 @@ func (h *MedicalProfileHandler) Update(c *gin.Context) {
 
 // Delete handles DELETE /v1/medical-profiles/:id.
 func (h *MedicalProfileHandler) Delete(c *gin.Context) {
-	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.Delete)(c)
 }
 
 // ListAccess handles GET /v1/medical-profiles/:id/access.
@@ -169,11 +160,7 @@ func (h *MedicalRecordHandler) Update(c *gin.Context) {
 
 // Delete handles DELETE /v1/medical-records/:id.
 func (h *MedicalRecordHandler) Delete(c *gin.Context) {
-	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.Delete)(c)
 }
 
 // ListFiles handles GET /v1/medical-records/:id/files.
@@ -313,11 +300,7 @@ func (h *MedicalMedicationHandler) Update(c *gin.Context) {
 
 // Delete handles DELETE /v1/medical-medications/:id.
 func (h *MedicalMedicationHandler) Delete(c *gin.Context) {
-	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.Delete)(c)
 }
 
 // NewMedicalAttributeDefHandler constructs a MedicalAttributeDefHandler.
@@ -327,12 +310,7 @@ func NewMedicalAttributeDefHandler(svc MedicalAttributeDefManager) *MedicalAttri
 
 // List handles GET /v1/medical-attribute-defs.
 func (h *MedicalAttributeDefHandler) List(c *gin.Context) {
-	defs, err := h.svc.List(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, defs)
+	listHandler(h.svc.List)(c)
 }
 
 // Upsert handles PUT /v1/medical-attribute-defs.

@@ -16,12 +16,7 @@ func NewDocumentHandler(svc DocumentManager) *DocumentHandler {
 
 // List handles GET /v1/documents.
 func (h *DocumentHandler) List(c *gin.Context) {
-	docs, err := h.svc.List(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, docs)
+	listHandler(h.svc.List)(c)
 }
 
 // Upload handles POST /v1/documents — multipart upload with a "file" field
@@ -67,9 +62,5 @@ func (h *DocumentHandler) Download(c *gin.Context) {
 
 // Delete handles DELETE /v1/documents/:id.
 func (h *DocumentHandler) Delete(c *gin.Context) {
-	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.Delete)(c)
 }

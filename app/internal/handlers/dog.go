@@ -51,12 +51,7 @@ func NewDogHandler(svc DogManager) *DogHandler {
 
 // ListDogs handles GET /v1/dogs.
 func (h *DogHandler) ListDogs(c *gin.Context) {
-	dogs, err := h.svc.ListDogs(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, dogs)
+	listHandler(h.svc.ListDogs)(c)
 }
 
 // CreateDog handles POST /v1/dogs.
@@ -71,23 +66,14 @@ func (h *DogHandler) UpdateDog(c *gin.Context) {
 
 // DeleteDog handles DELETE /v1/dogs/:id.
 func (h *DogHandler) DeleteDog(c *gin.Context) {
-	if err := h.svc.DeleteDog(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.DeleteDog)(c)
 }
 
 // ── Recipient types ──────────────────────────────────────────────────────────
 
 // ListRecipientTypes handles GET /v1/dog-recipient-types.
 func (h *DogHandler) ListRecipientTypes(c *gin.Context) {
-	types, err := h.svc.ListRecipientTypes(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, types)
+	listHandler(h.svc.ListRecipientTypes)(c)
 }
 
 // CreateRecipientType handles POST /v1/dog-recipient-types.
@@ -102,23 +88,14 @@ func (h *DogHandler) UpdateRecipientType(c *gin.Context) {
 
 // DeleteRecipientType handles DELETE /v1/dog-recipient-types/:id.
 func (h *DogHandler) DeleteRecipientType(c *gin.Context) {
-	if err := h.svc.DeleteRecipientType(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.DeleteRecipientType)(c)
 }
 
 // ── Recipient allocations ────────────────────────────────────────────────────
 
 // ListAllocations handles GET /v1/dog-recipient-allocations.
 func (h *DogHandler) ListAllocations(c *gin.Context) {
-	allocations, err := h.svc.ListAllocations(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, allocations)
+	listHandler(h.svc.ListAllocations)(c)
 }
 
 // PortionBatch handles POST /v1/dog-recipient-allocations/portion.
@@ -175,24 +152,14 @@ func (h *DogHandler) CatchUpFeeds(c *gin.Context) {
 // expected and actually-logged feeds per dog over the last
 // services.DogFeedReviewLookbackDays days.
 func (h *DogHandler) FeedReview(c *gin.Context) {
-	entries, err := h.svc.FeedReview(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, entries)
+	listHandler(h.svc.FeedReview)(c)
 }
 
 // ── Bulk bags ────────────────────────────────────────────────────────────────
 
 // ListBulkBags handles GET /v1/dog-bulk-bags.
 func (h *DogHandler) ListBulkBags(c *gin.Context) {
-	bags, err := h.svc.ListBulkBags(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, bags)
+	listHandler(h.svc.ListBulkBags)(c)
 }
 
 // CreateBulkBag handles POST /v1/dog-bulk-bags.
@@ -202,23 +169,14 @@ func (h *DogHandler) CreateBulkBag(c *gin.Context) {
 
 // DeleteBulkBag handles DELETE /v1/dog-bulk-bags/:id.
 func (h *DogHandler) DeleteBulkBag(c *gin.Context) {
-	if err := h.svc.DeleteBulkBag(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.DeleteBulkBag)(c)
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────
 
 // GetSettings handles GET /v1/dog-settings.
 func (h *DogHandler) GetSettings(c *gin.Context) {
-	settings, err := h.svc.GetSettings(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, settings)
+	listHandler(h.svc.GetSettings)(c)
 }
 
 // SetSettings handles PUT /v1/dog-settings.

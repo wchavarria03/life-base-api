@@ -52,9 +52,5 @@ func (h *TaskListHandler) Create(c *gin.Context) {
 
 // Delete handles DELETE /v1/task-lists/:id.
 func (h *TaskListHandler) Delete(c *gin.Context) {
-	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.Delete)(c)
 }

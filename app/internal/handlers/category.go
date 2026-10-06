@@ -14,12 +14,7 @@ func NewCategoryHandler(svc CategoryManager) *CategoryHandler {
 }
 
 func (h *CategoryHandler) List(c *gin.Context) {
-	cats, err := h.svc.List(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, cats)
+	listHandler(h.svc.List)(c)
 }
 
 func (h *CategoryHandler) Create(c *gin.Context) {
@@ -72,20 +67,11 @@ func (h *CategoryHandler) Update(c *gin.Context) {
 }
 
 func (h *CategoryHandler) Delete(c *gin.Context) {
-	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.Delete)(c)
 }
 
 func (h *CategoryHandler) ListRules(c *gin.Context) {
-	rules, err := h.svc.ListRules(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, rules)
+	listHandler(h.svc.ListRules)(c)
 }
 
 func (h *CategoryHandler) CreateRule(c *gin.Context) {
@@ -110,11 +96,7 @@ func (h *CategoryHandler) CreateRule(c *gin.Context) {
 }
 
 func (h *CategoryHandler) DeleteRule(c *gin.Context) {
-	if err := h.svc.DeleteRule(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.DeleteRule)(c)
 }
 
 func (h *CategoryHandler) PreviewRule(c *gin.Context) {

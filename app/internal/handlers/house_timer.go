@@ -13,12 +13,7 @@ func NewHouseTimerHandler(svc HouseTimerManager) *HouseTimerHandler {
 
 // List handles GET /v1/house-timers.
 func (h *HouseTimerHandler) List(c *gin.Context) {
-	timers, err := h.svc.List(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, timers)
+	listHandler(h.svc.List)(c)
 }
 
 // Create handles POST /v1/house-timers.
@@ -42,18 +37,10 @@ func (h *HouseTimerHandler) Create(c *gin.Context) {
 
 // MarkAnnounced handles POST /v1/house-timers/:id/announced.
 func (h *HouseTimerHandler) MarkAnnounced(c *gin.Context) {
-	if err := h.svc.MarkAnnounced(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.MarkAnnounced)(c)
 }
 
 // Delete handles DELETE /v1/house-timers/:id.
 func (h *HouseTimerHandler) Delete(c *gin.Context) {
-	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.Delete)(c)
 }

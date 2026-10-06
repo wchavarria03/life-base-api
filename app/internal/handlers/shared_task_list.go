@@ -37,12 +37,7 @@ type createSharedTaskListRequest struct {
 
 // List handles GET /v1/shared-lists.
 func (h *SharedTaskListHandler) List(c *gin.Context) {
-	shares, err := h.svc.List(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, shares)
+	listHandler(h.svc.List)(c)
 }
 
 // Create handles POST /v1/shared-lists.
@@ -69,11 +64,7 @@ func (h *SharedTaskListHandler) Create(c *gin.Context) {
 
 // Revoke handles DELETE /v1/shared-lists/:id.
 func (h *SharedTaskListHandler) Revoke(c *gin.Context) {
-	if err := h.svc.Revoke(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.Revoke)(c)
 }
 
 // PublicTasks handles GET /public/shared/:token — no auth, the token is the

@@ -40,31 +40,11 @@ func (h *TaskHandler) List(c *gin.Context) {
 }
 
 func (h *TaskHandler) Create(c *gin.Context) {
-	var input models.TaskInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	task, err := h.svc.Create(c.Request.Context(), input)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusCreated, task)
+	createHandler(h.svc.Create)(c)
 }
 
 func (h *TaskHandler) Update(c *gin.Context) {
-	var fields map[string]any
-	if err := c.ShouldBindJSON(&fields); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	task, err := h.svc.Update(c.Request.Context(), c.Param("id"), fields)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, task)
+	updateHandler(h.svc.Update)(c)
 }
 
 func (h *TaskHandler) Complete(c *gin.Context) {
@@ -77,9 +57,5 @@ func (h *TaskHandler) Complete(c *gin.Context) {
 }
 
 func (h *TaskHandler) Delete(c *gin.Context) {
-	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.Delete)(c)
 }

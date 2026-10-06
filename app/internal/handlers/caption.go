@@ -15,12 +15,7 @@ func NewCaptionHandler(svc CaptionManager) *CaptionHandler {
 
 // ListCategories handles GET /v1/caption-categories.
 func (h *CaptionHandler) ListCategories(c *gin.Context) {
-	cats, err := h.svc.ListCategories(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, cats)
+	listHandler(h.svc.ListCategories)(c)
 }
 
 type categoryRequest struct {
@@ -59,23 +54,14 @@ func (h *CaptionHandler) UpdateCategory(c *gin.Context) {
 
 // DeleteCategory handles DELETE /v1/caption-categories/:id.
 func (h *CaptionHandler) DeleteCategory(c *gin.Context) {
-	if err := h.svc.DeleteCategory(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.DeleteCategory)(c)
 }
 
 // ── Templates ────────────────────────────────────────────────────────────────
 
 // ListTemplates handles GET /v1/caption-templates.
 func (h *CaptionHandler) ListTemplates(c *gin.Context) {
-	templates, err := h.svc.ListTemplates(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, templates)
+	listHandler(h.svc.ListTemplates)(c)
 }
 
 type createTemplateRequest struct {
@@ -120,11 +106,7 @@ func (h *CaptionHandler) UpdateTemplate(c *gin.Context) {
 
 // DeleteTemplate handles DELETE /v1/caption-templates/:id.
 func (h *CaptionHandler) DeleteTemplate(c *gin.Context) {
-	if err := h.svc.DeleteTemplate(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.DeleteTemplate)(c)
 }
 
 // ── Versions ─────────────────────────────────────────────────────────────────

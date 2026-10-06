@@ -61,12 +61,7 @@ func (h *ScheduledPostHandler) Create(c *gin.Context) {
 
 // List handles GET /v1/social/scheduled.
 func (h *ScheduledPostHandler) List(c *gin.Context) {
-	posts, err := h.svc.List(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, posts)
+	listHandler(h.svc.List)(c)
 }
 
 // Delete handles DELETE /v1/social/scheduled/:id — cancels a pending post.

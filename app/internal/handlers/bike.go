@@ -13,12 +13,7 @@ func NewBikeHandler(svc BikeManager) *BikeHandler {
 }
 
 func (h *BikeHandler) List(c *gin.Context) {
-	bikes, err := h.svc.List(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, bikes)
+	listHandler(h.svc.List)(c)
 }
 
 func (h *BikeHandler) Get(c *gin.Context) {
@@ -35,39 +30,15 @@ func (h *BikeHandler) Get(c *gin.Context) {
 }
 
 func (h *BikeHandler) Create(c *gin.Context) {
-	var input models.BikeInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	bike, err := h.svc.Create(c.Request.Context(), input)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusCreated, bike)
+	createHandler(h.svc.Create)(c)
 }
 
 func (h *BikeHandler) Update(c *gin.Context) {
-	var fields map[string]any
-	if err := c.ShouldBindJSON(&fields); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	bike, err := h.svc.Update(c.Request.Context(), c.Param("id"), fields)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, bike)
+	updateHandler(h.svc.Update)(c)
 }
 
 func (h *BikeHandler) Delete(c *gin.Context) {
-	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.Delete)(c)
 }
 
 func NewBikeFitHistoryHandler(svc BikeFitHistoryManager) *BikeFitHistoryHandler {

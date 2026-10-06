@@ -289,9 +289,5 @@ func (h *SocialHandler) RetryInstagram(c *gin.Context) {
 // Delete handles DELETE /v1/social/posts/:id — removes the history row only,
 // does not touch the live Facebook/Instagram post.
 func (h *SocialHandler) Delete(c *gin.Context) {
-	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.Delete)(c)
 }

@@ -14,12 +14,7 @@ func NewReminderHandler(svc ReminderManager) *ReminderHandler {
 }
 
 func (h *ReminderHandler) List(c *gin.Context) {
-	reminders, err := h.svc.List(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, reminders)
+	listHandler(h.svc.List)(c)
 }
 
 func (h *ReminderHandler) ListByAccount(c *gin.Context) {

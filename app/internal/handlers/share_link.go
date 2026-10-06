@@ -34,12 +34,7 @@ func NewShareLinkHandler(svc ShareLinkManager) *ShareLinkHandler {
 
 // List handles GET /v1/share-links.
 func (h *ShareLinkHandler) List(c *gin.Context) {
-	links, err := h.svc.List(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, links)
+	listHandler(h.svc.List)(c)
 }
 
 // Create handles POST /v1/share-links.
@@ -73,11 +68,7 @@ func (h *ShareLinkHandler) Create(c *gin.Context) {
 
 // Revoke handles DELETE /v1/share-links/:id.
 func (h *ShareLinkHandler) Revoke(c *gin.Context) {
-	if err := h.svc.Revoke(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.Revoke)(c)
 }
 
 // PublicResolve handles GET /public/shared/:token — no auth, the token is

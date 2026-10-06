@@ -14,12 +14,7 @@ func NewEnvelopeHandler(svc EnvelopeManager) *EnvelopeHandler {
 }
 
 func (h *EnvelopeHandler) List(c *gin.Context) {
-	statuses, err := h.svc.List(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, statuses)
+	listHandler(h.svc.List)(c)
 }
 
 func (h *EnvelopeHandler) ListByAccount(c *gin.Context) {

@@ -4,8 +4,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-
-	"life-base-api/app/internal/models"
 )
 
 func NewGearHandler(svc GearManager) *GearHandler {
@@ -13,48 +11,19 @@ func NewGearHandler(svc GearManager) *GearHandler {
 }
 
 func (h *GearHandler) List(c *gin.Context) {
-	gear, err := h.svc.List(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, gear)
+	listHandler(h.svc.List)(c)
 }
 
 func (h *GearHandler) Create(c *gin.Context) {
-	var input models.GearInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	gear, err := h.svc.Create(c.Request.Context(), input)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusCreated, gear)
+	createHandler(h.svc.Create)(c)
 }
 
 func (h *GearHandler) Update(c *gin.Context) {
-	var fields map[string]any
-	if err := c.ShouldBindJSON(&fields); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	gear, err := h.svc.Update(c.Request.Context(), c.Param("id"), fields)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, gear)
+	updateHandler(h.svc.Update)(c)
 }
 
 func (h *GearHandler) Delete(c *gin.Context) {
-	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.Delete)(c)
 }
 
 func NewBottleHandler(svc BottleManager) *BottleHandler {
@@ -62,40 +31,15 @@ func NewBottleHandler(svc BottleManager) *BottleHandler {
 }
 
 func (h *BottleHandler) List(c *gin.Context) {
-	bottles, err := h.svc.List(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, bottles)
+	listHandler(h.svc.List)(c)
 }
 
 func (h *BottleHandler) Create(c *gin.Context) {
-	var input models.BottleInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	bottle, err := h.svc.Create(c.Request.Context(), input)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusCreated, bottle)
+	createHandler(h.svc.Create)(c)
 }
 
 func (h *BottleHandler) Update(c *gin.Context) {
-	var fields map[string]any
-	if err := c.ShouldBindJSON(&fields); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	bottle, err := h.svc.Update(c.Request.Context(), c.Param("id"), fields)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, bottle)
+	updateHandler(h.svc.Update)(c)
 }
 
 func (h *BottleHandler) MarkCleaned(c *gin.Context) {
@@ -108,11 +52,7 @@ func (h *BottleHandler) MarkCleaned(c *gin.Context) {
 }
 
 func (h *BottleHandler) Delete(c *gin.Context) {
-	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.Delete)(c)
 }
 
 func NewSupplyHandler(svc SupplyManager) *SupplyHandler {
@@ -120,40 +60,15 @@ func NewSupplyHandler(svc SupplyManager) *SupplyHandler {
 }
 
 func (h *SupplyHandler) List(c *gin.Context) {
-	supplies, err := h.svc.List(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, supplies)
+	listHandler(h.svc.List)(c)
 }
 
 func (h *SupplyHandler) Create(c *gin.Context) {
-	var input models.SupplyInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	supply, err := h.svc.Create(c.Request.Context(), input)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusCreated, supply)
+	createHandler(h.svc.Create)(c)
 }
 
 func (h *SupplyHandler) Update(c *gin.Context) {
-	var fields map[string]any
-	if err := c.ShouldBindJSON(&fields); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	supply, err := h.svc.Update(c.Request.Context(), c.Param("id"), fields)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, supply)
+	updateHandler(h.svc.Update)(c)
 }
 
 func (h *SupplyHandler) Deplete(c *gin.Context) {
@@ -166,18 +81,9 @@ func (h *SupplyHandler) Deplete(c *gin.Context) {
 }
 
 func (h *SupplyHandler) Delete(c *gin.Context) {
-	if err := h.svc.Delete(c.Request.Context(), c.Param("id")); err != nil {
-		internalError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
+	deleteHandler(h.svc.Delete)(c)
 }
 
 func (h *SupplyHandler) ListHistory(c *gin.Context) {
-	history, err := h.svc.ListHistory(c.Request.Context())
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, history)
+	listHandler(h.svc.ListHistory)(c)
 }
