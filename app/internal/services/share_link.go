@@ -214,6 +214,7 @@ func (s *ShareLinkService) Resolve(ctx context.Context, token string) (*models.S
 			MedicalRecord: &models.SharedMedicalRecordView{
 				Title: record.Title, RecordType: record.RecordType, RecordDate: record.RecordDate,
 				Attributes: record.Attributes, Notes: record.Notes,
+				DoctorName: record.DoctorName, Recommendations: record.Recommendations,
 			},
 		}, nil
 

@@ -75,6 +75,8 @@ type MedicalRecord struct {
 	// display. Keys with no entry fall back to an "Other" group in the UI.
 	AttributeGroups map[string]string `json:"attribute_groups"`
 	Notes           *string           `json:"notes,omitempty"`
+	DoctorName      *string           `json:"doctor_name,omitempty"`
+	Recommendations *string           `json:"recommendations,omitempty"`
 	CreatedAt       time.Time         `json:"created_at,omitempty"`
 }
 
@@ -88,6 +90,8 @@ type MedicalRecordInput struct {
 	Attributes      map[string]any    `json:"attributes,omitempty"`
 	AttributeGroups map[string]string `json:"attribute_groups,omitempty"`
 	Notes           *string           `json:"notes,omitempty"`
+	DoctorName      *string           `json:"doctor_name,omitempty"`
+	Recommendations *string           `json:"recommendations,omitempty"`
 }
 
 // MedicalRecordFile is one attached file (X-ray, lab PDF) on a record — the

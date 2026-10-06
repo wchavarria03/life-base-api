@@ -87,11 +87,13 @@ type SharedMedicalProfileView struct {
 // SharedMedicalRecordView is the public, read-only projection of a single
 // medical record — no attached files.
 type SharedMedicalRecordView struct {
-	Title      string            `json:"title"`
-	RecordType MedicalRecordType `json:"record_type"`
-	RecordDate string            `json:"record_date"`
-	Attributes map[string]any    `json:"attributes"`
-	Notes      *string           `json:"notes,omitempty"`
+	Title           string            `json:"title"`
+	RecordType      MedicalRecordType `json:"record_type"`
+	RecordDate      string            `json:"record_date"`
+	Attributes      map[string]any    `json:"attributes"`
+	Notes           *string           `json:"notes,omitempty"`
+	DoctorName      *string           `json:"doctor_name,omitempty"`
+	Recommendations *string           `json:"recommendations,omitempty"`
 }
 
 // SharedResource is the public resolver's response envelope — exactly one
