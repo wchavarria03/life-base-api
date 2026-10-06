@@ -226,10 +226,34 @@ func (s *MedicalRecordService) notifyOutOfRange(ctx context.Context, userID stri
 	if s.cfg.VAPIDPublicKey == "" || s.cfg.VAPIDPrivateKey == "" || len(record.Attributes) == 0 {
 		return
 	}
-	defs, err := s.defs.List(ctx)
+	flagged, err := s.flaggedAttributeLabels(ctx, record)
 	if err != nil {
 		log.Printf("medical: list attribute defs for push check: %v", err)
 		return
+	}
+	if len(flagged) == 0 {
+		return
+	}
+
+	subs, err := s.push.ListByUserID(ctx, userID)
+	if err != nil {
+		log.Printf("medical: list push subscriptions: %v", err)
+		return
+	}
+	body := fmt.Sprintf("%s: %s out of range", record.Title, strings.Join(flagged, ", "))
+	payload, err := json.Marshal(map[string]string{"title": "Lab value out of range", "body": body})
+	if err != nil {
+		return
+	}
+	s.sendPushToAll(ctx, subs, payload)
+}
+
+// flaggedAttributeLabels returns the friendly label (or raw key) of every
+// attribute on record whose value falls outside its known reference range.
+func (s *MedicalRecordService) flaggedAttributeLabels(ctx context.Context, record *models.MedicalRecord) ([]string, error) {
+	defs, err := s.defs.List(ctx)
+	if err != nil {
+		return nil, err
 	}
 	defByKey := make(map[string]*models.MedicalAttributeDef, len(defs))
 	for _, d := range defs {
@@ -250,20 +274,12 @@ func (s *MedicalRecordService) notifyOutOfRange(ctx context.Context, userID stri
 			flagged = append(flagged, label)
 		}
 	}
-	if len(flagged) == 0 {
-		return
-	}
+	return flagged, nil
+}
 
-	subs, err := s.push.ListByUserID(ctx, userID)
-	if err != nil {
-		log.Printf("medical: list push subscriptions: %v", err)
-		return
-	}
-	body := fmt.Sprintf("%s: %s out of range", record.Title, strings.Join(flagged, ", "))
-	payload, err := json.Marshal(map[string]string{"title": "Lab value out of range", "body": body})
-	if err != nil {
-		return
-	}
+// sendPushToAll best-effort-sends payload to every subscription, pruning
+// any that the push service reports as gone.
+func (s *MedicalRecordService) sendPushToAll(ctx context.Context, subs []*models.PushSubscription, payload []byte) {
 	for _, sub := range subs {
 		resp, err := webpush.SendNotificationWithContext(ctx, payload, &webpush.Subscription{
 			Endpoint: sub.Endpoint,
