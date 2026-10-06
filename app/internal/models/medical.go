@@ -70,19 +70,24 @@ type MedicalRecord struct {
 	Title      string            `json:"title"`
 	RecordDate string            `json:"record_date"`
 	Attributes map[string]any    `json:"attributes"`
-	Notes      *string           `json:"notes,omitempty"`
-	CreatedAt  time.Time         `json:"created_at,omitempty"`
+	// AttributeGroups optionally maps an attribute key to the section it
+	// appeared under in the source exam (e.g. "Serie blanca"), for grouped
+	// display. Keys with no entry fall back to an "Other" group in the UI.
+	AttributeGroups map[string]string `json:"attribute_groups"`
+	Notes           *string           `json:"notes,omitempty"`
+	CreatedAt       time.Time         `json:"created_at,omitempty"`
 }
 
 // MedicalRecordInput is the write shape for create/update.
 type MedicalRecordInput struct {
-	ProfileID  string            `json:"profile_id,omitempty"`
-	CreatedBy  string            `json:"created_by,omitempty"`
-	RecordType MedicalRecordType `json:"record_type,omitempty"`
-	Title      string            `json:"title,omitempty"`
-	RecordDate string            `json:"record_date,omitempty"`
-	Attributes map[string]any    `json:"attributes,omitempty"`
-	Notes      *string           `json:"notes,omitempty"`
+	ProfileID       string            `json:"profile_id,omitempty"`
+	CreatedBy       string            `json:"created_by,omitempty"`
+	RecordType      MedicalRecordType `json:"record_type,omitempty"`
+	Title           string            `json:"title,omitempty"`
+	RecordDate      string            `json:"record_date,omitempty"`
+	Attributes      map[string]any    `json:"attributes,omitempty"`
+	AttributeGroups map[string]string `json:"attribute_groups,omitempty"`
+	Notes           *string           `json:"notes,omitempty"`
 }
 
 // MedicalRecordFile is one attached file (X-ray, lab PDF) on a record — the
