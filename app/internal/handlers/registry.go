@@ -51,6 +51,10 @@ type Registry struct {
 	MedicalRecord       *MedicalRecordHandler
 	MedicalAttributeDef *MedicalAttributeDefHandler
 	MedicalMedication   *MedicalMedicationHandler
+
+	ChildProfile *ChildProfileHandler
+	Wallet       *WalletHandler
+	Shop         *ShopHandler
 }
 
 func NewRegistry(svc *services.Registry) (*Registry, error) {
@@ -62,7 +66,7 @@ func NewRegistry(svc *services.Registry) (*Registry, error) {
 		Category:        NewCategoryHandler(svc.Category),
 		Dump:            NewDumpHandler(),
 		Extract:         NewExtractHandler(svc.Import),
-		Me:              NewMeHandler(svc.Admin),
+		Me:              NewMeHandler(svc.Admin, svc.ChildProfile),
 		Report:          NewReportHandler(svc.Account, svc.Report),
 		RuleException:   NewRuleExceptionHandler(svc.RuleExceptions, svc.Category),
 		Transaction:     NewTransactionHandler(svc.Transaction),
@@ -91,7 +95,7 @@ func NewRegistry(svc *services.Registry) (*Registry, error) {
 		Activity:        NewActivityHandler(svc.Activity),
 		Strava:          NewStravaHandler(svc.Strava),
 
-		Task:                NewTaskHandler(svc.Task),
+		Task:                NewTaskHandler(svc.Task, svc.Wallet),
 		TaskList:            NewTaskListHandler(svc.TaskList),
 		Note:                NewNoteHandler(svc.Note),
 		SharedTaskList:      NewSharedTaskListHandler(svc.SharedTaskList),
@@ -102,6 +106,10 @@ func NewRegistry(svc *services.Registry) (*Registry, error) {
 		MedicalRecord:       NewMedicalRecordHandler(svc.MedicalRecord),
 		MedicalAttributeDef: NewMedicalAttributeDefHandler(svc.MedicalAttributeDef),
 		MedicalMedication:   NewMedicalMedicationHandler(svc.MedicalMedication),
+
+		ChildProfile: NewChildProfileHandler(svc.ChildProfile),
+		Wallet:       NewWalletHandler(svc.Wallet),
+		Shop:         NewShopHandler(svc.Shop),
 	}, nil
 }
 

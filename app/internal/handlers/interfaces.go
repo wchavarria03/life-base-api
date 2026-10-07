@@ -326,3 +326,27 @@ type StravaManager interface {
 	Disconnect(ctx context.Context) error
 	FetchActivities(ctx context.Context, after, before *time.Time, page, perPage int) ([]models.StravaActivityPreview, error)
 }
+
+type ChildProfileManager interface {
+	List(ctx context.Context) ([]*models.ChildProfile, error)
+	Create(ctx context.Context, input models.ChildProfileInput) (*models.ChildProfile, error)
+	Update(ctx context.Context, id string, fields map[string]any) (*models.ChildProfile, error)
+	Delete(ctx context.Context, id string) error
+	VerifyPIN(ctx context.Context, childID, pin string) (bool, error)
+	FindMyProfile(ctx context.Context, email string) (*models.ChildProfile, error)
+}
+
+type WalletManager interface {
+	Wallet(ctx context.Context, childID string) (*models.Wallet, error)
+}
+
+type ShopManager interface {
+	ListItems(ctx context.Context) ([]*models.ShopItem, error)
+	CreateItem(ctx context.Context, input models.ShopItemInput) (*models.ShopItem, error)
+	UpdateItem(ctx context.Context, id string, fields map[string]any) (*models.ShopItem, error)
+	DeleteItem(ctx context.Context, id string) error
+	ListOrdersByChild(ctx context.Context, childID string) ([]*models.ShopOrder, error)
+	ListPendingOrders(ctx context.Context) ([]*models.ShopOrder, error)
+	Purchase(ctx context.Context, childID, itemID string) (*models.ShopOrder, error)
+	MarkFulfilled(ctx context.Context, orderID string) (*models.ShopOrder, error)
+}

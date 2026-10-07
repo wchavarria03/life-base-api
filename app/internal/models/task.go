@@ -80,26 +80,31 @@ type Task struct {
 	ListID            *string      `json:"list_id,omitempty"`
 	ParentTaskID      *string      `json:"parent_task_id,omitempty"`
 	Tags              []string     `json:"tags"`
+	AssignedChildID   *string      `json:"assigned_child_id,omitempty"`
+	CoinValue         *int         `json:"coin_value,omitempty"`
+	PenaltyAppliedAt  *time.Time   `json:"penalty_applied_at,omitempty"`
 	CreatedAt         time.Time    `json:"created_at,omitempty"`
 	UpdatedAt         time.Time    `json:"updated_at,omitempty"`
 }
 
 // TaskInput is the write shape for create/update.
 type TaskInput struct {
-	UserID         string       `json:"user_id,omitempty"`
-	Category       TaskCategory `json:"category,omitempty"`
-	Title          string       `json:"title,omitempty"`
-	Description    *string      `json:"description,omitempty"`
-	Priority       string       `json:"priority,omitempty"`
-	IsRecurring    *bool        `json:"is_recurring,omitempty"`
-	IntervalDays   *int         `json:"interval_days,omitempty"`
-	RecurrenceType *string      `json:"recurrence_type,omitempty"`
-	DueDate        *string      `json:"due_date,omitempty"`
-	DueTime        *string      `json:"due_time,omitempty"`
-	Notes          *string      `json:"notes,omitempty"`
-	ListID         *string      `json:"list_id,omitempty"`
-	ParentTaskID   *string      `json:"parent_task_id,omitempty"`
-	Tags           []string     `json:"tags,omitempty"`
+	UserID          string       `json:"user_id,omitempty"`
+	Category        TaskCategory `json:"category,omitempty"`
+	Title           string       `json:"title,omitempty"`
+	Description     *string      `json:"description,omitempty"`
+	Priority        string       `json:"priority,omitempty"`
+	IsRecurring     *bool        `json:"is_recurring,omitempty"`
+	IntervalDays    *int         `json:"interval_days,omitempty"`
+	RecurrenceType  *string      `json:"recurrence_type,omitempty"`
+	DueDate         *string      `json:"due_date,omitempty"`
+	DueTime         *string      `json:"due_time,omitempty"`
+	Notes           *string      `json:"notes,omitempty"`
+	ListID          *string      `json:"list_id,omitempty"`
+	ParentTaskID    *string      `json:"parent_task_id,omitempty"`
+	Tags            []string     `json:"tags,omitempty"`
+	AssignedChildID *string      `json:"assigned_child_id,omitempty"`
+	CoinValue       *int         `json:"coin_value,omitempty"`
 }
 
 // TaskWithStatus enriches Task with a derived status field.

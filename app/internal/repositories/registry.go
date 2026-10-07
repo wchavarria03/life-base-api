@@ -62,6 +62,11 @@ type Registry struct {
 	MedicalRecordFiles   *supabaserepo.MedicalRecordFileRepository
 	MedicalAttributeDefs *supabaserepo.MedicalAttributeDefRepository
 	MedicalMedications   *supabaserepo.MedicalMedicationRepository
+
+	ChildProfiles      *supabaserepo.ChildProfileRepository
+	WalletTransactions *supabaserepo.WalletTransactionRepository
+	ShopItems          *supabaserepo.ShopItemRepository
+	ShopOrders         *supabaserepo.ShopOrderRepository
 }
 
 func NewRegistry(dbs *databases.Registry) *Registry {
@@ -122,5 +127,10 @@ func NewRegistry(dbs *databases.Registry) *Registry {
 		MedicalRecordFiles:   supabaserepo.NewMedicalRecordFileRepository(dbs.Supabase),
 		MedicalAttributeDefs: supabaserepo.NewMedicalAttributeDefRepository(dbs.Supabase),
 		MedicalMedications:   supabaserepo.NewMedicalMedicationRepository(dbs.Supabase),
+
+		ChildProfiles:      supabaserepo.NewChildProfileRepository(dbs.Supabase),
+		WalletTransactions: supabaserepo.NewWalletTransactionRepository(dbs.Supabase),
+		ShopItems:          supabaserepo.NewShopItemRepository(dbs.Supabase),
+		ShopOrders:         supabaserepo.NewShopOrderRepository(dbs.Supabase),
 	}
 }

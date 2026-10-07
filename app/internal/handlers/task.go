@@ -14,15 +14,23 @@ type TaskManager interface {
 	Create(ctx context.Context, input models.TaskInput) (*models.Task, error)
 	Update(ctx context.Context, id string, fields map[string]any) (*models.Task, error)
 	Delete(ctx context.Context, id string) error
-	Complete(ctx context.Context, id string) (*models.Task, error)
+}
+
+// TaskCompleter is the single entry point for completing a task — plain
+// TaskService.Complete for most tasks, but services.WalletService.CompleteTask
+// additionally authorizes and awards coins when the task is assigned to a
+// child. See WalletService.CompleteTask's doc comment.
+type TaskCompleter interface {
+	CompleteTask(ctx context.Context, id string) (*models.Task, error)
 }
 
 type TaskHandler struct {
-	svc TaskManager
+	svc       TaskManager
+	completer TaskCompleter
 }
 
-func NewTaskHandler(svc TaskManager) *TaskHandler {
-	return &TaskHandler{svc: svc}
+func NewTaskHandler(svc TaskManager, completer TaskCompleter) *TaskHandler {
+	return &TaskHandler{svc: svc, completer: completer}
 }
 
 func (h *TaskHandler) List(c *gin.Context) {
@@ -48,7 +56,7 @@ func (h *TaskHandler) Update(c *gin.Context) {
 }
 
 func (h *TaskHandler) Complete(c *gin.Context) {
-	task, err := h.svc.Complete(c.Request.Context(), c.Param("id"))
+	task, err := h.completer.CompleteTask(c.Request.Context(), c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 		return

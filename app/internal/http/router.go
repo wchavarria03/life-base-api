@@ -61,6 +61,7 @@ func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL, issuer s
 	setupAdminRoutes(v1, hdlrs)
 	setupCaptionRoutes(v1, hdlrs)
 	setupDogRoutes(v1, hdlrs)
+	setupKidRoutes(v1, hdlrs)
 	setupSocialRoutes(v1, hdlrs)
 	setupBikeRoutes(v1, hdlrs)
 	setupTaskRoutes(v1, hdlrs)
@@ -124,6 +125,29 @@ func setupDogRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 
 	rg.GET("/dog-settings", hdlrs.Dog.GetSettings)
 	rg.PUT("/dog-settings", hdlrs.Dog.SetSettings)
+}
+
+func setupKidRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
+	profiles := rg.Group("/kids/profiles")
+	profiles.GET("", hdlrs.ChildProfile.List)
+	profiles.POST("", hdlrs.ChildProfile.Create)
+	profiles.PATCH("/:id", hdlrs.ChildProfile.Update)
+	profiles.DELETE("/:id", hdlrs.ChildProfile.Delete)
+	profiles.POST("/:id/verify-pin", hdlrs.ChildProfile.VerifyPIN)
+
+	rg.GET("/kids/wallet/:childId", hdlrs.Wallet.Get)
+
+	items := rg.Group("/kids/shop-items")
+	items.GET("", hdlrs.Shop.ListItems)
+	items.POST("", hdlrs.Shop.CreateItem)
+	items.PATCH("/:id", hdlrs.Shop.UpdateItem)
+	items.DELETE("/:id", hdlrs.Shop.DeleteItem)
+
+	orders := rg.Group("/kids/shop-orders")
+	orders.GET("", hdlrs.Shop.ListOrdersByChild)
+	orders.GET("/pending", hdlrs.Shop.ListPendingOrders)
+	orders.POST("/purchase", hdlrs.Shop.Purchase)
+	orders.POST("/:id/fulfill", hdlrs.Shop.Fulfill)
 }
 
 func setupCaptionRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {

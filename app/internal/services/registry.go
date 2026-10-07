@@ -48,6 +48,10 @@ type Registry struct {
 	MedicalRecord       *MedicalRecordService
 	MedicalAttributeDef *MedicalAttributeDefService
 	MedicalMedication   *MedicalMedicationService
+
+	ChildProfile *ChildProfileService
+	Wallet       *WalletService
+	Shop         *ShopService
 }
 
 // NewRegistry wires every service with its repository dependencies.
@@ -117,5 +121,9 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 	r.MedicalAttributeDef = NewMedicalAttributeDefService(repos.MedicalAttributeDefs)
 	r.MedicalMedication = NewMedicalMedicationService(repos.MedicalMedications)
 	r.ShareLink = NewShareLinkService(repos.ShareLinks, r.Note, r.Bike, r.Component, r.MedicalProfile, r.MedicalRecord)
+
+	r.ChildProfile = NewChildProfileService(repos.ChildProfiles)
+	r.Wallet = NewWalletService(taskSvc, repos.ChildProfiles, repos.WalletTransactions)
+	r.Shop = NewShopService(repos.ShopItems, repos.ShopOrders, repos.ChildProfiles, repos.WalletTransactions)
 	return r
 }

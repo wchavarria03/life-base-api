@@ -1,0 +1,32 @@
+name: Apply Kid Task Penalties
+
+# Daily job: deducts a kid's configured penalty fee for any assigned task
+# left incomplete past its due date. Same free-cron-via-Actions pattern as
+# digest.yml — runs the `apply-kid-penalties` CLI subcommand
+# (app/cmd/kid_penalties.go) with the service-role key.
+
+on:
+  schedule:
+    - cron: "5 6 * * *" # 06:05 UTC daily — shortly after local midnight; adjust to taste
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  apply-kid-penalties:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - run: go build -o life-base-api .
+
+      - run: ./life-base-api apply-kid-penalties
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}

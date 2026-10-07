@@ -11,7 +11,8 @@ type AccountHandler struct {
 }
 
 type MeHandler struct {
-	admin AdminManager
+	admin         AdminManager
+	childProfiles ChildProfileManager
 }
 
 type TransactionHandler struct {
@@ -180,4 +181,16 @@ type ActivityHandler struct {
 
 type StravaHandler struct {
 	svc StravaManager
+}
+
+type ChildProfileHandler struct {
+	svc ChildProfileManager
+}
+
+type WalletHandler struct {
+	svc WalletManager
+}
+
+type ShopHandler struct {
+	svc ShopManager
 }
