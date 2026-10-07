@@ -16,6 +16,7 @@ func (h *BikeHandler) List(c *gin.Context) {
 	listHandler(h.svc.List)(c)
 }
 
+// Summary handles GET /v1/bikes/summary.
 func (h *BikeHandler) Summary(c *gin.Context) {
 	summary, err := h.svc.DashboardSummary(c.Request.Context())
 	if err != nil {
