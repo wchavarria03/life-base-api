@@ -93,3 +93,10 @@ type BikeFitHistoryInput struct {
 	CleatPosition          *string  `json:"cleat_position,omitempty"`
 	Notes                  *string  `json:"notes,omitempty"`
 }
+
+// BikeDashboardSummary is the aggregate shown on the Hub dashboard card —
+// computed server-side across every bike in one request.
+type BikeDashboardSummary struct {
+	BikeCount int `json:"bike_count"`
+	DueCount  int `json:"due_count"`
+}

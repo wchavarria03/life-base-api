@@ -257,6 +257,7 @@ type BikeManager interface {
 	Create(ctx context.Context, input models.BikeInput) (*models.Bike, error)
 	Update(ctx context.Context, id string, fields map[string]any) (*models.Bike, error)
 	Delete(ctx context.Context, id string) error
+	DashboardSummary(ctx context.Context) (*models.BikeDashboardSummary, error)
 }
 
 type BikeFitHistoryManager interface {

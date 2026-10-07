@@ -16,6 +16,15 @@ func (h *BikeHandler) List(c *gin.Context) {
 	listHandler(h.svc.List)(c)
 }
 
+func (h *BikeHandler) Summary(c *gin.Context) {
+	summary, err := h.svc.DashboardSummary(c.Request.Context())
+	if err != nil {
+		internalError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, summary)
+}
+
 func (h *BikeHandler) Get(c *gin.Context) {
 	bike, err := h.svc.FindByID(c.Request.Context(), c.Param("id"))
 	if err != nil {

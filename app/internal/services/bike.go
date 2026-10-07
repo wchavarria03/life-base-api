@@ -9,11 +9,16 @@ import (
 )
 
 type BikeService struct {
-	bikes BikeRepository
+	bikes       BikeRepository
+	components  *ComponentService
+	maintenance *MaintenanceTaskService
 }
 
-func NewBikeService(bikes BikeRepository) *BikeService {
-	return &BikeService{bikes: bikes}
+// NewBikeService constructs a BikeService. components/maintenance back
+// DashboardSummary, which aggregates each bike's due components/tasks
+// server-side instead of the frontend fetching them bike-by-bike.
+func NewBikeService(bikes BikeRepository, components *ComponentService, maintenance *MaintenanceTaskService) *BikeService {
+	return &BikeService{bikes: bikes, components: components, maintenance: maintenance}
 }
 
 func (s *BikeService) List(ctx context.Context) ([]*models.Bike, error) {
@@ -45,6 +50,42 @@ func (s *BikeService) Update(ctx context.Context, id string, fields map[string]a
 
 func (s *BikeService) Delete(ctx context.Context, id string) error {
 	return s.bikes.Delete(ctx, id)
+}
+
+// DashboardSummary aggregates bike count and total due components/tasks
+// across every bike in one call — replaces the frontend's previous
+// 1+2N fetch pattern (list bikes, then per-bike components+tasks) with a
+// single round trip; the N+1 still happens, just server-side where the
+// latency to Supabase is far cheaper than N+1 browser round trips.
+func (s *BikeService) DashboardSummary(ctx context.Context) (*models.BikeDashboardSummary, error) {
+	bikes, err := s.bikes.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list bikes: %w", err)
+	}
+
+	summary := &models.BikeDashboardSummary{BikeCount: len(bikes)}
+	for _, b := range bikes {
+		components, err := s.components.ListByBikeID(ctx, b.ID)
+		if err != nil {
+			return nil, fmt.Errorf("list components for bike %s: %w", b.ID, err)
+		}
+		for _, c := range components {
+			if c.IsDue {
+				summary.DueCount++
+			}
+		}
+
+		tasks, err := s.maintenance.ListByBikeID(ctx, b.ID)
+		if err != nil {
+			return nil, fmt.Errorf("list maintenance tasks for bike %s: %w", b.ID, err)
+		}
+		for _, t := range tasks {
+			if t.IsDue {
+				summary.DueCount++
+			}
+		}
+	}
+	return summary, nil
 }
 
 type BikeFitHistoryService struct {

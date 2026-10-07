@@ -60,6 +60,8 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 	socialSvc := NewSocialService(repos.SocialPosts, repos.Storage, social)
 	captionSvc := NewCaptionService(repos.Caption)
 	taskSvc := NewTaskService(repos.Tasks)
+	componentSvc := NewComponentService(repos.Components, repos.ComponentHistory)
+	maintenanceTaskSvc := NewMaintenanceTaskService(repos.MaintenanceTasks, repos.Bikes)
 	r := &Registry{
 		Account:         NewAccountService(repos.Accounts, repos.Transactions),
 		Budget:          NewBudgetService(repos.Budgets, repos.Accounts, repos.Transactions),
@@ -84,11 +86,11 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 		Dog:             NewDogService(repos.Dogs, repos.DogRecipientTypes, repos.DogRecipientAllocations, repos.DogFeedLog, repos.DogBulkBags, repos.DogSettings),
 		ScheduledPost:   NewScheduledPostService(repos.ScheduledPosts, repos.Storage, socialSvc, captionSvc),
 
-		Bike:            NewBikeService(repos.Bikes),
+		Bike:            NewBikeService(repos.Bikes, componentSvc, maintenanceTaskSvc),
 		BikeFitHistory:  NewBikeFitHistoryService(repos.BikeFitHistory),
-		Component:       NewComponentService(repos.Components, repos.ComponentHistory),
+		Component:       componentSvc,
 		ServiceLog:      NewServiceLogService(repos.ServiceLogs),
-		MaintenanceTask: NewMaintenanceTaskService(repos.MaintenanceTasks, repos.Bikes),
+		MaintenanceTask: maintenanceTaskSvc,
 		Gear:            NewGearService(repos.Gear),
 		Bottle:          NewBottleService(repos.Bottles),
 		Supply:          NewSupplyService(repos.Supplies, repos.SupplyHistory),

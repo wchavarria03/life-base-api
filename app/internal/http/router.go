@@ -164,6 +164,7 @@ func setupBikeRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	bikes := rg.Group("/bikes")
 	bikes.GET("", hdlrs.Bike.List)
 	bikes.POST("", hdlrs.Bike.Create)
+	bikes.GET("/summary", hdlrs.Bike.Summary)
 	bikes.GET("/:id", hdlrs.Bike.Get)
 	bikes.PATCH("/:id", hdlrs.Bike.Update)
 	bikes.DELETE("/:id", hdlrs.Bike.Delete)
