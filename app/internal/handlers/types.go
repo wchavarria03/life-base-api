@@ -183,14 +183,17 @@ type StravaHandler struct {
 	svc StravaManager
 }
 
+// ChildProfileHandler serves /v1/kids/profiles.
 type ChildProfileHandler struct {
 	svc ChildProfileManager
 }
 
+// WalletHandler serves /v1/kids/wallet.
 type WalletHandler struct {
 	svc WalletManager
 }
 
+// ShopHandler serves /v1/kids/shop-items and /v1/kids/shop-orders.
 type ShopHandler struct {
 	svc ShopManager
 }

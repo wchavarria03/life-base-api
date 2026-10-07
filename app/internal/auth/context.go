@@ -11,6 +11,8 @@ const (
 	userEmailKey contextKey = "supabase_user_email"
 )
 
+// WithUser stores the caller's JWT-derived identity on ctx: the raw token
+// (for forwarding to PostgREST), user id, household role, and email.
 func WithUser(ctx context.Context, token, userID, role, email string) context.Context {
 	ctx = context.WithValue(ctx, userTokenKey, token)
 	ctx = context.WithValue(ctx, userIDKey, userID)

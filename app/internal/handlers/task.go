@@ -29,6 +29,7 @@ type TaskHandler struct {
 	completer TaskCompleter
 }
 
+// NewTaskHandler constructs a TaskHandler.
 func NewTaskHandler(svc TaskManager, completer TaskCompleter) *TaskHandler {
 	return &TaskHandler{svc: svc, completer: completer}
 }

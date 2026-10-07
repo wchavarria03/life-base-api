@@ -327,6 +327,7 @@ type StravaManager interface {
 	FetchActivities(ctx context.Context, after, before *time.Time, page, perPage int) ([]models.StravaActivityPreview, error)
 }
 
+// ChildProfileManager is the subset of ChildProfileService the handler needs.
 type ChildProfileManager interface {
 	List(ctx context.Context) ([]*models.ChildProfile, error)
 	Create(ctx context.Context, input models.ChildProfileInput) (*models.ChildProfile, error)
@@ -336,10 +337,12 @@ type ChildProfileManager interface {
 	FindMyProfile(ctx context.Context, email string) (*models.ChildProfile, error)
 }
 
+// WalletManager is the subset of WalletService the handler needs.
 type WalletManager interface {
 	Wallet(ctx context.Context, childID string) (*models.Wallet, error)
 }
 
+// ShopManager is the subset of ShopService the handler needs.
 type ShopManager interface {
 	ListItems(ctx context.Context) ([]*models.ShopItem, error)
 	CreateItem(ctx context.Context, input models.ShopItemInput) (*models.ShopItem, error)

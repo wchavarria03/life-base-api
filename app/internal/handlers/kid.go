@@ -13,18 +13,22 @@ func NewChildProfileHandler(svc ChildProfileManager) *ChildProfileHandler {
 	return &ChildProfileHandler{svc: svc}
 }
 
+// List handles GET /v1/kids/profiles.
 func (h *ChildProfileHandler) List(c *gin.Context) {
 	listHandler(h.svc.List)(c)
 }
 
+// Create handles POST /v1/kids/profiles.
 func (h *ChildProfileHandler) Create(c *gin.Context) {
 	createHandler(h.svc.Create)(c)
 }
 
+// Update handles PATCH /v1/kids/profiles/:id.
 func (h *ChildProfileHandler) Update(c *gin.Context) {
 	updateHandler(h.svc.Update)(c)
 }
 
+// Delete handles DELETE /v1/kids/profiles/:id.
 func (h *ChildProfileHandler) Delete(c *gin.Context) {
 	deleteHandler(h.svc.Delete)(c)
 }
@@ -73,18 +77,22 @@ func NewShopHandler(svc ShopManager) *ShopHandler {
 	return &ShopHandler{svc: svc}
 }
 
+// ListItems handles GET /v1/kids/shop-items.
 func (h *ShopHandler) ListItems(c *gin.Context) {
 	listHandler(h.svc.ListItems)(c)
 }
 
+// CreateItem handles POST /v1/kids/shop-items.
 func (h *ShopHandler) CreateItem(c *gin.Context) {
 	createHandler(h.svc.CreateItem)(c)
 }
 
+// UpdateItem handles PATCH /v1/kids/shop-items/:id.
 func (h *ShopHandler) UpdateItem(c *gin.Context) {
 	updateHandler(h.svc.UpdateItem)(c)
 }
 
+// DeleteItem handles DELETE /v1/kids/shop-items/:id.
 func (h *ShopHandler) DeleteItem(c *gin.Context) {
 	deleteHandler(h.svc.DeleteItem)(c)
 }

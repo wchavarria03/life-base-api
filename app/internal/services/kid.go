@@ -13,6 +13,7 @@ import (
 
 // ── Repository interfaces ───────────────────────────────────────────────────
 
+// ChildProfileRepository is the persistence layer ChildProfileService needs.
 type ChildProfileRepository interface {
 	List(ctx context.Context) ([]*models.ChildProfile, error)
 	FindByID(ctx context.Context, id string) (*models.ChildProfile, error)
@@ -22,12 +23,16 @@ type ChildProfileRepository interface {
 	Delete(ctx context.Context, id string) error
 }
 
+// WalletTransactionRepository is the persistence layer WalletService needs.
 type WalletTransactionRepository interface {
 	ListByChildID(ctx context.Context, childID string) ([]*models.WalletTransaction, error)
 	ExistsForTask(ctx context.Context, taskID, reason string) (bool, error)
 	Create(ctx context.Context, input models.WalletTransaction) (*models.WalletTransaction, error)
 }
 
+// ShopItemRepository is the persistence layer ShopService needs for items.
+//
+//nolint:dupl // structurally mirrors other simple owned-resource repository interfaces; not worth a generic for 5 lines
 type ShopItemRepository interface {
 	List(ctx context.Context) ([]*models.ShopItem, error)
 	FindByID(ctx context.Context, id string) (*models.ShopItem, error)
@@ -36,6 +41,7 @@ type ShopItemRepository interface {
 	Delete(ctx context.Context, id string) error
 }
 
+// ShopOrderRepository is the persistence layer ShopService needs for orders.
 type ShopOrderRepository interface {
 	ListByChildID(ctx context.Context, childID string) ([]*models.ShopOrder, error)
 	ListPending(ctx context.Context) ([]*models.ShopOrder, error)
@@ -58,10 +64,12 @@ func NewChildProfileService(profiles ChildProfileRepository) *ChildProfileServic
 	return &ChildProfileService{profiles: profiles}
 }
 
+// List returns every child profile visible to the caller.
 func (s *ChildProfileService) List(ctx context.Context) ([]*models.ChildProfile, error) {
 	return s.profiles.List(ctx)
 }
 
+// FindByID returns a child profile by id, or nil if not found/visible.
 func (s *ChildProfileService) FindByID(ctx context.Context, id string) (*models.ChildProfile, error) {
 	return s.profiles.FindByID(ctx, id)
 }
@@ -75,6 +83,7 @@ func (s *ChildProfileService) FindMyProfile(ctx context.Context, email string) (
 	return s.profiles.FindByEmail(ctx, email)
 }
 
+// Create inserts a new child profile, hashing PIN into PinHash if set.
 func (s *ChildProfileService) Create(ctx context.Context, input models.ChildProfileInput) (*models.ChildProfile, error) {
 	userID := auth.UserIDFromContext(ctx)
 	if userID == "" {
@@ -95,6 +104,8 @@ func (s *ChildProfileService) Create(ctx context.Context, input models.ChildProf
 	return s.profiles.Create(ctx, input)
 }
 
+// Update patches a child profile's fields — a "pin" field is hashed into
+// pin_hash before reaching the repository, same as Create.
 func (s *ChildProfileService) Update(ctx context.Context, id string, fields map[string]any) (*models.ChildProfile, error) {
 	if len(fields) == 0 {
 		return nil, fmt.Errorf("no fields to update")
@@ -113,6 +124,7 @@ func (s *ChildProfileService) Update(ctx context.Context, id string, fields map[
 	return s.profiles.Update(ctx, id, fields)
 }
 
+// Delete removes a child profile.
 func (s *ChildProfileService) Delete(ctx context.Context, id string) error {
 	return s.profiles.Delete(ctx, id)
 }
@@ -237,10 +249,12 @@ func NewShopService(items ShopItemRepository, orders ShopOrderRepository, childP
 	return &ShopService{items: items, orders: orders, childProfiles: childProfiles, walletTx: walletTx}
 }
 
+// ListItems returns every shop item visible to the caller.
 func (s *ShopService) ListItems(ctx context.Context) ([]*models.ShopItem, error) {
 	return s.items.List(ctx)
 }
 
+// CreateItem inserts a new shop item, owned by the caller.
 func (s *ShopService) CreateItem(ctx context.Context, input models.ShopItemInput) (*models.ShopItem, error) {
 	userID := auth.UserIDFromContext(ctx)
 	if userID == "" {
@@ -253,6 +267,7 @@ func (s *ShopService) CreateItem(ctx context.Context, input models.ShopItemInput
 	return s.items.Create(ctx, input)
 }
 
+// UpdateItem patches a shop item's fields.
 func (s *ShopService) UpdateItem(ctx context.Context, id string, fields map[string]any) (*models.ShopItem, error) {
 	if len(fields) == 0 {
 		return nil, fmt.Errorf("no fields to update")
@@ -260,14 +275,17 @@ func (s *ShopService) UpdateItem(ctx context.Context, id string, fields map[stri
 	return s.items.Update(ctx, id, fields)
 }
 
+// DeleteItem removes a shop item.
 func (s *ShopService) DeleteItem(ctx context.Context, id string) error {
 	return s.items.Delete(ctx, id)
 }
 
+// ListOrdersByChild returns childID's purchase history, newest first.
 func (s *ShopService) ListOrdersByChild(ctx context.Context, childID string) ([]*models.ShopOrder, error) {
 	return s.orders.ListByChildID(ctx, childID)
 }
 
+// ListPendingOrders returns every pending order the caller (a parent) owns.
 func (s *ShopService) ListPendingOrders(ctx context.Context) ([]*models.ShopOrder, error) {
 	return s.orders.ListPending(ctx)
 }
