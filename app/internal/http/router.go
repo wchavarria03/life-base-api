@@ -57,6 +57,8 @@ func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL, issuer s
 	v1.PUT("/menu-preferences", hdlrs.MenuPreferences.Set)
 	v1.POST("/push-subscriptions", hdlrs.Push.Subscribe)
 	v1.DELETE("/push-subscriptions", hdlrs.Push.Unsubscribe)
+	v1.POST("/push/expo-token", hdlrs.ExpoPush.Register)
+	v1.DELETE("/push/expo-token", hdlrs.ExpoPush.Unregister)
 	v1.GET("/export", hdlrs.Export.Handle)
 	setupAdminRoutes(v1, hdlrs)
 	setupCaptionRoutes(v1, hdlrs)

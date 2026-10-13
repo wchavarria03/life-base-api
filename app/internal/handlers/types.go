@@ -87,6 +87,11 @@ type PushHandler struct {
 	svc PushManager
 }
 
+// ExpoPushHandler serves the mobile (Expo) push token endpoints.
+type ExpoPushHandler struct {
+	svc ExpoPushManager
+}
+
 // ScheduledPostHandler serves the scheduled social post endpoints.
 type ScheduledPostHandler struct {
 	svc ScheduledPostManager

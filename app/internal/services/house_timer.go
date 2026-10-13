@@ -27,15 +27,16 @@ type HouseTimerConfig struct {
 // HouseTimerService manages one-off dashboard timers (e.g. "Laundry — 45
 // min") and the push notification sent when one fires.
 type HouseTimerService struct {
-	repo *supabaserepo.HouseTimerRepository
-	push *PushService
-	cfg  HouseTimerConfig
-	http *http.Client
+	repo     *supabaserepo.HouseTimerRepository
+	push     *PushService
+	expoPush *ExpoPushService
+	cfg      HouseTimerConfig
+	http     *http.Client
 }
 
 // NewHouseTimerService constructs a HouseTimerService.
-func NewHouseTimerService(repo *supabaserepo.HouseTimerRepository, push *PushService, cfg HouseTimerConfig) *HouseTimerService {
-	return &HouseTimerService{repo: repo, push: push, cfg: cfg, http: &http.Client{Timeout: 15 * time.Second}}
+func NewHouseTimerService(repo *supabaserepo.HouseTimerRepository, push *PushService, expoPush *ExpoPushService, cfg HouseTimerConfig) *HouseTimerService {
+	return &HouseTimerService{repo: repo, push: push, expoPush: expoPush, cfg: cfg, http: &http.Client{Timeout: 15 * time.Second}}
 }
 
 // List returns the caller's recent timers.
@@ -120,6 +121,12 @@ func (s *HouseTimerService) NotifyDue(ctx context.Context) (int, error) {
 				continue
 			}
 			sent++
+		}
+
+		if mobileSent, err := s.expoPush.Send(ctx, t.UserID, t.Label, t.Message); err != nil {
+			log.Printf("house timer: send expo push to user=%s: %v", t.UserID, err)
+		} else {
+			sent += mobileSent
 		}
 
 		if err := s.repo.Update(ctx, t.ID, map[string]any{"notified": true}); err != nil {

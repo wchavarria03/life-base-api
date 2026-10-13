@@ -24,6 +24,7 @@ type Registry struct {
 	Preferences     *PreferencesHandler
 	MenuPreferences *MenuPreferencesHandler
 	Push            *PushHandler
+	ExpoPush        *ExpoPushHandler
 	AuditLog        *AuditLogHandler
 	ScheduledPost   *ScheduledPostHandler
 	Dog             *DogHandler
@@ -79,6 +80,7 @@ func NewRegistry(svc *services.Registry) (*Registry, error) {
 		Preferences:     NewPreferencesHandler(svc.Preferences),
 		MenuPreferences: NewMenuPreferencesHandler(svc.MenuPreferences),
 		Push:            NewPushHandler(svc.Push),
+		ExpoPush:        NewExpoPushHandler(svc.ExpoPush),
 		AuditLog:        NewAuditLogHandler(svc.AuditLog),
 		ScheduledPost:   NewScheduledPostHandler(svc.ScheduledPost),
 		Dog:             NewDogHandler(svc.Dog),

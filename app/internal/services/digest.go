@@ -37,14 +37,15 @@ type DigestService struct {
 	reminders ReminderRepository
 	prefs     *PreferencesService
 	push      *PushService
+	expoPush  *ExpoPushService
 	admin     *supabaserepo.AdminRepository
 	cfg       DigestConfig
 	http      *http.Client
 }
 
 // NewDigestService constructs a DigestService.
-func NewDigestService(reminders ReminderRepository, prefs *PreferencesService, push *PushService, admin *supabaserepo.AdminRepository, cfg DigestConfig) *DigestService {
-	return &DigestService{reminders: reminders, prefs: prefs, push: push, admin: admin, cfg: cfg, http: &http.Client{Timeout: 15 * time.Second}}
+func NewDigestService(reminders ReminderRepository, prefs *PreferencesService, push *PushService, expoPush *ExpoPushService, admin *supabaserepo.AdminRepository, cfg DigestConfig) *DigestService {
+	return &DigestService{reminders: reminders, prefs: prefs, push: push, expoPush: expoPush, admin: admin, cfg: cfg, http: &http.Client{Timeout: 15 * time.Second}}
 }
 
 // alertSummary is what changes from "nothing to report" to a sendable
@@ -139,6 +140,12 @@ func (s *DigestService) RunPush(ctx context.Context) (int, error) {
 				continue
 			}
 			sent++
+		}
+
+		if mobileSent, err := s.expoPush.Send(ctx, p.UserID, title, body); err != nil {
+			log.Printf("digest: send expo push to user=%s: %v", p.UserID, err)
+		} else {
+			sent += mobileSent
 		}
 	}
 	return sent, nil

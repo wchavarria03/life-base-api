@@ -52,3 +52,47 @@ func (h *PushHandler) Unsubscribe(c *gin.Context) {
 	}
 	c.Status(http.StatusNoContent)
 }
+
+// NewExpoPushHandler constructs an ExpoPushHandler.
+func NewExpoPushHandler(svc ExpoPushManager) *ExpoPushHandler {
+	return &ExpoPushHandler{svc: svc}
+}
+
+type registerExpoTokenRequest struct {
+	Token    string `json:"token" binding:"required"`
+	Platform string `json:"platform" binding:"required,oneof=ios android"`
+}
+
+// Register handles POST /v1/push/expo-token — registers a mobile device's
+// Expo push token for this user, upserting on re-registration.
+func (h *ExpoPushHandler) Register(c *gin.Context) {
+	var req registerExpoTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	userID := auth.UserIDFromContext(c.Request.Context())
+	if err := h.svc.Register(c.Request.Context(), userID, req.Token, req.Platform); err != nil {
+		internalError(c, err)
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+type unregisterExpoTokenRequest struct {
+	Token string `json:"token" binding:"required"`
+}
+
+// Unregister handles DELETE /v1/push/expo-token.
+func (h *ExpoPushHandler) Unregister(c *gin.Context) {
+	var req unregisterExpoTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.svc.Unregister(c.Request.Context(), req.Token); err != nil {
+		internalError(c, err)
+		return
+	}
+	c.Status(http.StatusNoContent)
+}

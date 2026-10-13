@@ -200,6 +200,12 @@ type PushManager interface {
 	Unsubscribe(ctx context.Context, endpoint string) error
 }
 
+// ExpoPushManager registers and removes mobile (Expo) push tokens.
+type ExpoPushManager interface {
+	Register(ctx context.Context, userID, token, platform string) error
+	Unregister(ctx context.Context, token string) error
+}
+
 // PreferenceManager reads and writes per-user notification preferences.
 type PreferenceManager interface {
 	Get(ctx context.Context, userID string) (*models.UserPreferences, error)

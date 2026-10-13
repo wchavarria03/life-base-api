@@ -21,6 +21,7 @@ type Registry struct {
 	Preferences     *PreferencesService
 	MenuPreferences *MenuPreferencesService
 	Push            *PushService
+	ExpoPush        *ExpoPushService
 	Digest          *DigestService
 	AuditLog        *AuditLogService
 	Dog             *DogService
@@ -61,6 +62,7 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 	reminder := NewReminderService(repos.Reminders, repos.TransactionCategories)
 	preferences := NewPreferencesService(repos.Preferences)
 	push := NewPushService(repos.PushSubscriptions)
+	expoPush := NewExpoPushService(repos.ExpoPushTokens)
 	socialSvc := NewSocialService(repos.SocialPosts, repos.Storage, social)
 	captionSvc := NewCaptionService(repos.Caption)
 	taskSvc := NewTaskService(repos.Tasks)
@@ -85,7 +87,8 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 		Preferences:     preferences,
 		MenuPreferences: NewMenuPreferencesService(repos.MenuPreferences),
 		Push:            push,
-		Digest:          NewDigestService(repos.Reminders, preferences, push, repos.Admin, digest),
+		ExpoPush:        expoPush,
+		Digest:          NewDigestService(repos.Reminders, preferences, push, expoPush, repos.Admin, digest),
 		AuditLog:        NewAuditLogService(repos.AuditLog),
 		Dog:             NewDogService(repos.Dogs, repos.DogRecipientTypes, repos.DogRecipientAllocations, repos.DogFeedLog, repos.DogBulkBags, repos.DogSettings),
 		ScheduledPost:   NewScheduledPostService(repos.ScheduledPosts, repos.Storage, socialSvc, captionSvc),
@@ -107,7 +110,7 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 	}
 	r.SharedTaskList = NewSharedTaskListService(repos.SharedTaskLists, r.Task, sharedTaskLists)
 	r.Document = NewDocumentService(repos.Documents, repos.Storage)
-	r.HouseTimer = NewHouseTimerService(repos.HouseTimers, push, HouseTimerConfig{
+	r.HouseTimer = NewHouseTimerService(repos.HouseTimers, push, expoPush, HouseTimerConfig{
 		VAPIDPublicKey:  digest.VAPIDPublicKey,
 		VAPIDPrivateKey: digest.VAPIDPrivateKey,
 		VAPIDSubject:    digest.VAPIDSubject,
