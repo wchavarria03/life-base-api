@@ -1,3 +1,4 @@
+//nolint:dupl // structurally mirrors PushSubscriptionRepository; different table/shape, not worth a generic for 5 methods
 package supabase
 
 import (
