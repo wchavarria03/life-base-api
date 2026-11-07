@@ -253,7 +253,7 @@ func advanceReminderDate(date string, recurrence models.ReminderRecurrence) stri
 // advanceByRecurrence is the shared date step behind reminders and tasks: it
 // moves a YYYY-MM-DD date forward by one weekly, biweekly, monthly or yearly
 // period, and returns the input unchanged when it can't parse the date or
-// doesn't recognise the recurrence.
+// doesn't recognize the recurrence.
 func advanceByRecurrence(date, recurrence string) string {
 	t, err := time.Parse("2006-01-02", date)
 	if err != nil {

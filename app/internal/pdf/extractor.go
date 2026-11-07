@@ -75,7 +75,7 @@ func ExtractCellsFromBytes(data []byte) (string, error) {
 	return sb.String(), nil
 }
 
-func ExtractText(inputPath, outputPath string, verbose bool) error {
+func ExtractText(inputPath, outputPath string, _ bool) error {
 	reader, err := NewReader(inputPath)
 	if err != nil {
 		return fmt.Errorf("failed to create PDF reader: %w", err)

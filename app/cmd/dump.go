@@ -5,7 +5,7 @@ import "github.com/spf13/cobra"
 var dumpCmd = &cobra.Command{
 	Use:   "dump",
 	Short: "Dump raw extracted text from PDFs (for debugging parsers)",
-	RunE: func(_ *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		return deps.Handlers.Dump.Handle(cfg.InputDir, cfg.OutputDir, cfg.Verbose)
 	},
 }

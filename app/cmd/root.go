@@ -42,7 +42,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "life-base-api",
 	Short: "Ingest bank statement PDFs, store transactions, and serve them via HTTP API",
-	PersistentPreRunE: func(_ *cobra.Command, args []string) error {
+	PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
 		if _, err := os.Stat(cfg.InputDir); os.IsNotExist(err) {
 			return fmt.Errorf("input directory does not exist: %s", cfg.InputDir)
 		}
