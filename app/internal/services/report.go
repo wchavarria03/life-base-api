@@ -123,7 +123,7 @@ func (a *reportAccumulator) add(tx *models.Transaction) {
 		a.summary.TotalIncome += amount
 		a.dailyIncome[day] += amount
 	case models.TypeExpense:
-		a.addExpense(day, math.Abs(amount), tx.Categories) // expenses are stored as negatives; normalise to positive
+		a.addExpense(day, math.Abs(amount), tx.Categories) // expenses are stored as negatives; normalize to positive
 	case models.TypeTransfer:
 		if amount >= 0 {
 			a.summary.Transfers.IncomingCount++
