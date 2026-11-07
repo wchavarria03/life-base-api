@@ -29,8 +29,8 @@ const (
 var (
 	// ErrVaultDisabled means VAULT_SYNC_USER_ID is not configured.
 	ErrVaultDisabled = errors.New("vault sync is not configured")
-	// ErrNoteNotFound is returned when a note id does not exist for the caller.
-	ErrNoteNotFound = errors.New("note not found")
+	// ErrNoteNotFound (declared in note_task_link.go) is also returned here
+	// when a note id does not exist for the caller.
 	// ErrSensitiveDeclared is returned when the app tries to un-flag a note
 	// whose file declares itself sensitive.
 	ErrSensitiveDeclared = errors.New("sensitive flag is declared inside the file; remove it there first")
