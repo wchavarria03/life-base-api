@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Template. Copy to ~/Library/LaunchAgents/com.<you>.notes-autosync.plist, then
+  replace every YOURUSER / path below (launchd does NOT expand ~ or $HOME) and:
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.<you>.notes-autosync.plist
+  Stop:  launchctl bootout gui/$(id -u)/com.<you>.notes-autosync
+  Pause without unloading: touch <repo>/.notes-autosync-ignore
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.example.notes-autosync</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/YOURUSER/bin/notes-autosync.sh</string>
+    <string>--repo</string>
+    <string>/Users/YOURUSER/personal/notes</string>
+    <string>--debounce</string>
+    <string>300</string>
+    <!-- Stay alive after a change until the tree has been idle 5 min, then sync. -->
+    <string>--wait</string>
+  </array>
+
+  <!-- Run when anything directly inside these paths changes. WatchPaths is not
+       recursive: list the folders you edit in, plus the trigger file the
+       nvim/Emacs hooks touch (create it first: touch ~/.notes-autosync.trigger). -->
+  <key>WatchPaths</key>
+  <array>
+    <string>/Users/YOURUSER/personal/notes/second-brain</string>
+    <string>/Users/YOURUSER/.notes-autosync.trigger</string>
+  </array>
+
+  <!-- Also run every 5 minutes: picks up changes made on other machines
+       (pull) and anything WatchPaths missed. -->
+  <key>StartInterval</key>
+  <integer>300</integer>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>ThrottleInterval</key>
+  <integer>30</integer>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <!-- launchd's default PATH lacks Homebrew; git/ssh must be found. -->
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>/Users/YOURUSER/.local/state/notes-autosync/launchd.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/YOURUSER/.local/state/notes-autosync/launchd.err.log</string>
+
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>LowPriorityIO</key>
+  <true/>
+</dict>
+</plist>
