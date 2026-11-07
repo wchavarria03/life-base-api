@@ -160,7 +160,14 @@ func (s *NoteTaskLinkService) CreateTaskFromChecklistItem(ctx context.Context, n
 		return nil, fmt.Errorf("no checklist item on line %d", lineIndex)
 	}
 	if item.TaskID != "" {
-		return nil, fmt.Errorf("checklist item is already linked to a task")
+		// A marker whose task was since deleted is stale: allow re-linking.
+		existing, err := s.tasks.FindByID(ctx, item.TaskID)
+		if err != nil {
+			return nil, fmt.Errorf("find linked task: %w", err)
+		}
+		if existing != nil {
+			return nil, fmt.Errorf("checklist item is already linked to a task")
+		}
 	}
 	if item.Text == "" {
 		return nil, fmt.Errorf("checklist item has no text")
