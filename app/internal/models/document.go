@@ -6,18 +6,18 @@ import "time"
 // (insurance, receipts, warranty cards) with no public URL, unlike the
 // social-images bucket.
 type Document struct {
-	ID          string    `json:"id,omitempty"`
-	UserID      string    `json:"user_id,omitempty"`
-	Title       string    `json:"title"`
-	Category    *string   `json:"category,omitempty"`
-	FileName    string    `json:"file_name"`
-	ContentType string    `json:"content_type"`
-	FileSize    int64     `json:"file_size"`
-	StoragePath string    `json:"storage_path"`
+	ID          string  `json:"id,omitempty"`
+	UserID      string  `json:"user_id,omitempty"`
+	Title       string  `json:"title"`
+	Category    *string `json:"category,omitempty"`
+	FileName    string  `json:"file_name"`
+	ContentType string  `json:"content_type"`
+	FileSize    int64   `json:"file_size"`
+	StoragePath string  `json:"storage_path"`
 	// Sensitive documents are never exposed through share links and get a
 	// shorter signed-URL lifetime.
 	Sensitive bool      `json:"sensitive"`
-	CreatedAt   time.Time `json:"created_at,omitempty"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
 }
 
 // DocumentInput is the write shape for Create.

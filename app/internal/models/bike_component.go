@@ -6,17 +6,17 @@ import "time"
 // derived at read time (see ComponentWithStatus), not stored — accumulated_km
 // is the raw input, updated as activities are logged against the bike.
 type Component struct {
-	ID                      string    `json:"id"`
-	BikeID                  string    `json:"bike_id"`
-	Name                    string    `json:"name"`
-	Brand                   *string   `json:"brand,omitempty"`
-	Model                   *string   `json:"model,omitempty"`
-	IsActive                bool      `json:"is_active"`
-	LastReplacedDate        string    `json:"last_replaced_date"`
-	ReplacementIntervalKm   *int      `json:"replacement_interval_km,omitempty"`
-	ReplacementIntervalDays *int      `json:"replacement_interval_days,omitempty"`
-	AccumulatedKm           float64   `json:"accumulated_km"`
-	Notes                   *string   `json:"notes,omitempty"`
+	ID                      string  `json:"id"`
+	BikeID                  string  `json:"bike_id"`
+	Name                    string  `json:"name"`
+	Brand                   *string `json:"brand,omitempty"`
+	Model                   *string `json:"model,omitempty"`
+	IsActive                bool    `json:"is_active"`
+	LastReplacedDate        string  `json:"last_replaced_date"`
+	ReplacementIntervalKm   *int    `json:"replacement_interval_km,omitempty"`
+	ReplacementIntervalDays *int    `json:"replacement_interval_days,omitempty"`
+	AccumulatedKm           float64 `json:"accumulated_km"`
+	Notes                   *string `json:"notes,omitempty"`
 	// ReminderSent is set once a maintenance reminder Task has been created
 	// for this component's current due period, so crossing the threshold on
 	// a later activity log doesn't spam another reminder. Reset to false by

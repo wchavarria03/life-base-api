@@ -38,7 +38,7 @@ func (h *SocialHandler) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "image field is required"})
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var caption *string
 	if v := c.PostForm("caption"); v != "" {

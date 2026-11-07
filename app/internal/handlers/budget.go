@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -47,22 +48,9 @@ func (h *BudgetHandler) Create(c *gin.Context) {
 }
 
 func (h *BudgetHandler) Update(c *gin.Context) {
-	id := c.Param("id")
-	var req updateBudgetRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	budget, err := h.budgets.Update(c.Request.Context(), id, decimal.NewFromFloat(req.Amount))
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
-	}
-	if budget == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "budget not found"})
-		return
-	}
-	c.JSON(http.StatusOK, budget)
+	updateOrNotFound("budget not found", func(ctx context.Context, id string, req updateBudgetRequest) (*models.Budget, error) {
+		return h.budgets.Update(ctx, id, decimal.NewFromFloat(req.Amount))
+	})(c)
 }
 
 func (h *BudgetHandler) Delete(c *gin.Context) {

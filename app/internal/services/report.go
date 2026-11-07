@@ -50,76 +50,13 @@ func (s *ReportService) Summarize(ctx context.Context, accountIDs []string, from
 		ByCategory:     []models.CategorySpend{},
 	}
 
-	dailyIncome := map[string]float64{}
-	dailyExpenses := map[string]float64{}
-	// dailyBalance tracks the summed balance across all accounts for each day
-	// that had at least one transaction.
-	dailyBalance := map[string]float64{}
-	categoryTotals := map[string]*models.CategorySpend{}
-
-	// Seed per-account last balance from carry values so accounts with no
-	// in-period transactions still contribute to the running total.
-	lastBalPerAccount := make(map[string]float64, len(accountIDs))
-	for _, id := range accountIDs {
-		lastBalPerAccount[id] = carryPerAccount[id]
-	}
-
+	acc := newReportAccumulator(summary, catByID, accountIDs, carryPerAccount)
 	for _, tx := range txs { // sorted date asc by the repo query
-		day := tx.Date.Format("2006-01-02")
-		amount, _ := tx.Amount.Float64()
-		bal, _ := tx.Balance.Float64()
-
-		lastBalPerAccount[tx.AccountID] = bal
-
-		// Sum all accounts' latest balance to get the portfolio total for this day.
-		dayTotal := 0.0
-		for _, b := range lastBalPerAccount {
-			dayTotal += b
-		}
-		dailyBalance[day] = dayTotal
-
-		switch tx.Type {
-		case models.TypeIncome:
-			summary.TotalIncome += amount
-			dailyIncome[day] += amount
-		case models.TypeExpense:
-			absAmount := math.Abs(amount) // expenses are stored as negatives; normalise to positive
-			summary.TotalExpenses += absAmount
-			dailyExpenses[day] += absAmount
-			roots := resolveRootCategories(tx.Categories, catByID)
-			if len(roots) == 0 {
-				if _, ok := categoryTotals[uncategorizedID]; !ok {
-					categoryTotals[uncategorizedID] = &models.CategorySpend{
-						CategoryID:   uncategorizedID,
-						CategoryName: "Uncategorized",
-						Color:        uncategorizedColor,
-					}
-				}
-				categoryTotals[uncategorizedID].Total += absAmount
-			}
-			for _, root := range roots {
-				if _, ok := categoryTotals[root.ID]; !ok {
-					categoryTotals[root.ID] = &models.CategorySpend{
-						CategoryID:   root.ID,
-						CategoryName: root.Name,
-						Color:        root.Color,
-					}
-				}
-				categoryTotals[root.ID].Total += absAmount
-			}
-		case models.TypeTransfer:
-			if amount >= 0 {
-				summary.Transfers.IncomingCount++
-				summary.Transfers.IncomingTotal += amount
-			} else {
-				summary.Transfers.OutgoingCount++
-				summary.Transfers.OutgoingTotal += math.Abs(amount)
-			}
-		}
+		acc.add(tx)
 	}
 
 	totalBalance := 0.0
-	for _, bal := range lastBalPerAccount {
+	for _, bal := range acc.lastBalPerAccount {
 		totalBalance += bal
 	}
 	summary.TotalBalance = totalBalance
@@ -129,31 +66,129 @@ func (s *ReportService) Summarize(ctx context.Context, accountIDs []string, from
 	for _, bal := range carryPerAccount {
 		carryTotal += bal
 	}
+	acc.fillDaily(from, to, carryTotal)
+	acc.fillCategories()
+
+	return summary, nil
+}
+
+// reportAccumulator gathers the per-day and per-category figures while
+// Summarize walks the period's transactions. dailyBalance is the summed
+// balance across all accounts for each day that had at least one transaction;
+// lastBalPerAccount is seeded from the carry values so accounts with no
+// in-period transactions still contribute to the running total.
+type reportAccumulator struct {
+	summary           *models.ReportSummary
+	catByID           map[string]*models.Category
+	dailyIncome       map[string]float64
+	dailyExpenses     map[string]float64
+	dailyBalance      map[string]float64
+	categoryTotals    map[string]*models.CategorySpend
+	lastBalPerAccount map[string]float64
+}
+
+func newReportAccumulator(summary *models.ReportSummary, catByID map[string]*models.Category, accountIDs []string, carry map[string]float64) *reportAccumulator {
+	last := make(map[string]float64, len(accountIDs))
+	for _, id := range accountIDs {
+		last[id] = carry[id]
+	}
+	return &reportAccumulator{
+		summary:           summary,
+		catByID:           catByID,
+		dailyIncome:       map[string]float64{},
+		dailyExpenses:     map[string]float64{},
+		dailyBalance:      map[string]float64{},
+		categoryTotals:    map[string]*models.CategorySpend{},
+		lastBalPerAccount: last,
+	}
+}
+
+// add folds one transaction into the running figures.
+func (a *reportAccumulator) add(tx *models.Transaction) {
+	day := tx.Date.Format("2006-01-02")
+	amount, _ := tx.Amount.Float64()
+	bal, _ := tx.Balance.Float64()
+
+	a.lastBalPerAccount[tx.AccountID] = bal
+
+	// Sum all accounts' latest balance to get the portfolio total for this day.
+	dayTotal := 0.0
+	for _, b := range a.lastBalPerAccount {
+		dayTotal += b
+	}
+	a.dailyBalance[day] = dayTotal
+
+	switch tx.Type {
+	case models.TypeIncome:
+		a.summary.TotalIncome += amount
+		a.dailyIncome[day] += amount
+	case models.TypeExpense:
+		a.addExpense(day, math.Abs(amount), tx.Categories) // expenses are stored as negatives; normalise to positive
+	case models.TypeTransfer:
+		if amount >= 0 {
+			a.summary.Transfers.IncomingCount++
+			a.summary.Transfers.IncomingTotal += amount
+		} else {
+			a.summary.Transfers.OutgoingCount++
+			a.summary.Transfers.OutgoingTotal += math.Abs(amount)
+		}
+	}
+}
+
+// addExpense books a positive expense amount against the day and against each
+// root category (or "Uncategorized" when the transaction has none).
+func (a *reportAccumulator) addExpense(day string, absAmount float64, cats []*models.Category) {
+	a.summary.TotalExpenses += absAmount
+	a.dailyExpenses[day] += absAmount
+	roots := resolveRootCategories(cats, a.catByID)
+	if len(roots) == 0 {
+		a.addCategorySpend(uncategorizedID, "Uncategorized", uncategorizedColor, absAmount)
+	}
+	for _, root := range roots {
+		a.addCategorySpend(root.ID, root.Name, root.Color, absAmount)
+	}
+}
+
+func (a *reportAccumulator) addCategorySpend(id, name, color string, absAmount float64) {
+	if _, ok := a.categoryTotals[id]; !ok {
+		a.categoryTotals[id] = &models.CategorySpend{
+			CategoryID:   id,
+			CategoryName: name,
+			Color:        color,
+		}
+	}
+	a.categoryTotals[id].Total += absAmount
+}
+
+// fillDaily emits one DailyChange and one DailyBalance per calendar day in
+// [from, to]; days without transactions carry the previous day's balance.
+func (a *reportAccumulator) fillDaily(from, to time.Time, carryTotal float64) {
 	prevTotal := carryTotal
 	for d := from; !d.After(to); d = d.AddDate(0, 0, 1) {
 		day := d.Format("2006-01-02")
-		summary.DailyChanges = append(summary.DailyChanges, models.DailyChange{
+		a.summary.DailyChanges = append(a.summary.DailyChanges, models.DailyChange{
 			Date:     day,
-			Income:   dailyIncome[day],
-			Expenses: dailyExpenses[day],
+			Income:   a.dailyIncome[day],
+			Expenses: a.dailyExpenses[day],
 		})
-		if total, ok := dailyBalance[day]; ok {
+		if total, ok := a.dailyBalance[day]; ok {
 			prevTotal = total
 		}
-		summary.BalanceHistory = append(summary.BalanceHistory, models.DailyBalance{
+		a.summary.BalanceHistory = append(a.summary.BalanceHistory, models.DailyBalance{
 			Date:    day,
 			Balance: prevTotal,
 		})
 	}
+}
 
-	for _, cs := range categoryTotals {
-		summary.ByCategory = append(summary.ByCategory, *cs)
+// fillCategories copies the category totals into the summary, largest first.
+func (a *reportAccumulator) fillCategories() {
+	for _, cs := range a.categoryTotals {
+		a.summary.ByCategory = append(a.summary.ByCategory, *cs)
 	}
-	sort.Slice(summary.ByCategory, func(i, j int) bool {
-		return summary.ByCategory[i].Total > summary.ByCategory[j].Total
+	sort.Slice(a.summary.ByCategory, func(i, j int) bool {
+		return a.summary.ByCategory[i].Total > a.summary.ByCategory[j].Total
 	})
-
-	return summary, nil
 }
 
 // resolveRootCategories walks each assigned category up one level to its

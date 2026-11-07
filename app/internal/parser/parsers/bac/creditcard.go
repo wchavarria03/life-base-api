@@ -63,18 +63,58 @@ func (p *creditCardParser) Parse(text string) (*models.Statement, error) {
 		return nil, fmt.Errorf("bac/creditcard: could not find product number")
 	}
 	productNumber := productMatch[1]
+	closingDate := ccClosingDate(text)
 
+	rows, prevBalanceLocal, prevBalanceDollars, havePrevBalance := parseCCRows(text, closingDate)
+	if !havePrevBalance {
+		return nil, fmt.Errorf("bac/creditcard: could not find previous balance")
+	}
+	if len(rows) == 0 {
+		return nil, fmt.Errorf("bac/creditcard: no transactions found — verify the PDF matches this format")
+	}
+
+	// The PDF's own sign convention is inverted from the rest of this app: a
+	// purchase (which increases what you owe) prints as positive, and a
+	// payment/credit (which reduces it) prints as negative. Negating puts
+	// purchases in the red like every other expense and payments/credits in
+	// the green, consistent with checking/savings accounts. Balances are
+	// tracked in the same inverted sign, so a running balance is a negative
+	// "amount owed" — like a liability.
+	runningLocal := prevBalanceLocal.Neg()
+	runningDollars := prevBalanceDollars.Neg()
+
+	transactions := buildCCTransactions(rows, &runningLocal, &runningDollars)
+
+	if tx := ccInterestTx(text, ccInterestLocalPattern, closingDate, &runningLocal, "CRC"); tx != nil {
+		transactions = append(transactions, *tx)
+	}
+	if tx := ccInterestTx(text, ccInterestDollarsPattern, closingDate, &runningDollars, "USD"); tx != nil {
+		transactions = append(transactions, *tx)
+	}
+
+	stampImportSeq(transactions)
+
+	return &models.Statement{
+		AccountNumber: productNumber,
+		Transactions:  transactions,
+	}, nil
+}
+
+// ccClosingDate returns the statement's closing date, or the zero time when
+// it is absent or unparseable.
+func ccClosingDate(text string) time.Time {
 	var closingDate time.Time
 	if m := ccClosingDatePattern.FindStringSubmatch(text); m != nil {
 		if t, err := time.Parse("02/01/2006", m[1]); err == nil {
 			closingDate = t
 		}
 	}
+	return closingDate
+}
 
-	var prevBalanceLocal, prevBalanceDollars decimal.Decimal
-	havePrevBalance := false
-	var rows []ccRow
-
+// parseCCRows extracts the monetary rows and the previous-balance row from
+// the cell-delimited statement text.
+func parseCCRows(text string, closingDate time.Time) (rows []ccRow, prevLocal, prevDollars decimal.Decimal, havePrev bool) {
 	for _, m := range ccRowPattern.FindAllStringSubmatch(text, -1) {
 		dateStr := m[1]
 		description := strings.TrimSpace(m[2])
@@ -82,8 +122,8 @@ func (p *creditCardParser) Parse(text string) (*models.Statement, error) {
 		dollars := parseAmount(m[4])
 
 		if strings.Contains(description, "Previous balance") {
-			prevBalanceLocal, prevBalanceDollars = local, dollars
-			havePrevBalance = true
+			prevLocal, prevDollars = local, dollars
+			havePrev = true
 			continue
 		}
 
@@ -105,87 +145,61 @@ func (p *creditCardParser) Parse(text string) (*models.Statement, error) {
 
 		rows = append(rows, ccRow{date: date, description: description, local: local, dollars: dollars})
 	}
+	return rows, prevLocal, prevDollars, havePrev
+}
 
-	if !havePrevBalance {
-		return nil, fmt.Errorf("bac/creditcard: could not find previous balance")
-	}
-	if len(rows) == 0 {
-		return nil, fmt.Errorf("bac/creditcard: no transactions found — verify the PDF matches this format")
-	}
-
-	// The PDF's own sign convention is inverted from the rest of this app: a
-	// purchase (which increases what you owe) prints as positive, and a
-	// payment/credit (which reduces it) prints as negative. Negating puts
-	// purchases in the red like every other expense and payments/credits in
-	// the green, consistent with checking/savings accounts. Balances are
-	// tracked in the same inverted sign, so a running balance is a negative
-	// "amount owed" — like a liability.
-	runningLocal := prevBalanceLocal.Neg()
-	runningDollars := prevBalanceDollars.Neg()
-
+// buildCCTransactions splits each row into per-currency transactions,
+// advancing the running balances in place. Local (CRC) comes before dollars
+// (USD) for every row, as in the statement.
+func buildCCTransactions(rows []ccRow, runningLocal, runningDollars *decimal.Decimal) []models.Transaction {
 	var transactions []models.Transaction
 	for _, r := range rows {
 		if !r.local.IsZero() {
-			amount := r.local.Neg()
-			runningLocal = runningLocal.Add(amount)
-			transactions = append(transactions, models.Transaction{
-				Date:        r.date,
-				Type:        deriveCreditCardType(r.description, amount),
-				Description: r.description,
-				Amount:      amount,
-				Balance:     runningLocal,
-				Currency:    "CRC",
-			})
+			transactions = append(transactions, ccRowTx(r, r.local, runningLocal, "CRC"))
 		}
 		if !r.dollars.IsZero() {
-			amount := r.dollars.Neg()
-			runningDollars = runningDollars.Add(amount)
-			transactions = append(transactions, models.Transaction{
-				Date:        r.date,
-				Type:        deriveCreditCardType(r.description, amount),
-				Description: r.description,
-				Amount:      amount,
-				Balance:     runningDollars,
-				Currency:    "USD",
-			})
+			transactions = append(transactions, ccRowTx(r, r.dollars, runningDollars, "USD"))
 		}
 	}
+	return transactions
+}
 
-	if m := ccInterestLocalPattern.FindStringSubmatch(text); m != nil {
-		if interest := parseAmount(m[1]); interest.IsPositive() {
-			amount := interest.Neg()
-			runningLocal = runningLocal.Add(amount)
-			transactions = append(transactions, models.Transaction{
-				Date:        closingDate,
-				Type:        models.TypeExpense,
-				Description: "Intereses corrientes del mes",
-				Amount:      amount,
-				Balance:     runningLocal,
-				Currency:    "CRC",
-			})
-		}
+// ccRowTx builds one transaction for a row in one currency, negating the
+// printed amount and advancing running.
+func ccRowTx(r ccRow, printed decimal.Decimal, running *decimal.Decimal, currency string) models.Transaction {
+	amount := printed.Neg()
+	*running = running.Add(amount)
+	return models.Transaction{
+		Date:        r.date,
+		Type:        deriveCreditCardType(r.description, amount),
+		Description: r.description,
+		Amount:      amount,
+		Balance:     *running,
+		Currency:    currency,
 	}
-	if m := ccInterestDollarsPattern.FindStringSubmatch(text); m != nil {
-		if interest := parseAmount(m[1]); interest.IsPositive() {
-			amount := interest.Neg()
-			runningDollars = runningDollars.Add(amount)
-			transactions = append(transactions, models.Transaction{
-				Date:        closingDate,
-				Type:        models.TypeExpense,
-				Description: "Intereses corrientes del mes",
-				Amount:      amount,
-				Balance:     runningDollars,
-				Currency:    "USD",
-			})
-		}
+}
+
+// ccInterestTx synthesizes the period's interest expense from the footer
+// summary, or returns nil when absent or not positive. It advances running.
+func ccInterestTx(text string, pattern *regexp.Regexp, closingDate time.Time, running *decimal.Decimal, currency string) *models.Transaction {
+	m := pattern.FindStringSubmatch(text)
+	if m == nil {
+		return nil
 	}
-
-	stampImportSeq(transactions)
-
-	return &models.Statement{
-		AccountNumber: productNumber,
-		Transactions:  transactions,
-	}, nil
+	interest := parseAmount(m[1])
+	if !interest.IsPositive() {
+		return nil
+	}
+	amount := interest.Neg()
+	*running = running.Add(amount)
+	return &models.Transaction{
+		Date:        closingDate,
+		Type:        models.TypeExpense,
+		Description: "Intereses corrientes del mes",
+		Amount:      amount,
+		Balance:     *running,
+		Currency:    currency,
+	}
 }
 
 // deriveCreditCardType classifies a credit-card statement row. amount is

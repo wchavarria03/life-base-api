@@ -22,11 +22,7 @@ var protectedNoteFields = []string{
 }
 
 type NoteRepository interface {
-	List(ctx context.Context) ([]*models.Note, error)
-	FindByID(ctx context.Context, id string) (*models.Note, error)
-	Create(ctx context.Context, input models.NoteInput) (*models.Note, error)
-	Update(ctx context.Context, id string, fields map[string]any) (*models.Note, error)
-	Delete(ctx context.Context, id string) error
+	crudRepository[models.Note, models.NoteInput]
 }
 
 type NoteService struct {

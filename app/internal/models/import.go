@@ -35,8 +35,8 @@ type ImportSummary struct {
 // slice returned by the dry-run.
 type TransactionOverride struct {
 	Index       int      `json:"index"`
-	Date        string   `json:"date,omitempty"`         // YYYY-MM-DD
+	Date        string   `json:"date,omitempty"` // YYYY-MM-DD
 	Description string   `json:"description,omitempty"`
-	Type        string   `json:"type,omitempty"`         // expense | income | transfer
+	Type        string   `json:"type,omitempty"` // expense | income | transfer
 	CategoryIDs []string `json:"category_ids,omitempty"`
 }

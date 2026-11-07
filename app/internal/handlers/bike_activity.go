@@ -22,18 +22,7 @@ func (h *ActivityHandler) ListByBike(c *gin.Context) {
 }
 
 func (h *ActivityHandler) Create(c *gin.Context) {
-	var input models.ActivityInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	input.BikeID = c.Param("id")
-	activity, err := h.svc.Create(c.Request.Context(), input)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusCreated, activity)
+	createForBike(func(in *models.ActivityInput, id string) { in.BikeID = id }, h.svc.Create)(c)
 }
 
 func (h *ActivityHandler) Delete(c *gin.Context) {

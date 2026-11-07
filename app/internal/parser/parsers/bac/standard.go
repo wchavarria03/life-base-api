@@ -15,9 +15,9 @@ import (
 var ibanPattern = regexp.MustCompile(`^CR\d{20}$`)
 
 const (
-	bacFieldCount  = 7  // columns per transaction row: Fecha|Referencia|Código|Descripción|Débito|Crédito|Balance
-	bacShortStart  = 10 // start index of 9-digit short number within the 20 IBAN digits
-	bacShortEnd    = 19 // end index (exclusive)
+	bacFieldCount = 7  // columns per transaction row: Fecha|Referencia|Código|Descripción|Débito|Crédito|Balance
+	bacShortStart = 10 // start index of 9-digit short number within the 20 IBAN digits
+	bacShortEnd   = 19 // end index (exclusive)
 )
 
 func init() {

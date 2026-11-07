@@ -181,12 +181,19 @@ type BottleRepository interface {
 	Delete(ctx context.Context, id string) error
 }
 
-type SupplyRepository interface {
-	List(ctx context.Context) ([]*models.Supply, error)
-	FindByID(ctx context.Context, id string) (*models.Supply, error)
-	Create(ctx context.Context, input models.SupplyInput) (*models.Supply, error)
-	Update(ctx context.Context, id string, fields map[string]any) (*models.Supply, error)
+// crudRepository is the persistence shape shared by the simple owned-resource
+// repositories (supplies, notes, shop items): list, find, create from an
+// input struct, patch by field map, delete.
+type crudRepository[T, I any] interface {
+	List(ctx context.Context) ([]*T, error)
+	FindByID(ctx context.Context, id string) (*T, error)
+	Create(ctx context.Context, input I) (*T, error)
+	Update(ctx context.Context, id string, fields map[string]any) (*T, error)
 	Delete(ctx context.Context, id string) error
+}
+
+type SupplyRepository interface {
+	crudRepository[models.Supply, models.SupplyInput]
 }
 
 type SupplyHistoryRepository interface {

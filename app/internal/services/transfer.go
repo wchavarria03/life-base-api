@@ -32,37 +32,13 @@ func NewTransferService(accounts AccountRepository, transactions TransactionRepo
 // the same currency as the request. BCCR exchange-rate support is tracked
 // separately in docs/FUTURE_ENHANCEMENTS.md.
 func (s *TransferService) CreateTransfer(ctx context.Context, input models.TransferInput) (*models.TransferResult, error) {
-	if input.FromAccountID == "" || input.ToAccountID == "" {
-		return nil, fmt.Errorf("from_account_id and to_account_id are required")
-	}
-	if input.FromAccountID == input.ToAccountID {
-		return nil, fmt.Errorf("from_account_id and to_account_id must be different")
-	}
-	if input.Amount.LessThanOrEqual(decimal.Zero) {
-		return nil, fmt.Errorf("amount must be positive")
+	if err := validateTransferInput(input); err != nil {
+		return nil, err
 	}
 
-	fromAccount, err := s.accounts.FindByID(ctx, input.FromAccountID)
+	fromAccount, toAccount, err := s.lookupTransferAccounts(ctx, input)
 	if err != nil {
-		return nil, fmt.Errorf("lookup from account: %w", err)
-	}
-	if fromAccount == nil {
-		return nil, fmt.Errorf("from account not found")
-	}
-
-	toAccount, err := s.accounts.FindByID(ctx, input.ToAccountID)
-	if err != nil {
-		return nil, fmt.Errorf("lookup to account: %w", err)
-	}
-	if toAccount == nil {
-		return nil, fmt.Errorf("to account not found")
-	}
-
-	if fromAccount.Currency != input.Currency || toAccount.Currency != input.Currency {
-		return nil, fmt.Errorf(
-			"cross-currency transfers are not supported yet: both accounts must use %s (from=%s, to=%s)",
-			input.Currency, fromAccount.Currency, toAccount.Currency,
-		)
+		return nil, err
 	}
 
 	description := input.Description
@@ -70,36 +46,9 @@ func (s *TransferService) CreateTransfer(ctx context.Context, input models.Trans
 		description = fmt.Sprintf("Transfer: %s -> %s", fromAccount.Name, toAccount.Name)
 	}
 
-	fromTx, err := s.transactions.Create(ctx, &models.Transaction{
-		AccountID:   input.FromAccountID,
-		Date:        input.Date,
-		Description: description,
-		Amount:      input.Amount.Neg(),
-		Type:        models.TypeTransfer,
-		Currency:    input.Currency,
-	})
+	fromTx, toTx, err := s.createTransferLegs(ctx, input, description)
 	if err != nil {
-		return nil, fmt.Errorf("create outgoing transaction: %w", err)
-	}
-
-	toTx, err := s.transactions.Create(ctx, &models.Transaction{
-		AccountID:   input.ToAccountID,
-		Date:        input.Date,
-		Description: description,
-		Amount:      input.Amount,
-		Type:        models.TypeTransfer,
-		Currency:    input.Currency,
-	})
-	if err != nil {
-		// Compensate: remove the leg we already wrote so the source
-		// account doesn't end up silently short with no matching credit.
-		if delErr := s.transactions.Delete(ctx, fromTx.ID); delErr != nil {
-			return nil, fmt.Errorf(
-				"create incoming transaction: %w (also failed to roll back outgoing leg %s: %v)",
-				err, fromTx.ID, delErr,
-			)
-		}
-		return nil, fmt.Errorf("create incoming transaction: %w", err)
+		return nil, err
 	}
 
 	transfer, err := s.transfers.Create(ctx, fromTx.ID, toTx.ID, nil, "calculated")
@@ -123,6 +72,84 @@ func (s *TransferService) CreateTransfer(ctx context.Context, input models.Trans
 	}, nil
 }
 
+// validateTransferInput checks the request shape before any lookups happen.
+func validateTransferInput(input models.TransferInput) error {
+	if input.FromAccountID == "" || input.ToAccountID == "" {
+		return fmt.Errorf("from_account_id and to_account_id are required")
+	}
+	if input.FromAccountID == input.ToAccountID {
+		return fmt.Errorf("from_account_id and to_account_id must be different")
+	}
+	if input.Amount.LessThanOrEqual(decimal.Zero) {
+		return fmt.Errorf("amount must be positive")
+	}
+	return nil
+}
+
+// lookupTransferAccounts loads both accounts and enforces the same-currency rule.
+func (s *TransferService) lookupTransferAccounts(ctx context.Context, input models.TransferInput) (*models.Account, *models.Account, error) {
+	fromAccount, err := s.accounts.FindByID(ctx, input.FromAccountID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("lookup from account: %w", err)
+	}
+	if fromAccount == nil {
+		return nil, nil, fmt.Errorf("from account not found")
+	}
+
+	toAccount, err := s.accounts.FindByID(ctx, input.ToAccountID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("lookup to account: %w", err)
+	}
+	if toAccount == nil {
+		return nil, nil, fmt.Errorf("to account not found")
+	}
+
+	if fromAccount.Currency != input.Currency || toAccount.Currency != input.Currency {
+		return nil, nil, fmt.Errorf(
+			"cross-currency transfers are not supported yet: both accounts must use %s (from=%s, to=%s)",
+			input.Currency, fromAccount.Currency, toAccount.Currency,
+		)
+	}
+	return fromAccount, toAccount, nil
+}
+
+// createTransferLegs writes the debit and credit transactions, rolling back
+// the debit if the credit cannot be written.
+func (s *TransferService) createTransferLegs(ctx context.Context, input models.TransferInput, description string) (*models.Transaction, *models.Transaction, error) {
+	fromTx, err := s.transactions.Create(ctx, &models.Transaction{
+		AccountID:   input.FromAccountID,
+		Date:        input.Date,
+		Description: description,
+		Amount:      input.Amount.Neg(),
+		Type:        models.TypeTransfer,
+		Currency:    input.Currency,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("create outgoing transaction: %w", err)
+	}
+
+	toTx, err := s.transactions.Create(ctx, &models.Transaction{
+		AccountID:   input.ToAccountID,
+		Date:        input.Date,
+		Description: description,
+		Amount:      input.Amount,
+		Type:        models.TypeTransfer,
+		Currency:    input.Currency,
+	})
+	if err != nil {
+		// Compensate: remove the leg we already wrote so the source
+		// account doesn't end up silently short with no matching credit.
+		if delErr := s.transactions.Delete(ctx, fromTx.ID); delErr != nil {
+			return nil, nil, fmt.Errorf(
+				"create incoming transaction: %w (also failed to roll back outgoing leg %s: %v)",
+				err, fromTx.ID, delErr,
+			)
+		}
+		return nil, nil, fmt.Errorf("create incoming transaction: %w", err)
+	}
+	return fromTx, toTx, nil
+}
+
 // LinkTransactions links two already-existing transactions as the two legs of a
 // transfer. Unlike CreateTransfer, no new transaction rows are created — the
 // caller supplies the IDs of transactions that came from an imported statement.
@@ -134,53 +161,14 @@ func (s *TransferService) LinkTransactions(ctx context.Context, fromTxID, toTxID
 		return nil, fmt.Errorf("from_tx_id and to_tx_id must be different")
 	}
 
-	fromTx, err := s.transactions.GetByID(ctx, fromTxID)
+	fromTx, toTx, err := s.loadLinkableTransactions(ctx, fromTxID, toTxID)
 	if err != nil {
-		return nil, fmt.Errorf("lookup from transaction: %w", err)
-	}
-	if fromTx == nil {
-		return nil, ErrFromTxNotFound
+		return nil, err
 	}
 
-	toTx, err := s.transactions.GetByID(ctx, toTxID)
+	exchangeRate, err := linkExchangeRate(fromTx, toTx)
 	if err != nil {
-		return nil, fmt.Errorf("lookup to transaction: %w", err)
-	}
-	if toTx == nil {
-		return nil, ErrToTxNotFound
-	}
-
-	if fromTx.TransferID != "" {
-		return nil, ErrFromTxLinked
-	}
-	if toTx.TransferID != "" {
-		return nil, ErrToTxLinked
-	}
-
-	var exchangeRate *float64
-	if fromTx.Currency == toTx.Currency {
-		if !fromTx.Amount.Add(toTx.Amount).IsZero() {
-			return nil, fmt.Errorf(
-				"amounts must net to zero: %s + %s = %s",
-				fromTx.Amount, toTx.Amount, fromTx.Amount.Add(toTx.Amount),
-			)
-		}
-	} else {
-		// Cross-currency link (e.g. an informal currency exchange with someone
-		// else): one leg must be a debit and the other a credit, and we derive
-		// the implied rate from the two amounts rather than requiring them to
-		// net to zero (they're in different currencies).
-		if fromTx.Amount.Sign() == toTx.Amount.Sign() {
-			return nil, fmt.Errorf(
-				"cross-currency transfer legs must have opposite signs: from_tx=%s, to_tx=%s",
-				fromTx.Amount, toTx.Amount,
-			)
-		}
-		if fromTx.Amount.IsZero() || toTx.Amount.IsZero() {
-			return nil, fmt.Errorf("transfer legs cannot have a zero amount")
-		}
-		rate, _ := toTx.Amount.Abs().Div(fromTx.Amount.Abs()).Float64()
-		exchangeRate = &rate
+		return nil, err
 	}
 
 	transfer, err := s.transfers.Create(ctx, fromTxID, toTxID, exchangeRate, "manual")
@@ -202,6 +190,64 @@ func (s *TransferService) LinkTransactions(ctx context.Context, fromTxID, toTxID
 		FromTransaction: *fromTx,
 		ToTransaction:   *toTx,
 	}, nil
+}
+
+// loadLinkableTransactions fetches both legs and rejects missing or
+// already-linked transactions, in the same order the checks always ran.
+func (s *TransferService) loadLinkableTransactions(ctx context.Context, fromTxID, toTxID string) (*models.Transaction, *models.Transaction, error) {
+	fromTx, err := s.transactions.GetByID(ctx, fromTxID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("lookup from transaction: %w", err)
+	}
+	if fromTx == nil {
+		return nil, nil, ErrFromTxNotFound
+	}
+
+	toTx, err := s.transactions.GetByID(ctx, toTxID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("lookup to transaction: %w", err)
+	}
+	if toTx == nil {
+		return nil, nil, ErrToTxNotFound
+	}
+
+	if fromTx.TransferID != "" {
+		return nil, nil, ErrFromTxLinked
+	}
+	if toTx.TransferID != "" {
+		return nil, nil, ErrToTxLinked
+	}
+	return fromTx, toTx, nil
+}
+
+// linkExchangeRate validates the two legs' amounts and returns the implied
+// exchange rate for a cross-currency link (nil for a same-currency link).
+func linkExchangeRate(fromTx, toTx *models.Transaction) (*float64, error) {
+	if fromTx.Currency == toTx.Currency {
+		if !fromTx.Amount.Add(toTx.Amount).IsZero() {
+			return nil, fmt.Errorf(
+				"amounts must net to zero: %s + %s = %s",
+				fromTx.Amount, toTx.Amount, fromTx.Amount.Add(toTx.Amount),
+			)
+		}
+		return nil, nil
+	}
+
+	// Cross-currency link (e.g. an informal currency exchange with someone
+	// else): one leg must be a debit and the other a credit, and we derive
+	// the implied rate from the two amounts rather than requiring them to
+	// net to zero (they're in different currencies).
+	if fromTx.Amount.Sign() == toTx.Amount.Sign() {
+		return nil, fmt.Errorf(
+			"cross-currency transfer legs must have opposite signs: from_tx=%s, to_tx=%s",
+			fromTx.Amount, toTx.Amount,
+		)
+	}
+	if fromTx.Amount.IsZero() || toTx.Amount.IsZero() {
+		return nil, fmt.Errorf("transfer legs cannot have a zero amount")
+	}
+	rate, _ := toTx.Amount.Abs().Div(fromTx.Amount.Abs()).Float64()
+	return &rate, nil
 }
 
 // UpdateTransactionType corrects a transaction's type after import (e.g. a
@@ -380,7 +426,7 @@ func (s *TransferService) MatchForPeriod(ctx context.Context, from, to time.Time
 	if fxMin != nil && fxMax != nil {
 		fxr = &fxRange{min: *fxMin, max: *fxMax}
 	}
-	pairs := s.Match(stmts, fxr)
+	pairs := s.match(stmts, fxr)
 
 	// Flatten all transactions for index lookup (same iteration order as Match).
 	var flat []models.Transaction
@@ -428,16 +474,41 @@ func (s *TransferService) ReconcileForPeriod(ctx context.Context, from, to time.
 		return 0, fmt.Errorf("fetch transactions: %w", err)
 	}
 
-	// Index accounts by ID for short-number lookup.
-	shortByAcct := make(map[string]string, len(accounts))
-	acctNumByID := make(map[string]string, len(accounts))
-	for _, acc := range accounts {
-		shortByAcct[acc.ID] = acc.ShortNumber
-		acctNumByID[acc.ID] = acc.AccountNumber
+	stmts := buildReconcileStatements(accounts, allTxs)
+	if len(stmts) == 0 {
+		return 0, nil
 	}
 
-	// Group unlinked transactions by account — any type is a candidate; see
-	// the doc comment above for why type isn't filtered here.
+	pairs := s.match(stmts, nil)
+
+	// Flatten in the same iteration order match() used, so indices align.
+	var flat []models.Transaction
+	for _, stmt := range stmts {
+		flat = append(flat, stmt.Transactions...)
+	}
+
+	linked := 0
+	for _, pair := range pairs {
+		// Skip the weakest tiers — they require user confirmation.
+		if pair.confidence == models.MatchByAmountDate || pair.confidence == models.MatchByFXRate {
+			continue
+		}
+		if pair.a >= len(flat) || pair.b >= len(flat) {
+			continue
+		}
+		if s.linkReconciledPair(ctx, flat[pair.a], flat[pair.b]) {
+			linked++
+		}
+	}
+
+	return linked, nil
+}
+
+// buildReconcileStatements groups the unlinked transactions by account and
+// wraps each account that has any into a synthetic statement, in account
+// order. Any transaction type is a candidate; see ReconcileForPeriod's doc
+// comment for why type isn't filtered here.
+func buildReconcileStatements(accounts []*models.Account, allTxs []*models.Transaction) []*models.Statement {
 	txsByAccount := make(map[string][]*models.Transaction, len(accounts))
 	for _, tx := range allTxs {
 		if tx.TransferID != "" {
@@ -446,7 +517,6 @@ func (s *TransferService) ReconcileForPeriod(ctx context.Context, from, to time.
 		txsByAccount[tx.AccountID] = append(txsByAccount[tx.AccountID], tx)
 	}
 
-	// Build synthetic statements from accounts that have qualifying transactions.
 	stmts := make([]*models.Statement, 0, len(accounts))
 	for _, acc := range accounts {
 		txs := txsByAccount[acc.ID]
@@ -463,51 +533,29 @@ func (s *TransferService) ReconcileForPeriod(ctx context.Context, from, to time.
 			Transactions:  flat,
 		})
 	}
+	return stmts
+}
 
-	if len(stmts) == 0 {
-		return 0, nil
+// linkReconciledPair persists one auto-matched transfer and reports whether
+// it was created. A failure is non-fatal: one bad pair must not abort the
+// whole reconciliation.
+func (s *TransferService) linkReconciledPair(ctx context.Context, fromTx, toTx models.Transaction) bool {
+	transfer, err := s.transfers.Create(ctx, fromTx.ID, toTx.ID, nil, "auto")
+	if err != nil {
+		return false
 	}
-
-	pairs := s.Match(stmts, nil)
-
-	// Flatten in the same iteration order Match() used, so indices align.
-	var flat []models.Transaction
-	for _, stmt := range stmts {
-		flat = append(flat, stmt.Transactions...)
+	_ = s.transactions.SetTransferID(ctx, fromTx.ID, transfer.ID)
+	_ = s.transactions.SetTransferID(ctx, toTx.ID, transfer.ID)
+	// Both legs likely arrived as plain expense/income (see doc comment) —
+	// reclassify so they stop counting as real spending/income now that
+	// they're confirmed to be the two sides of one internal transfer.
+	if fromTx.Type != models.TypeTransfer {
+		_ = s.transactions.UpdateType(ctx, fromTx.ID, models.TypeTransfer)
 	}
-
-	linked := 0
-	for _, pair := range pairs {
-		// Skip the weakest tiers — they require user confirmation.
-		if pair.confidence == models.MatchByAmountDate || pair.confidence == models.MatchByFXRate {
-			continue
-		}
-		if pair.a >= len(flat) || pair.b >= len(flat) {
-			continue
-		}
-		fromTx := flat[pair.a]
-		toTx := flat[pair.b]
-
-		transfer, err := s.transfers.Create(ctx, fromTx.ID, toTx.ID, nil, "auto")
-		if err != nil {
-			// Non-fatal: one bad pair must not abort the whole reconciliation.
-			continue
-		}
-		_ = s.transactions.SetTransferID(ctx, fromTx.ID, transfer.ID)
-		_ = s.transactions.SetTransferID(ctx, toTx.ID, transfer.ID)
-		// Both legs likely arrived as plain expense/income (see doc comment) —
-		// reclassify so they stop counting as real spending/income now that
-		// they're confirmed to be the two sides of one internal transfer.
-		if fromTx.Type != models.TypeTransfer {
-			_ = s.transactions.UpdateType(ctx, fromTx.ID, models.TypeTransfer)
-		}
-		if toTx.Type != models.TypeTransfer {
-			_ = s.transactions.UpdateType(ctx, toTx.ID, models.TypeTransfer)
-		}
-		linked++
+	if toTx.Type != models.TypeTransfer {
+		_ = s.transactions.UpdateType(ctx, toTx.ID, models.TypeTransfer)
 	}
-
-	return linked, nil
+	return true
 }
 
 // matchPair holds the indices of a matched pair within the flattened
@@ -517,7 +565,7 @@ type matchPair struct {
 	confidence models.MatchConfidence
 }
 
-// Match identifies transfer pairs across statements using a priority order:
+// match identifies transfer pairs across statements using a priority order:
 //  1. Same Reference across accounts (strongest)
 //  2. Description contains counterpart's ShortNumber (TEF A/DE patterns)
 //  3. Matching (or truncated-prefix) description, same currency
@@ -527,7 +575,7 @@ type matchPair struct {
 //
 // Returns pairs of (a, b) indices into the flattened transaction list, with
 // the confidence tier that produced the match.
-func (s *TransferService) Match(statements []*models.Statement, fxr *fxRange) []matchPair {
+func (s *TransferService) match(statements []*models.Statement, fxr *fxRange) []matchPair {
 	type indexed struct {
 		stmtIdx int
 		txIdx   int
@@ -581,15 +629,14 @@ func isTransferPair(a, b models.Transaction, shortA, shortB string, fxr *fxRange
 		return models.MatchByReference, true
 	}
 
+	// Currencies are equal from here on, so each tier only needs to know
+	// whether the two amounts cancel out.
+	cancels := a.Amount.Add(b.Amount).IsZero()
+
 	// Tier 2: TEF description contains counterpart's short number AND amounts net to zero.
 	// The description check alone is not sufficient — the same short number can appear
 	// in unrelated transfers. Requiring amounts to cancel rules out false positives.
-	if shortB != "" && strings.Contains(a.Description, shortB) &&
-		a.Currency == b.Currency && a.Amount.Add(b.Amount).IsZero() {
-		return models.MatchByShortNumber, true
-	}
-	if shortA != "" && strings.Contains(b.Description, shortA) &&
-		a.Currency == b.Currency && a.Amount.Add(b.Amount).IsZero() {
+	if cancels && (citesShortNumber(a.Description, shortB) || citesShortNumber(b.Description, shortA)) {
 		return models.MatchByShortNumber, true
 	}
 
@@ -597,17 +644,22 @@ func isTransferPair(a, b models.Transaction, shortA, shortB string, fxr *fxRange
 	// Catches internal bank movements (e.g. BAC Objetivos) where both sides share
 	// an identical (or prefix-truncated) description but carry no account-number
 	// cross-reference. One side may be shorter due to PDF column-width truncation.
-	if a.Currency == b.Currency && a.Amount.Add(b.Amount).IsZero() &&
-		descriptionMatches(a.Description, b.Description) {
+	if cancels && descriptionMatches(a.Description, b.Description) {
 		return models.MatchByDescription, true
 	}
 
 	// Tier 4: same date + same currency + same absolute amount (opposite signs)
-	if a.Date.Equal(b.Date) && a.Currency == b.Currency && a.Amount.Add(b.Amount).IsZero() {
+	if cancels && a.Date.Equal(b.Date) {
 		return models.MatchByAmountDate, true
 	}
 
 	return "", false
+}
+
+// citesShortNumber reports whether description mentions a non-empty account
+// short number.
+func citesShortNumber(description, short string) bool {
+	return short != "" && strings.Contains(description, short)
 }
 
 // matchFXRate matches two opposite-sign, opposite-currency transactions on

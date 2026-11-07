@@ -55,7 +55,7 @@ func fetchECPublicKey(jwksURL string) (*ecdsa.PublicKey, error) {
 	if err != nil {
 		return nil, fmt.Errorf("fetch JWKS: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var keys jwks
 	if err := json.NewDecoder(resp.Body).Decode(&keys); err != nil {

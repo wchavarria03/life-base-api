@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -16,49 +15,13 @@ func NewReportHandler(accounts AccountLister, summarizer ReportSummarizer) *Repo
 func (h *ReportHandler) GetSummary(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	fromStr := c.Query("from")
-	toStr := c.Query("to")
-	accountID := c.Query("account_id")
-	currency := c.Query("currency")
-
-	if fromStr == "" || toStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "from and to are required"})
+	from, to, fromStr, toStr, ok := parseDateRange(c)
+	if !ok {
 		return
 	}
 
-	from, err := time.Parse("2006-01-02", fromStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid from date, expected YYYY-MM-DD"})
-		return
-	}
-	to, err := time.Parse("2006-01-02", toStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid to date, expected YYYY-MM-DD"})
-		return
-	}
-
-	var accountIDs []string
-
-	if accountID != "" {
-		acct, err := h.accounts.GetByID(ctx, accountID)
-		if err != nil || acct == nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "account not found"})
-			return
-		}
-		accountIDs = []string{accountID}
-	} else if currency != "" {
-		accounts, err := h.accounts.List(ctx)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list accounts"})
-			return
-		}
-		for _, a := range accounts {
-			if a.Currency == currency && !a.Locked && !a.External {
-				accountIDs = append(accountIDs, a.ID)
-			}
-		}
-	} else {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "account_id or currency is required"})
+	accountIDs, ok := h.summaryAccountIDs(c, c.Query("account_id"), c.Query("currency"))
+	if !ok {
 		return
 	}
 
@@ -82,6 +45,38 @@ func (h *ReportHandler) GetSummary(c *gin.Context) {
 	c.JSON(http.StatusOK, summary)
 }
 
+// summaryAccountIDs resolves which accounts a summary covers: one account by
+// id, or every open, non-external account in a currency. It writes the error
+// response itself and returns ok=false when neither is usable.
+func (h *ReportHandler) summaryAccountIDs(c *gin.Context, accountID, currency string) ([]string, bool) {
+	ctx := c.Request.Context()
+	switch {
+	case accountID != "":
+		acct, err := h.accounts.GetByID(ctx, accountID)
+		if err != nil || acct == nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "account not found"})
+			return nil, false
+		}
+		return []string{accountID}, true
+	case currency != "":
+		accounts, err := h.accounts.List(ctx)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list accounts"})
+			return nil, false
+		}
+		var ids []string
+		for _, a := range accounts {
+			if a.Currency == currency && !a.Locked && !a.External {
+				ids = append(ids, a.ID)
+			}
+		}
+		return ids, true
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{"error": "account_id or currency is required"})
+		return nil, false
+	}
+}
+
 // NetWorth handles GET /v1/reports/net-worth?from=&to= — one balance-history
 // summary per currency the caller has accounts in, side by side. No FX
 // conversion: each currency is its own independent total, same as the
@@ -90,20 +85,8 @@ func (h *ReportHandler) GetSummary(c *gin.Context) {
 func (h *ReportHandler) NetWorth(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	fromStr := c.Query("from")
-	toStr := c.Query("to")
-	if fromStr == "" || toStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "from and to are required"})
-		return
-	}
-	from, err := time.Parse("2006-01-02", fromStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid from date, expected YYYY-MM-DD"})
-		return
-	}
-	to, err := time.Parse("2006-01-02", toStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid to date, expected YYYY-MM-DD"})
+	from, to, _, _, ok := parseDateRange(c)
+	if !ok {
 		return
 	}
 

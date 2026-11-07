@@ -31,14 +31,8 @@ type WalletTransactionRepository interface {
 }
 
 // ShopItemRepository is the persistence layer ShopService needs for items.
-//
-//nolint:dupl // structurally mirrors other simple owned-resource repository interfaces; not worth a generic for 5 lines
 type ShopItemRepository interface {
-	List(ctx context.Context) ([]*models.ShopItem, error)
-	FindByID(ctx context.Context, id string) (*models.ShopItem, error)
-	Create(ctx context.Context, input models.ShopItemInput) (*models.ShopItem, error)
-	Update(ctx context.Context, id string, fields map[string]any) (*models.ShopItem, error)
-	Delete(ctx context.Context, id string) error
+	crudRepository[models.ShopItem, models.ShopItemInput]
 }
 
 // ShopOrderRepository is the persistence layer ShopService needs for orders.

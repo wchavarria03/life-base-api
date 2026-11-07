@@ -47,7 +47,7 @@ func (r *AdminRepository) ListAuthEmails(ctx context.Context) (map[string]string
 	if err != nil {
 		return nil, fmt.Errorf("list auth users: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= http.StatusBadRequest {
 		return nil, fmt.Errorf("list auth users: http %d", resp.StatusCode)

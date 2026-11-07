@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strconv"
@@ -82,24 +83,9 @@ func (h *TransferHandler) Link(c *gin.Context) {
 // to an external party as a transfer. If the transaction was linked to a
 // transfer, the link is torn down as part of the update.
 func (h *TransferHandler) UpdateTransactionType(c *gin.Context) {
-	txID := c.Param("id")
-	var req updateTransactionTypeRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	tx, err := h.svc.UpdateTransactionType(c.Request.Context(), txID, models.TransactionType(req.Type))
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
-	}
-	if tx == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "transaction not found"})
-		return
-	}
-
-	c.JSON(http.StatusOK, tx)
+	updateOrNotFound("transaction not found", func(ctx context.Context, id string, req updateTransactionTypeRequest) (*models.Transaction, error) {
+		return h.svc.UpdateTransactionType(ctx, id, models.TransactionType(req.Type))
+	})(c)
 }
 
 // LinkExisting handles POST /v1/transfers/link-existing — links an
@@ -167,38 +153,24 @@ func (h *TransferHandler) Reconcile(c *gin.Context) {
 }
 
 func (h *TransferHandler) GetMatches(c *gin.Context) {
-	fromStr := c.Query("from")
-	toStr := c.Query("to")
-
-	if fromStr == "" || toStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "from and to are required"})
-		return
-	}
-
-	from, err := time.Parse("2006-01-02", fromStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid from date, expected YYYY-MM-DD"})
-		return
-	}
-	to, err := time.Parse("2006-01-02", toStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid to date, expected YYYY-MM-DD"})
+	from, to, _, _, ok := parseDateRange(c)
+	if !ok {
 		return
 	}
 
 	var fxMin, fxMax *float64
 	if minStr, maxStr := c.Query("fx_min"), c.Query("fx_max"); minStr != "" && maxStr != "" {
-		min, err := strconv.ParseFloat(minStr, 64)
+		lo, err := strconv.ParseFloat(minStr, 64)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid fx_min"})
 			return
 		}
-		max, err := strconv.ParseFloat(maxStr, 64)
+		hi, err := strconv.ParseFloat(maxStr, 64)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid fx_max"})
 			return
 		}
-		fxMin, fxMax = &min, &max
+		fxMin, fxMax = &lo, &hi
 	}
 
 	matches, err := h.svc.MatchForPeriod(c.Request.Context(), from, to, fxMin, fxMax)

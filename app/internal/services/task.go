@@ -296,27 +296,10 @@ func deriveDueStatus(dueDate *string) models.TaskStatus {
 	}
 }
 
-// advanceTaskDate is deliberately the same shape as advanceReminderDate in
-// reminder.go — copying that exact recurrence pattern per this feature's
-// design (see docs/HUB_PLAN.md), not accidental duplication.
-//
-//nolint:dupl // intentional mirror of advanceReminderDate's recurrence logic
+// advanceTaskDate returns date moved forward by one recurrence period. It
+// shares its date step with advanceReminderDate (see advanceByRecurrence).
 func advanceTaskDate(date string, recurrence models.TaskRecurrence) string {
-	t, err := time.Parse("2006-01-02", date)
-	if err != nil {
-		return date
-	}
-	switch recurrence {
-	case models.TaskWeekly:
-		return t.AddDate(0, 0, 7).Format("2006-01-02")
-	case models.TaskBiweekly:
-		return t.AddDate(0, 0, 14).Format("2006-01-02")
-	case models.TaskMonthly:
-		return t.AddDate(0, 1, 0).Format("2006-01-02")
-	case models.TaskYearly:
-		return t.AddDate(1, 0, 0).Format("2006-01-02")
-	}
-	return date
+	return advanceByRecurrence(date, string(recurrence))
 }
 
 func validateTaskRecurrence(rt string) error {

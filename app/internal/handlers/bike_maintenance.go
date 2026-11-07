@@ -22,18 +22,7 @@ func (h *ServiceLogHandler) ListByBike(c *gin.Context) {
 }
 
 func (h *ServiceLogHandler) Create(c *gin.Context) {
-	var input models.ServiceLogInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	input.BikeID = c.Param("id")
-	log, err := h.svc.Create(c.Request.Context(), input)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusCreated, log)
+	createForBike(func(in *models.ServiceLogInput, id string) { in.BikeID = id }, h.svc.Create)(c)
 }
 
 func (h *ServiceLogHandler) Delete(c *gin.Context) {
@@ -58,32 +47,11 @@ func (h *MaintenanceTaskHandler) ListByBike(c *gin.Context) {
 }
 
 func (h *MaintenanceTaskHandler) Create(c *gin.Context) {
-	var input models.MaintenanceTaskInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	input.BikeID = c.Param("id")
-	task, err := h.svc.Create(c.Request.Context(), input)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusCreated, task)
+	createForBike(func(in *models.MaintenanceTaskInput, id string) { in.BikeID = id }, h.svc.Create)(c)
 }
 
 func (h *MaintenanceTaskHandler) Update(c *gin.Context) {
-	var fields map[string]any
-	if err := c.ShouldBindJSON(&fields); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	task, err := h.svc.Update(c.Request.Context(), c.Param("taskId"), fields)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, task)
+	updateByParam("taskId", h.svc.Update)(c)
 }
 
 func (h *MaintenanceTaskHandler) Complete(c *gin.Context) {

@@ -27,6 +27,17 @@ linters:
     paths:
       - app/internal/parser/parsers/bac/testdata
     rules:
+      # Doc-comment style nits (revive exported / package-comments). The
+      # codebase documents behavior where it is non-obvious rather than
+      # restating every method name, so these are not enforced.
+      - linters:
+          - revive
+        text: "should have comment or be unexported|should have a package comment|should be of the form|should have comment \\(or a comment on this block\\)"
+      # Spanish bank-statement keywords (Producto, COMISION, ...) are data,
+      # not English prose.
+      - path: app/internal/parser/parsers/bac/
+        linters:
+          - misspell
       - path: _test\.go
         linters:
           - gosec

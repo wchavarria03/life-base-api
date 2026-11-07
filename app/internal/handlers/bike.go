@@ -65,18 +65,7 @@ func (h *BikeFitHistoryHandler) ListByBike(c *gin.Context) {
 }
 
 func (h *BikeFitHistoryHandler) Create(c *gin.Context) {
-	var input models.BikeFitHistoryInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	input.BikeID = c.Param("id")
-	entry, err := h.svc.Create(c.Request.Context(), input)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusCreated, entry)
+	createForBike(func(in *models.BikeFitHistoryInput, id string) { in.BikeID = id }, h.svc.Create)(c)
 }
 
 func (h *BikeFitHistoryHandler) Delete(c *gin.Context) {

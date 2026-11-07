@@ -40,139 +40,182 @@ func (p *savingsParser) Detect(text string) bool {
 }
 
 func (p *savingsParser) Parse(text string) (*models.Statement, error) {
-	lines := strings.Split(text, "\n")
+	sc := &savingsScanner{currency: "CRC"}
 
-	var (
-		accountNumber     string
-		currency          = "CRC"
-		cutoffYear        int
-		cutoffMonth       int
-		inTable           bool
-		afterUltimaLinea  int // 0 = not seen; 1 = "ÚLTIMA LÍNEA" seen; 2 = "SALDO AL CORTE" seen
-		closingBalance    decimal.Decimal
-		closingBalanceSet bool
-		transactions      []models.Transaction
-		fields            []string
-		nextIsIBAN        bool
-		nextIsCurrency    bool
-	)
-
-	for _, rawLine := range lines {
+	for _, rawLine := range strings.Split(text, "\n") {
 		trimmed := strings.TrimSpace(rawLine)
 		if trimmed == "" {
 			continue
 		}
-
-		// After ÚLTIMA LÍNEA: consume "SALDO AL CORTE" then the balance value.
-		if afterUltimaLinea > 0 {
-			if afterUltimaLinea == 1 {
-				// Expect "SALDO AL CORTE" next
-				afterUltimaLinea = 2
-				continue
-			}
-			// afterUltimaLinea == 2: this line is the closing balance
-			closingBalance = parseAmount(trimmed)
-			closingBalanceSet = true
+		if sc.scan(trimmed) {
 			break
-		}
-
-		// IBAN: "Cuenta IBAN:" appears on its own line; the value is the next line.
-		if nextIsIBAN {
-			raw := strings.ReplaceAll(trimmed, " ", "")
-			if ibanPattern.MatchString(raw) {
-				accountNumber = raw
-			}
-			nextIsIBAN = false
-			continue
-		}
-		if trimmed == "Cuenta IBAN:" {
-			nextIsIBAN = true
-			continue
-		}
-
-		// Currency: "Moneda:" on its own line; value is the next line.
-		if nextIsCurrency {
-			moneda := strings.ToUpper(trimmed)
-			if strings.Contains(moneda, "DOLLAR") || strings.Contains(moneda, "USD") {
-				currency = "USD"
-			} else if strings.Contains(moneda, "EURO") {
-				currency = "EUR"
-			}
-			nextIsCurrency = false
-			continue
-		}
-		if trimmed == "Moneda:" {
-			nextIsCurrency = true
-			continue
-		}
-
-		// Cut-off date from a standalone line like "30/JUN/26".
-		if cutoffYear == 0 && !inTable {
-			if m := savingsCutoffRe.FindStringSubmatch(trimmed); m != nil {
-				if mo, ok := savingsMonths[m[2]]; ok {
-					cutoffMonth = mo
-					if y, err := savingsParseYear(m[3]); err == nil {
-						cutoffYear = y
-					}
-				}
-			}
-		}
-
-		// "NO. REFERENCIA" is the column-header line that starts the transaction table.
-		if trimmed == "NO. REFERENCIA" {
-			inTable = true
-			fields = fields[:0]
-			continue
-		}
-
-		if !inTable {
-			continue
-		}
-
-		// "ÚLTIMA LÍNEA" ends the transaction table.
-		if trimmed == "ÚLTIMA LÍNEA" {
-			afterUltimaLinea = 1
-			continue
-		}
-
-		// Skip the remaining column-header lines that appear immediately after
-		// "NO. REFERENCIA" and would pollute the field accumulator.
-		if isSavingsColumnHeader(trimmed) {
-			continue
-		}
-
-		fields = append(fields, trimmed)
-
-		if len(fields) == savingsFieldCount {
-			tx, err := parseSavingsFields(fields, currency, cutoffYear, cutoffMonth)
-			if err == nil {
-				transactions = append(transactions, tx)
-			}
-			fields = fields[:0]
 		}
 	}
 
-	if len(transactions) == 0 {
+	if len(sc.transactions) == 0 {
 		return nil, fmt.Errorf("bac/savings: no transactions found — verify the PDF matches this format")
 	}
 
-	// Reconstruct the per-transaction running balance by walking backwards from the closing
-	// balance. Each stored balance is the account value AFTER that transaction applied.
-	if closingBalanceSet {
-		running := closingBalance
-		for i := len(transactions) - 1; i >= 0; i-- {
-			transactions[i].Balance = running
-			running = running.Sub(transactions[i].Amount)
-		}
-	}
+	sc.applyRunningBalance()
 
-	stampImportSeq(transactions)
+	stampImportSeq(sc.transactions)
 
 	return &models.Statement{
-		AccountNumber: accountNumber,
-		ShortNumber:   bacShortNumber(accountNumber),
-		Transactions:  transactions,
+		AccountNumber: sc.accountNumber,
+		ShortNumber:   bacShortNumber(sc.accountNumber),
+		Transactions:  sc.transactions,
 	}, nil
+}
+
+// savingsScanner holds the line-by-line state of a savings statement parse.
+type savingsScanner struct {
+	accountNumber     string
+	currency          string
+	cutoffYear        int
+	cutoffMonth       int
+	inTable           bool
+	afterUltimaLinea  int // 0 = not seen; 1 = "ÚLTIMA LÍNEA" seen; 2 = "SALDO AL CORTE" seen
+	closingBalance    decimal.Decimal
+	closingBalanceSet bool
+	transactions      []models.Transaction
+	fields            []string
+	nextIsIBAN        bool
+	nextIsCurrency    bool
+}
+
+// scan consumes one non-empty trimmed line and reports whether parsing is
+// finished (the closing balance has been read).
+func (sc *savingsScanner) scan(trimmed string) bool {
+	// After ÚLTIMA LÍNEA: consume "SALDO AL CORTE" then the balance value.
+	if sc.afterUltimaLinea > 0 {
+		return sc.consumeClosing(trimmed)
+	}
+
+	// IBAN: "Cuenta IBAN:" appears on its own line; the value is the next line.
+	if sc.nextIsIBAN {
+		sc.readIBAN(trimmed)
+		return false
+	}
+	if trimmed == "Cuenta IBAN:" {
+		sc.nextIsIBAN = true
+		return false
+	}
+
+	// Currency: "Moneda:" on its own line; value is the next line.
+	if sc.nextIsCurrency {
+		sc.readCurrency(trimmed)
+		return false
+	}
+	if trimmed == "Moneda:" {
+		sc.nextIsCurrency = true
+		return false
+	}
+
+	sc.readCutoff(trimmed)
+	sc.consumeTableLine(trimmed)
+	return false
+}
+
+// consumeClosing handles the two lines after "ÚLTIMA LÍNEA": the "SALDO AL
+// CORTE" label, then the closing balance (which ends the parse).
+func (sc *savingsScanner) consumeClosing(trimmed string) bool {
+	if sc.afterUltimaLinea == 1 {
+		// Expect "SALDO AL CORTE" next
+		sc.afterUltimaLinea = 2
+		return false
+	}
+	// afterUltimaLinea == 2: this line is the closing balance
+	sc.closingBalance = parseAmount(trimmed)
+	sc.closingBalanceSet = true
+	return true
+}
+
+func (sc *savingsScanner) readIBAN(trimmed string) {
+	raw := strings.ReplaceAll(trimmed, " ", "")
+	if ibanPattern.MatchString(raw) {
+		sc.accountNumber = raw
+	}
+	sc.nextIsIBAN = false
+}
+
+func (sc *savingsScanner) readCurrency(trimmed string) {
+	moneda := strings.ToUpper(trimmed)
+	if strings.Contains(moneda, "DOLLAR") || strings.Contains(moneda, "USD") {
+		sc.currency = "USD"
+	} else if strings.Contains(moneda, "EURO") {
+		sc.currency = "EUR"
+	}
+	sc.nextIsCurrency = false
+}
+
+// readCutoff picks up the cut-off date from a standalone line like "30/JUN/26".
+func (sc *savingsScanner) readCutoff(trimmed string) {
+	if sc.cutoffYear != 0 || sc.inTable {
+		return
+	}
+	m := savingsCutoffRe.FindStringSubmatch(trimmed)
+	if m == nil {
+		return
+	}
+	mo, ok := savingsMonths[m[2]]
+	if !ok {
+		return
+	}
+	sc.cutoffMonth = mo
+	if y, err := savingsParseYear(m[3]); err == nil {
+		sc.cutoffYear = y
+	}
+}
+
+// consumeTableLine feeds one line of the transaction table into the field
+// accumulator, emitting a transaction every savingsFieldCount fields.
+func (sc *savingsScanner) consumeTableLine(trimmed string) {
+	// "NO. REFERENCIA" is the column-header line that starts the transaction table.
+	if trimmed == "NO. REFERENCIA" {
+		sc.inTable = true
+		sc.fields = sc.fields[:0]
+		return
+	}
+
+	if !sc.inTable {
+		return
+	}
+
+	// "ÚLTIMA LÍNEA" ends the transaction table.
+	if trimmed == "ÚLTIMA LÍNEA" {
+		sc.afterUltimaLinea = 1
+		return
+	}
+
+	// Skip the remaining column-header lines that appear immediately after
+	// "NO. REFERENCIA" and would pollute the field accumulator.
+	if isSavingsColumnHeader(trimmed) {
+		return
+	}
+
+	sc.fields = append(sc.fields, trimmed)
+
+	if len(sc.fields) == savingsFieldCount {
+		tx, err := parseSavingsFields(sc.fields, sc.currency, sc.cutoffYear, sc.cutoffMonth)
+		if err == nil {
+			sc.transactions = append(sc.transactions, tx)
+		}
+		sc.fields = sc.fields[:0]
+	}
+}
+
+// applyRunningBalance reconstructs the per-transaction running balance by
+// walking backwards from the closing balance. Each stored balance is the
+// account value AFTER that transaction applied.
+func (sc *savingsScanner) applyRunningBalance() {
+	if !sc.closingBalanceSet {
+		return
+	}
+	running := sc.closingBalance
+	for i := len(sc.transactions) - 1; i >= 0; i-- {
+		sc.transactions[i].Balance = running
+		running = running.Sub(sc.transactions[i].Amount)
+	}
 }
 
 // isSavingsColumnHeader returns true for the column-header lines that appear once

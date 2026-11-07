@@ -27,13 +27,13 @@ func NewReader(pdfPath string) (*Reader, error) {
 
 	fileInfo, err := f.Stat()
 	if err != nil {
-		f.Close()
+		_ = f.Close()
 		return nil, fmt.Errorf("failed to get file info: %w", err)
 	}
 
 	reader, err := pdf.NewReader(f, fileInfo.Size())
 	if err != nil {
-		f.Close()
+		_ = f.Close()
 		return nil, fmt.Errorf("failed to create PDF reader: %w", err)
 	}
 

@@ -22,32 +22,11 @@ func (h *ComponentHandler) ListByBike(c *gin.Context) {
 }
 
 func (h *ComponentHandler) Create(c *gin.Context) {
-	var input models.ComponentInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	input.BikeID = c.Param("id")
-	component, err := h.svc.Create(c.Request.Context(), input)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusCreated, component)
+	createForBike(func(in *models.ComponentInput, id string) { in.BikeID = id }, h.svc.Create)(c)
 }
 
 func (h *ComponentHandler) Update(c *gin.Context) {
-	var fields map[string]any
-	if err := c.ShouldBindJSON(&fields); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	component, err := h.svc.Update(c.Request.Context(), c.Param("componentId"), fields)
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, component)
+	updateByParam("componentId", h.svc.Update)(c)
 }
 
 func (h *ComponentHandler) Delete(c *gin.Context) {

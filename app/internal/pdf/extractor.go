@@ -80,13 +80,13 @@ func ExtractText(inputPath, outputPath string, verbose bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to create PDF reader: %w", err)
 	}
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 
 	outFile, err := os.Create(outputPath) //nolint:gosec // outputPath is CLI-supplied (--output flag), not HTTP-reachable
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %w", err)
 	}
-	defer outFile.Close()
+	defer func() { _ = outFile.Close() }()
 
 	for i := 1; i <= reader.GetNumPages(); i++ {
 		text, err := reader.ExtractTextFromPage(i)

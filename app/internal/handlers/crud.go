@@ -40,18 +40,7 @@ func createHandler[TIn, TOut any](fn func(ctx context.Context, input TIn) (TOut,
 // updateHandler wraps a "bind a partial-fields map, call service Update by
 // :id" endpoint.
 func updateHandler[TOut any](fn func(ctx context.Context, id string, fields map[string]any) (TOut, error)) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		fields, ok := bindJSON[map[string]any](c)
-		if !ok {
-			return
-		}
-		item, err := fn(c.Request.Context(), c.Param("id"), fields)
-		if err != nil {
-			c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, item)
-	}
+	return updateByParam("id", fn)
 }
 
 // deleteHandler wraps a "call service Delete by :id, return 204" endpoint.

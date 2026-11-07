@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -11,7 +12,7 @@ import (
 
 	"life-base-api/app/internal/models"
 	"life-base-api/app/internal/parser"
-	_ "life-base-api/app/internal/parser/parsers/bac"
+	_ "life-base-api/app/internal/parser/parsers/bac" // registers the BAC statement parsers
 	"life-base-api/app/internal/pdf"
 )
 
@@ -27,34 +28,70 @@ func NewUploadHandler(importer StatementImporter) *UploadHandler {
 func (h *UploadHandler) Import(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxUploadBytes)
 
+	data, filename, ok := readUploadedPDF(c)
+	if !ok {
+		return
+	}
+
+	stmt, parserName, ok := parseUploadedStatement(c, data)
+	if !ok {
+		return
+	}
+	stmt.SourceFile = filename
+
+	ctx := c.Request.Context()
+	if c.Query("dry_run") == "true" {
+		c.JSON(http.StatusOK, h.dryRunPreview(ctx, stmt, parserName))
+		return
+	}
+
+	catOverrides := applyFormOverrides(stmt, c.PostForm("overrides"))
+
+	summary, err := h.importer.ImportWithSummary(ctx, stmt, parserName, catOverrides)
+	if err != nil {
+		internalError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, summary)
+}
+
+// readUploadedPDF reads the multipart "file" field, requiring a .pdf name.
+// It writes the error response itself and returns ok=false on failure.
+func readUploadedPDF(c *gin.Context) (data []byte, filename string, ok bool) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "file field is required"})
-		return
+		return nil, "", false
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	if !strings.HasSuffix(strings.ToLower(header.Filename), ".pdf") {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "only PDF files are supported"})
-		return
+		return nil, "", false
 	}
 
-	data, err := io.ReadAll(file)
+	data, err = io.ReadAll(file)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read uploaded file"})
-		return
+		return nil, "", false
 	}
+	return data, header.Filename, true
+}
 
+// parseUploadedStatement extracts the PDF text, detects the bank parser and
+// parses the statement. It writes the error response itself on failure.
+func parseUploadedStatement(c *gin.Context, data []byte) (*models.Statement, string, bool) {
 	text, err := pdf.ExtractTextFromBytes(data)
 	if err != nil {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "could not extract text from PDF"})
-		return
+		return nil, "", false
 	}
 
 	p, err := parser.Detect(text)
 	if err != nil {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "unsupported bank statement format — only BAC statements are supported right now"})
-		return
+		return nil, "", false
 	}
 
 	// This format's PDF content stream places table cells with no whitespace
@@ -70,46 +107,45 @@ func (h *UploadHandler) Import(c *gin.Context) {
 	stmt, err := p.Parse(text)
 	if err != nil {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "failed to parse statement: " + err.Error()})
-		return
+		return nil, "", false
 	}
-	stmt.SourceFile = header.Filename
+	return stmt, p.Name(), true
+}
 
-	if c.Query("dry_run") == "true" {
-		preview := buildPreview(stmt, p.Name())
-		if count, err := h.importer.CheckOverlap(c.Request.Context(), stmt); err == nil {
-			preview.ExistingCount = count
-		}
-		if catIDs := h.importer.PreviewCategories(c.Request.Context(), stmt); catIDs != nil {
-			for idx, catID := range catIDs {
-				if idx >= 0 && idx < len(preview.Transactions) {
-					preview.Transactions[idx].Categories = []*models.Category{{ID: catID}}
-				}
-			}
-		}
-		c.JSON(http.StatusOK, preview)
-		return
+// dryRunPreview builds the no-write preview: parsed rows, how many already
+// exist, and the categories import would auto-assign.
+func (h *UploadHandler) dryRunPreview(ctx context.Context, stmt *models.Statement, parserName string) *models.ImportPreview {
+	preview := buildPreview(stmt, parserName)
+	if count, err := h.importer.CheckOverlap(ctx, stmt); err == nil {
+		preview.ExistingCount = count
 	}
+	for idx, catID := range h.importer.PreviewCategories(ctx, stmt) {
+		if idx >= 0 && idx < len(preview.Transactions) {
+			preview.Transactions[idx].Categories = []*models.Category{{ID: catID}}
+		}
+	}
+	return preview
+}
 
+// applyFormOverrides applies the optional "overrides" JSON field (per-row
+// edits from the preview screen) to stmt and returns the category choices
+// keyed by row index. Malformed JSON is ignored, as before.
+func applyFormOverrides(stmt *models.Statement, raw string) map[int][]string {
 	catOverrides := map[int][]string{}
-	if raw := c.PostForm("overrides"); raw != "" {
-		var overrides []models.TransactionOverride
-		if err := json.Unmarshal([]byte(raw), &overrides); err == nil {
-			applyOverrides(stmt, overrides)
-			for _, o := range overrides {
-				if len(o.CategoryIDs) > 0 {
-					catOverrides[o.Index] = o.CategoryIDs
-				}
-			}
+	if raw == "" {
+		return catOverrides
+	}
+	var overrides []models.TransactionOverride
+	if err := json.Unmarshal([]byte(raw), &overrides); err != nil {
+		return catOverrides
+	}
+	applyOverrides(stmt, overrides)
+	for _, o := range overrides {
+		if len(o.CategoryIDs) > 0 {
+			catOverrides[o.Index] = o.CategoryIDs
 		}
 	}
-
-	summary, err := h.importer.ImportWithSummary(c.Request.Context(), stmt, p.Name(), catOverrides)
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-
-	c.JSON(http.StatusOK, summary)
+	return catOverrides
 }
 
 func applyOverrides(stmt *models.Statement, overrides []models.TransactionOverride) {

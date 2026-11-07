@@ -13,7 +13,7 @@ func WriteTransactions(path string, transactions []models.Transaction) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	w := bufio.NewWriter(f)
 	for _, tx := range transactions {

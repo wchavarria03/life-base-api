@@ -245,19 +245,28 @@ func deriveReminderStatus(r *models.Reminder) models.ReminderStatus {
 	}
 }
 
+// advanceReminderDate returns date moved forward by one recurrence period.
 func advanceReminderDate(date string, recurrence models.ReminderRecurrence) string {
+	return advanceByRecurrence(date, string(recurrence))
+}
+
+// advanceByRecurrence is the shared date step behind reminders and tasks: it
+// moves a YYYY-MM-DD date forward by one weekly, biweekly, monthly or yearly
+// period, and returns the input unchanged when it can't parse the date or
+// doesn't recognise the recurrence.
+func advanceByRecurrence(date, recurrence string) string {
 	t, err := time.Parse("2006-01-02", date)
 	if err != nil {
 		return date
 	}
 	switch recurrence {
-	case models.ReminderWeekly:
+	case "weekly":
 		return t.AddDate(0, 0, 7).Format("2006-01-02")
-	case models.ReminderBiweekly:
+	case "biweekly":
 		return t.AddDate(0, 0, 14).Format("2006-01-02")
-	case models.ReminderMonthly:
+	case "monthly":
 		return t.AddDate(0, 1, 0).Format("2006-01-02")
-	case models.ReminderYearly:
+	case "yearly":
 		return t.AddDate(1, 0, 0).Format("2006-01-02")
 	}
 	return date

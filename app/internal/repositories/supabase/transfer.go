@@ -52,8 +52,8 @@ func (r *TransferRepository) Create(ctx context.Context, fromTxID, toTxID string
 // GetByID looks up a transfer row by ID.
 func (r *TransferRepository) GetByID(ctx context.Context, id string) (*models.Transfer, error) {
 	rows, err := databases.Get[[]*transferRow](ctx, r.client, "/rest/v1/transfers", url.Values{
-		"id":     []string{"eq." + id},
-		"limit":  []string{"1"},
+		"id":    []string{"eq." + id},
+		"limit": []string{"1"},
 	})
 	if err != nil {
 		return nil, err

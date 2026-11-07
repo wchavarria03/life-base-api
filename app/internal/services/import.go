@@ -360,27 +360,12 @@ func (s *ImportService) PreviewCategories(ctx context.Context, stmt *models.Stat
 		return nil
 	}
 
-	// Only rules that apply to this account: global rules (no AccountID)
-	// always apply; account-specific rules only apply to their own account.
-	// A brand-new account (accountID == "") only ever matches global rules.
-	rules := make([]*models.CategoryRule, 0, len(allRules))
-	for _, r := range allRules {
-		if r.AccountID == "" || r.AccountID == accountID {
-			rules = append(rules, r)
-		}
-	}
+	rules := rulesForAccount(allRules, accountID)
 	if len(rules) == 0 {
 		return nil
 	}
 
-	disabledIDs := map[string]bool{}
-	if accountID != "" && s.ruleExceptions != nil {
-		if ids, err := s.ruleExceptions.FindByAccount(ctx, accountID); err == nil {
-			for _, id := range ids {
-				disabledIDs[id] = true
-			}
-		}
-	}
+	disabledIDs := s.disabledRuleIDs(ctx, accountID)
 
 	result := make(map[int]string)
 	for i, tx := range stmt.Transactions {
@@ -389,6 +374,34 @@ func (s *ImportService) PreviewCategories(ctx context.Context, stmt *models.Stat
 		}
 	}
 	return result
+}
+
+// rulesForAccount keeps only the rules that apply to accountID: global rules
+// (no AccountID) always apply; account-specific rules only apply to their own
+// account. A brand-new account (accountID == "") only ever matches global rules.
+func rulesForAccount(allRules []*models.CategoryRule, accountID string) []*models.CategoryRule {
+	rules := make([]*models.CategoryRule, 0, len(allRules))
+	for _, r := range allRules {
+		if r.AccountID == "" || r.AccountID == accountID {
+			rules = append(rules, r)
+		}
+	}
+	return rules
+}
+
+// disabledRuleIDs returns the rule IDs the account has opted out of.
+// Best-effort: a lookup failure just means no rules are disabled.
+func (s *ImportService) disabledRuleIDs(ctx context.Context, accountID string) map[string]bool {
+	disabledIDs := map[string]bool{}
+	if accountID == "" || s.ruleExceptions == nil {
+		return disabledIDs
+	}
+	if ids, err := s.ruleExceptions.FindByAccount(ctx, accountID); err == nil {
+		for _, id := range ids {
+			disabledIDs[id] = true
+		}
+	}
+	return disabledIDs
 }
 
 // categoryOverride pairs a parsed transaction (as it appeared in the source

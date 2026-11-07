@@ -204,7 +204,7 @@ func (s *StravaService) FetchActivities(ctx context.Context, after, before *time
 	if err != nil {
 		return nil, fmt.Errorf("strava request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("read strava response: %w", err)
@@ -313,7 +313,7 @@ func (s *StravaService) exchangeToken(ctx context.Context, form url.Values, out 
 	if err != nil {
 		return fmt.Errorf("token request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("read token response: %w", err)
