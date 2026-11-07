@@ -360,6 +360,7 @@ func setupNoteRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	// Vault sync (git <-> app), sensitive flag, search and backlinks.
 	notes.POST("/sync-request", hdlrs.Vault.RequestSync)
 	notes.GET("/sync-status", hdlrs.Vault.SyncStatus)
+	notes.GET("/graph", hdlrs.Vault.Graph)
 	notes.GET("/search", hdlrs.Vault.Search)
 	notes.GET("/lookup", hdlrs.Vault.Lookup)
 	notes.PATCH("/:id/sensitive", hdlrs.Vault.SetSensitive)

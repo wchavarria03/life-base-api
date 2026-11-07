@@ -121,6 +121,23 @@ func (r *VaultRepository) ListBacklinks(ctx context.Context, noteID, orgID strin
 	return databases.Get[[]*models.BacklinkRow](ctx, r.client, "/rest/v1/note_links", params, notesSchema)
 }
 
+// ListGraphNodes returns every live note without its content.
+func (r *VaultRepository) ListGraphNodes(ctx context.Context) ([]*models.GraphNode, error) {
+	return databases.Get[[]*models.GraphNode](ctx, r.client, "/rest/v1/notes", url.Values{
+		"select":     []string{"id,title,source,vault_path,org_id,pinned,sensitive"},
+		"deleted_at": []string{"is.null"},
+		"limit":      []string{"5000"},
+	}, notesSchema)
+}
+
+// ListGraphLinks returns the note_links rows visible to the caller (RLS).
+func (r *VaultRepository) ListGraphLinks(ctx context.Context) ([]*models.GraphLinkRow, error) {
+	return databases.Get[[]*models.GraphLinkRow](ctx, r.client, "/rest/v1/note_links", url.Values{
+		"select": []string{"from_note_id,to_note_id,to_org_id"},
+		"limit":  []string{"20000"},
+	}, notesSchema)
+}
+
 // Search runs notes.search_notes under the caller's JWT.
 func (r *VaultRepository) Search(ctx context.Context, q string, limit int) ([]*models.NoteSearchHit, error) {
 	return databases.Post[[]*models.NoteSearchHit](ctx, r.client, "/rest/v1/rpc/search_notes",

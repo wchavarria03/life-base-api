@@ -110,3 +110,33 @@ type NoteRef struct {
 	ID    string `json:"id"`
 	Title string `json:"title"`
 }
+
+// GraphNode is one note in the notes graph (no content).
+type GraphNode struct {
+	ID        string  `json:"id"`
+	Title     string  `json:"title"`
+	Source    string  `json:"source"`
+	VaultPath *string `json:"vault_path,omitempty"`
+	OrgID     *string `json:"org_id,omitempty"`
+	Pinned    bool    `json:"pinned"`
+	Sensitive bool    `json:"sensitive"`
+}
+
+// GraphLinkRow is the PostgREST shape of a note_links row for the graph.
+type GraphLinkRow struct {
+	FromNoteID string  `json:"from_note_id"`
+	ToNoteID   *string `json:"to_note_id"`
+	ToOrgID    string  `json:"to_org_id"`
+}
+
+// GraphEdge connects two notes by id.
+type GraphEdge struct {
+	Source string `json:"source"`
+	Target string `json:"target"`
+}
+
+// NoteGraph is what GET /v1/notes/graph returns.
+type NoteGraph struct {
+	Nodes []GraphNode `json:"nodes"`
+	Edges []GraphEdge `json:"edges"`
+}
