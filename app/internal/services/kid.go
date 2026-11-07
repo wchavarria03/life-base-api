@@ -193,7 +193,7 @@ func (s *WalletService) Wallet(ctx context.Context, childID string) (*models.Wal
 // the caller's own ctx/RLS, which only a parent-owner or the linked child
 // themself can see) and, on a genuine incomplete->complete transition,
 // awards CoinValue coins exactly once (guarded by ExistsForTask).
-func (s *WalletService) CompleteTask(ctx context.Context, taskID string) (*models.Task, error) {
+func (s *WalletService) CompleteTask(ctx context.Context, taskID string, opts models.TaskCompletion) (*models.Task, error) {
 	task, err := s.tasks.FindByID(ctx, taskID)
 	if err != nil {
 		return nil, fmt.Errorf("find task: %w", err)
@@ -202,7 +202,7 @@ func (s *WalletService) CompleteTask(ctx context.Context, taskID string) (*model
 		return nil, fmt.Errorf("task not found")
 	}
 	if task.AssignedChildID == nil {
-		return s.tasks.Complete(ctx, taskID)
+		return s.tasks.CompleteWith(ctx, taskID, opts)
 	}
 
 	child, err := s.childProfiles.FindByID(ctx, *task.AssignedChildID)
@@ -215,7 +215,7 @@ func (s *WalletService) CompleteTask(ctx context.Context, taskID string) (*model
 
 	wasIncomplete := task.CompletedAt == nil
 	svcCtx := auth.WithServiceRole(ctx)
-	updated, err := s.tasks.Complete(svcCtx, taskID)
+	updated, err := s.tasks.CompleteWith(svcCtx, taskID, opts)
 	if err != nil {
 		return nil, err
 	}

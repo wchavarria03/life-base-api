@@ -43,6 +43,7 @@ type Registry struct {
 
 	Task                *TaskHandler
 	TaskList            *TaskListHandler
+	TaskLog             *TaskLogHandler
 	Note                *NoteHandler
 	SharedTaskList      *SharedTaskListHandler
 	ShareLink           *ShareLinkHandler
@@ -99,6 +100,7 @@ func NewRegistry(svc *services.Registry) (*Registry, error) {
 
 		Task:                NewTaskHandler(svc.Task, svc.Wallet),
 		TaskList:            NewTaskListHandler(svc.TaskList),
+		TaskLog:             NewTaskLogHandler(svc.TaskLog),
 		Note:                NewNoteHandler(svc.Note),
 		SharedTaskList:      NewSharedTaskListHandler(svc.SharedTaskList),
 		ShareLink:           NewShareLinkHandler(svc.ShareLink),

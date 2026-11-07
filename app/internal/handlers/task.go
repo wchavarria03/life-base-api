@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"context"
+	"errors"
+	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -21,7 +23,7 @@ type TaskManager interface {
 // additionally authorizes and awards coins when the task is assigned to a
 // child. See WalletService.CompleteTask's doc comment.
 type TaskCompleter interface {
-	CompleteTask(ctx context.Context, id string) (*models.Task, error)
+	CompleteTask(ctx context.Context, id string, opts models.TaskCompletion) (*models.Task, error)
 }
 
 type TaskHandler struct {
@@ -56,8 +58,15 @@ func (h *TaskHandler) Update(c *gin.Context) {
 	updateHandler(h.svc.Update)(c)
 }
 
+// Complete handles POST /v1/tasks/:id/complete. The JSON body is optional
+// ({performed_at, note, cost, currency}); no body behaves as before.
 func (h *TaskHandler) Complete(c *gin.Context) {
-	task, err := h.completer.CompleteTask(c.Request.Context(), c.Param("id"))
+	var opts models.TaskCompletion
+	if err := c.ShouldBindJSON(&opts); err != nil && !errors.Is(err, io.EOF) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	task, err := h.completer.CompleteTask(c.Request.Context(), c.Param("id"), opts)
 	if err != nil {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 		return

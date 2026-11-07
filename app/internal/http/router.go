@@ -256,6 +256,13 @@ func setupTaskRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	tasks.DELETE("/:id", hdlrs.Task.Delete)
 	tasks.POST("/:id/complete", hdlrs.Task.Complete)
 
+	// Home maintenance history. "/logs" is a static segment next to "/:id";
+	// gin (>= 1.8) routes the two without conflict.
+	tasks.GET("/logs", hdlrs.TaskLog.List)
+	tasks.GET("/logs/summary", hdlrs.TaskLog.Summary)
+	tasks.POST("/logs", hdlrs.TaskLog.Create)
+	tasks.DELETE("/logs/:id", hdlrs.TaskLog.Delete)
+
 	taskLists := rg.Group("/task-lists")
 	taskLists.GET("", hdlrs.TaskList.List)
 	taskLists.POST("", hdlrs.TaskList.Create)

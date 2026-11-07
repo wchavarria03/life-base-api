@@ -20,6 +20,7 @@ type TaskRepository interface {
 
 type TaskService struct {
 	tasks TaskRepository
+	logs  TaskLogRepository
 }
 
 func NewTaskService(tasks TaskRepository) *TaskService {
@@ -79,6 +80,10 @@ func (s *TaskService) Create(ctx context.Context, input models.TaskInput) (*mode
 	if err := validateTaskPriority(input.Priority); err != nil {
 		return nil, err
 	}
+	if input.LeadTimeDays != nil && *input.LeadTimeDays < 0 {
+		return nil, fmt.Errorf("lead_time_days must be zero or greater")
+	}
+	input.Area = normalizeArea(input.Area)
 	if input.RecurrenceType != nil && *input.RecurrenceType != "" {
 		if err := validateTaskRecurrence(*input.RecurrenceType); err != nil {
 			return nil, err
@@ -109,6 +114,9 @@ func (s *TaskService) Update(ctx context.Context, id string, fields map[string]a
 			return nil, err
 		}
 	}
+	if n, ok := fields["lead_time_days"].(float64); ok && n < 0 {
+		return nil, fmt.Errorf("lead_time_days must be zero or greater")
+	}
 	return s.tasks.Update(ctx, id, fields)
 }
 
@@ -127,7 +135,23 @@ func (s *TaskService) Delete(ctx context.Context, id string) error {
 //     recurrence_type): today's date as last_completed_date; due-ness
 //     recomputes from there, no new row.
 //   - one-off: stamp completed_at, no next row.
+//
+// Every completion also writes a tasks.task_logs row (see recordCompletion).
 func (s *TaskService) Complete(ctx context.Context, id string) (*models.Task, error) {
+	return s.CompleteWith(ctx, id, models.TaskCompletion{})
+}
+
+// CompleteWith is Complete plus the optional performed date, note and cost
+// recorded on the history row. A zero TaskCompletion behaves like Complete.
+func (s *TaskService) CompleteWith(ctx context.Context, id string, opts models.TaskCompletion) (*models.Task, error) {
+	if err := validateTaskCompletion(opts); err != nil {
+		return nil, err
+	}
+	performedAt := opts.PerformedAt
+	if performedAt == "" {
+		performedAt = time.Now().Format(taskDateLayout)
+	}
+
 	task, err := s.tasks.FindByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("find task: %w", err)
@@ -153,6 +177,8 @@ func (s *TaskService) Complete(ctx context.Context, id string) (*models.Task, er
 			DueDate:        &nextDue,
 			RecurrenceType: task.RecurrenceType,
 			Notes:          task.Notes,
+			Area:           task.Area,
+			LeadTimeDays:   task.LeadTimeDays,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("create next occurrence: %w", err)
@@ -162,17 +188,28 @@ func (s *TaskService) Complete(ctx context.Context, id string) (*models.Task, er
 				return nil, fmt.Errorf("link next occurrence: %w", err)
 			}
 		}
+		s.recordCompletion(ctx, task, opts, performedAt)
 		return s.tasks.FindByID(ctx, id)
 	}
 
 	if task.IsRecurring {
-		return s.tasks.Update(ctx, id, map[string]any{
-			"last_completed_date": time.Now().Format("2006-01-02"),
+		updated, err := s.tasks.Update(ctx, id, map[string]any{
+			"last_completed_date": performedAt,
 		})
+		if err != nil {
+			return nil, err
+		}
+		s.recordCompletion(ctx, task, opts, performedAt)
+		return updated, nil
 	}
-	return s.tasks.Update(ctx, id, map[string]any{
+	updated, err := s.tasks.Update(ctx, id, map[string]any{
 		"completed_at": time.Now().UTC().Format(time.RFC3339),
 	})
+	if err != nil {
+		return nil, err
+	}
+	s.recordCompletion(ctx, task, opts, performedAt)
+	return updated, nil
 }
 
 func withTaskStatus(t *models.Task) models.TaskWithStatus {

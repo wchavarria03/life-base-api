@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	webpush "github.com/SherClockHolmes/webpush-go"
@@ -35,6 +36,7 @@ type DigestConfig struct {
 // DigestService computes and sends the push/email notification digest.
 type DigestService struct {
 	reminders ReminderRepository
+	tasks     DigestTaskSource
 	prefs     *PreferencesService
 	push      *PushService
 	expoPush  *ExpoPushService
@@ -44,8 +46,8 @@ type DigestService struct {
 }
 
 // NewDigestService constructs a DigestService.
-func NewDigestService(reminders ReminderRepository, prefs *PreferencesService, push *PushService, expoPush *ExpoPushService, admin *supabaserepo.AdminRepository, cfg DigestConfig) *DigestService {
-	return &DigestService{reminders: reminders, prefs: prefs, push: push, expoPush: expoPush, admin: admin, cfg: cfg, http: &http.Client{Timeout: 15 * time.Second}}
+func NewDigestService(reminders ReminderRepository, tasks DigestTaskSource, prefs *PreferencesService, push *PushService, expoPush *ExpoPushService, admin *supabaserepo.AdminRepository, cfg DigestConfig) *DigestService {
+	return &DigestService{reminders: reminders, tasks: tasks, prefs: prefs, push: push, expoPush: expoPush, admin: admin, cfg: cfg, http: &http.Client{Timeout: 15 * time.Second}}
 }
 
 // alertSummary is what changes from "nothing to report" to a sendable
@@ -53,12 +55,31 @@ func NewDigestService(reminders ReminderRepository, prefs *PreferencesService, p
 // commit) an email digest body.
 type alertSummary struct {
 	OverdueCount int
+	// Task alerts (house/household): overdue, and due today or within the
+	// task's lead_time_days ("due soon").
+	TaskOverdueCount int
+	TaskDueSoonCount int
 }
 
-func (a alertSummary) empty() bool { return a.OverdueCount == 0 }
+func (a alertSummary) empty() bool {
+	return a.OverdueCount == 0 && a.TaskOverdueCount == 0 && a.TaskDueSoonCount == 0
+}
 
 func (a alertSummary) message() (title, body string) {
 	title = "Life-Base"
+	if a.TaskOverdueCount > 0 || a.TaskDueSoonCount > 0 {
+		var parts []string
+		if a.OverdueCount > 0 {
+			parts = append(parts, fmt.Sprintf("%d overdue reminder(s)", a.OverdueCount))
+		}
+		if a.TaskOverdueCount > 0 {
+			parts = append(parts, fmt.Sprintf("%d overdue home task(s)", a.TaskOverdueCount))
+		}
+		if a.TaskDueSoonCount > 0 {
+			parts = append(parts, fmt.Sprintf("%d home task(s) due soon", a.TaskDueSoonCount))
+		}
+		return title, "You have " + strings.Join(parts, ", ") + "."
+	}
 	if a.OverdueCount == 1 {
 		body = "You have 1 overdue reminder."
 	} else {
@@ -79,7 +100,17 @@ func (s *DigestService) computeAlerts(ctx context.Context, userID string) (alert
 			overdue++
 		}
 	}
-	return alertSummary{OverdueCount: overdue}, nil
+	summary := alertSummary{OverdueCount: overdue}
+
+	// A task-fetch failure must not suppress reminder alerts, so it is logged
+	// and the task counts stay zero.
+	openTasks, err := s.tasks.ListOpenByUser(ctx, userID)
+	if err != nil {
+		log.Printf("digest: list tasks for user=%s: %v", userID, err)
+		return summary, nil
+	}
+	summary.TaskOverdueCount, summary.TaskDueSoonCount = countTaskAlerts(openTasks, today)
+	return summary, nil
 }
 
 // RunPush sends a push notification to every device of every user with

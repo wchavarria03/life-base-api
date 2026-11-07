@@ -80,6 +80,8 @@ type Task struct {
 	ListID            *string      `json:"list_id,omitempty"`
 	ParentTaskID      *string      `json:"parent_task_id,omitempty"`
 	Tags              []string     `json:"tags"`
+	Area              *string      `json:"area,omitempty"`
+	LeadTimeDays      *int         `json:"lead_time_days,omitempty"`
 	AssignedChildID   *string      `json:"assigned_child_id,omitempty"`
 	CoinValue         *int         `json:"coin_value,omitempty"`
 	PenaltyAppliedAt  *time.Time   `json:"penalty_applied_at,omitempty"`
@@ -103,6 +105,8 @@ type TaskInput struct {
 	ListID          *string      `json:"list_id,omitempty"`
 	ParentTaskID    *string      `json:"parent_task_id,omitempty"`
 	Tags            []string     `json:"tags,omitempty"`
+	Area            *string      `json:"area,omitempty"`
+	LeadTimeDays    *int         `json:"lead_time_days,omitempty"`
 	AssignedChildID *string      `json:"assigned_child_id,omitempty"`
 	CoinValue       *int         `json:"coin_value,omitempty"`
 }

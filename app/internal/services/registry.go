@@ -40,6 +40,7 @@ type Registry struct {
 
 	Task                *TaskService
 	TaskList            *TaskListService
+	TaskLog             *TaskLogService
 	Note                *NoteService
 	SharedTaskList      *SharedTaskListService
 	ShareLink           *ShareLinkService
@@ -65,7 +66,7 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 	expoPush := NewExpoPushService(repos.ExpoPushTokens)
 	socialSvc := NewSocialService(repos.SocialPosts, repos.Storage, social)
 	captionSvc := NewCaptionService(repos.Caption)
-	taskSvc := NewTaskService(repos.Tasks)
+	taskSvc := NewTaskService(repos.Tasks).WithLogs(repos.TaskLogs)
 	componentSvc := NewComponentService(repos.Components, repos.ComponentHistory)
 	maintenanceTaskSvc := NewMaintenanceTaskService(repos.MaintenanceTasks, repos.Bikes)
 	r := &Registry{
@@ -88,7 +89,7 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 		MenuPreferences: NewMenuPreferencesService(repos.MenuPreferences),
 		Push:            push,
 		ExpoPush:        expoPush,
-		Digest:          NewDigestService(repos.Reminders, preferences, push, expoPush, repos.Admin, digest),
+		Digest:          NewDigestService(repos.Reminders, repos.Tasks, preferences, push, expoPush, repos.Admin, digest),
 		AuditLog:        NewAuditLogService(repos.AuditLog),
 		Dog:             NewDogService(repos.Dogs, repos.DogRecipientTypes, repos.DogRecipientAllocations, repos.DogFeedLog, repos.DogBulkBags, repos.DogSettings),
 		ScheduledPost:   NewScheduledPostService(repos.ScheduledPosts, repos.Storage, socialSvc, captionSvc),
@@ -106,6 +107,7 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 
 		Task:     taskSvc,
 		TaskList: NewTaskListService(repos.TaskLists),
+		TaskLog:  NewTaskLogService(repos.TaskLogs),
 		Note:     NewNoteService(repos.Notes, repos.NoteVersions),
 	}
 	r.SharedTaskList = NewSharedTaskListService(repos.SharedTaskLists, r.Task, sharedTaskLists)
