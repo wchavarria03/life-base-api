@@ -16,7 +16,7 @@ import (
 // owner-facing management plus the public (unauthenticated) resolver.
 type ShareLinkManager interface {
 	List(ctx context.Context) ([]*models.ShareLink, error)
-	Create(ctx context.Context, resourceType models.ShareResourceType, resourceID string, expiresAt *time.Time) (*models.ShareLink, error)
+	Create(ctx context.Context, resourceType models.ShareResourceType, resourceID string, expiresAt *time.Time, confirmSensitive bool) (*models.ShareLink, error)
 	Revoke(ctx context.Context, id string) error
 	Resolve(ctx context.Context, token string) (*models.SharedResource, error)
 }
@@ -43,6 +43,8 @@ func (h *ShareLinkHandler) Create(c *gin.Context) {
 		ResourceType string  `json:"resource_type" binding:"required"`
 		ResourceID   string  `json:"resource_id" binding:"required"`
 		ExpiresAt    *string `json:"expires_at,omitempty"` // RFC3339, optional
+		// ConfirmSensitive must be true to share a sensitive-flagged note.
+		ConfirmSensitive bool `json:"confirm_sensitive,omitempty"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -58,8 +60,12 @@ func (h *ShareLinkHandler) Create(c *gin.Context) {
 		expiresAt = &t
 	}
 
-	link, err := h.svc.Create(c.Request.Context(), models.ShareResourceType(req.ResourceType), req.ResourceID, expiresAt)
+	link, err := h.svc.Create(c.Request.Context(), models.ShareResourceType(req.ResourceType), req.ResourceID, expiresAt, req.ConfirmSensitive)
 	if err != nil {
+		if errors.Is(err, services.ErrSensitiveConfirmRequired) {
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error(), "code": "sensitive_confirm_required"})
+			return
+		}
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 		return
 	}
@@ -74,6 +80,9 @@ func (h *ShareLinkHandler) Revoke(c *gin.Context) {
 // PublicResolve handles GET /public/shared/:token — no auth, the token is
 // the credential.
 func (h *ShareLinkHandler) PublicResolve(c *gin.Context) {
+	// Shared content must never be cached by shared caches or indexed.
+	c.Header("Cache-Control", "no-store")
+	c.Header("X-Robots-Tag", "noindex, nofollow")
 	resource, err := h.svc.Resolve(c.Request.Context(), c.Param("token"))
 	if err != nil {
 		if errors.Is(err, services.ErrShareLinkNotFound) {

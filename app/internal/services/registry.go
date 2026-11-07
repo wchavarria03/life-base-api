@@ -1,6 +1,10 @@
 package services
 
-import "life-base-api/app/internal/repositories"
+import (
+	"os"
+
+	"life-base-api/app/internal/repositories"
+)
 
 type Registry struct {
 	Account         *AccountService
@@ -43,6 +47,7 @@ type Registry struct {
 	TaskLog             *TaskLogService
 	Note                *NoteService
 	NoteTaskLink        *NoteTaskLinkService
+	Vault               *VaultService
 	SharedTaskList      *SharedTaskListService
 	ShareLink           *ShareLinkService
 	Document            *DocumentService
@@ -129,7 +134,9 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 	r.MedicalProfile = NewMedicalProfileService(repos.MedicalProfiles, repos.MedicalAccess, repos.MedicalRecords)
 	r.MedicalAttributeDef = NewMedicalAttributeDefService(repos.MedicalAttributeDefs)
 	r.MedicalMedication = NewMedicalMedicationService(repos.MedicalMedications)
-	r.ShareLink = NewShareLinkService(repos.ShareLinks, r.Note, r.Bike, r.Component, r.MedicalProfile, r.MedicalRecord)
+	r.ShareLink = NewShareLinkService(repos.ShareLinks, r.Note, r.Bike, r.Component, r.MedicalProfile, r.MedicalRecord, r.AuditLog)
+	// The vault is single-user: the worker acts as VAULT_SYNC_USER_ID.
+	r.Vault = NewVaultService(repos.Vault, repos.NoteVersions, r.Note, os.Getenv("VAULT_SYNC_USER_ID"))
 
 	r.ChildProfile = NewChildProfileService(repos.ChildProfiles)
 	r.Wallet = NewWalletService(taskSvc, repos.ChildProfiles, repos.WalletTransactions)

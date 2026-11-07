@@ -64,9 +64,16 @@ type SharedBikeView struct {
 }
 
 // SharedNoteView is the public, read-only projection of a note.
+//
+// For org notes Content is always nil and RenderedHTML carries the
+// server-sanitized rendering; raw org source (which can contain property
+// drawers, ids and paths) is never exposed. No vault_path/org_id/sensitive
+// fields exist on this type on purpose.
 type SharedNoteView struct {
-	Title   string  `json:"title"`
-	Content *string `json:"content,omitempty"`
+	Title         string  `json:"title"`
+	Content       *string `json:"content,omitempty"`
+	ContentFormat string  `json:"content_format,omitempty"`
+	RenderedHTML  string  `json:"rendered_html,omitempty"`
 }
 
 // SharedMedicalRecordSummary is one record's public, read-only listing

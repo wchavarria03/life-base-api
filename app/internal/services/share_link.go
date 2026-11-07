@@ -10,7 +10,15 @@ import (
 	"life-base-api/app/internal/auth"
 	"life-base-api/app/internal/models"
 	supabaserepo "life-base-api/app/internal/repositories/supabase"
+	"life-base-api/app/internal/vault"
 )
+
+// sensitiveShareMaxTTL caps how long a link to a sensitive-flagged note may live.
+const sensitiveShareMaxTTL = 7 * 24 * time.Hour
+
+// ErrSensitiveConfirmRequired is returned when a link to a sensitive note is
+// requested without confirm_sensitive: true.
+var ErrSensitiveConfirmRequired = errors.New("this note is flagged sensitive: confirm_sensitive must be true")
 
 // shareTokenAlphabet avoids visually-ambiguous characters (0/O, 1/I/l) so a
 // short link reads back cleanly if someone has to type it.
@@ -31,11 +39,12 @@ type ShareLinkService struct {
 	components      *ComponentService
 	medicalProfiles *MedicalProfileService
 	medicalRecords  *MedicalRecordService
+	audit           *AuditLogService
 }
 
 // NewShareLinkService constructs a ShareLinkService.
-func NewShareLinkService(repo *supabaserepo.ShareLinkRepository, notes *NoteService, bikes *BikeService, components *ComponentService, medicalProfiles *MedicalProfileService, medicalRecords *MedicalRecordService) *ShareLinkService {
-	return &ShareLinkService{repo: repo, notes: notes, bikes: bikes, components: components, medicalProfiles: medicalProfiles, medicalRecords: medicalRecords}
+func NewShareLinkService(repo *supabaserepo.ShareLinkRepository, notes *NoteService, bikes *BikeService, components *ComponentService, medicalProfiles *MedicalProfileService, medicalRecords *MedicalRecordService, audit *AuditLogService) *ShareLinkService {
+	return &ShareLinkService{repo: repo, notes: notes, bikes: bikes, components: components, medicalProfiles: medicalProfiles, medicalRecords: medicalRecords, audit: audit}
 }
 
 // List returns the caller's own share links, each enriched with the
@@ -70,11 +79,19 @@ func (s *ShareLinkService) resourceTitle(ctx context.Context, resourceType model
 // service, under the caller's own JWT) before minting a link — the public
 // resolver later trusts resource_id with no further ownership check, so
 // this is the one place that matters.
-func (s *ShareLinkService) Create(ctx context.Context, resourceType models.ShareResourceType, resourceID string, expiresAt *time.Time) (*models.ShareLink, error) {
+//
+// Sensitive-flagged notes need confirmSensitive == true and an expiry of at
+// most 7 days ("never" is rejected); creation is audit-logged. Revocation is
+// covered by the AuditLog() middleware (DELETE /v1/share-links/:id).
+func (s *ShareLinkService) Create(ctx context.Context, resourceType models.ShareResourceType, resourceID string, expiresAt *time.Time, confirmSensitive bool) (*models.ShareLink, error) {
 	userID := auth.UserIDFromContext(ctx)
 	if userID == "" {
 		return nil, fmt.Errorf("no authenticated user")
 	}
+	if expiresAt != nil && expiresAt.Before(time.Now()) {
+		return nil, fmt.Errorf("expires_at must be in the future")
+	}
+	noteSensitive := false
 
 	switch resourceType {
 	case models.ShareResourceNote:
@@ -82,8 +99,20 @@ func (s *ShareLinkService) Create(ctx context.Context, resourceType models.Share
 		if err != nil {
 			return nil, fmt.Errorf("find note: %w", err)
 		}
-		if note == nil {
+		if note == nil || note.DeletedAt != nil {
 			return nil, fmt.Errorf("note not found")
+		}
+		if note.Sensitive {
+			noteSensitive = true
+			if !confirmSensitive {
+				return nil, ErrSensitiveConfirmRequired
+			}
+			if expiresAt == nil {
+				return nil, fmt.Errorf("links to sensitive notes must expire (max 7 days)")
+			}
+			if expiresAt.After(time.Now().Add(sensitiveShareMaxTTL + time.Minute)) {
+				return nil, fmt.Errorf("links to sensitive notes can last at most 7 days")
+			}
 		}
 	case models.ShareResourceBike:
 		bike, err := s.bikes.FindByID(ctx, resourceID)
@@ -118,13 +147,32 @@ func (s *ShareLinkService) Create(ctx context.Context, resourceType models.Share
 		return nil, fmt.Errorf("generate token: %w", err)
 	}
 
-	return s.repo.Create(ctx, models.ShareLinkInput{
+	link, err := s.repo.Create(ctx, models.ShareLinkInput{
 		UserID:       userID,
 		ResourceType: resourceType,
 		ResourceID:   resourceID,
 		Token:        token,
 		ExpiresAt:    expiresAt,
 	})
+	if err != nil {
+		return nil, err
+	}
+	if resourceType == models.ShareResourceNote {
+		exp := "never"
+		if expiresAt != nil {
+			exp = expiresAt.UTC().Format(time.RFC3339)
+		}
+		auditErr := s.audit.Create(ctx, "SHARE_CREATE",
+			fmt.Sprintf("/share-links note=%s sensitive=%t expires=%s", resourceID, noteSensitive, exp), 201)
+		if auditErr != nil && noteSensitive {
+			// Fail closed: a sensitive link must never exist without an audit entry.
+			if link != nil {
+				_ = s.repo.Update(ctx, link.ID, map[string]any{"revoked": true})
+			}
+			return nil, fmt.Errorf("audit log: %w", auditErr)
+		}
+	}
+	return link, nil
 }
 
 // Revoke soft-deletes a share link (owner-scoped by RLS).
@@ -156,10 +204,20 @@ func (s *ShareLinkService) Resolve(ctx context.Context, token string) (*models.S
 		if err != nil || note == nil {
 			return nil, ErrShareLinkNotFound
 		}
-		return &models.SharedResource{
-			ResourceType: models.ShareResourceNote,
-			Note:         &models.SharedNoteView{Title: note.Title, Content: note.Content},
-		}, nil
+		if note.DeletedAt != nil {
+			return nil, ErrShareLinkNotFound
+		}
+		view := &models.SharedNoteView{Title: note.Title, ContentFormat: note.ContentFormat}
+		if note.ContentFormat == "org" {
+			// Never expose raw org source: render sanitized HTML in share mode
+			// (no note-to-note links, no image embeds).
+			if note.Content != nil {
+				view.RenderedHTML = vault.RenderOrg(*note.Content, vault.RenderOptions{Share: true})
+			}
+		} else {
+			view.Content = note.Content
+		}
+		return &models.SharedResource{ResourceType: models.ShareResourceNote, Note: view}, nil
 
 	case models.ShareResourceBike:
 		bike, err := s.bikes.FindByID(ctx, link.ResourceID)

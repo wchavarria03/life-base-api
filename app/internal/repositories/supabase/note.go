@@ -20,7 +20,8 @@ func NewNoteRepository(client *databases.SupabaseClient) *NoteRepository {
 
 func (r *NoteRepository) List(ctx context.Context) ([]*models.Note, error) {
 	return databases.Get[[]*models.Note](ctx, r.client, "/rest/v1/notes", url.Values{
-		"order": []string{"pinned.desc,updated_at.desc"},
+		"order":      []string{"pinned.desc,updated_at.desc"},
+		"deleted_at": []string{"is.null"}, // hide notes removed from the vault
 	}, notesSchema)
 }
 

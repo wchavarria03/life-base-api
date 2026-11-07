@@ -53,6 +53,7 @@ type Registry struct {
 	TaskLogs        *supabaserepo.TaskLogRepository
 	Notes           *supabaserepo.NoteRepository
 	NoteVersions    *supabaserepo.NoteVersionRepository
+	Vault           *supabaserepo.VaultRepository
 	SharedTaskLists *supabaserepo.SharedTaskListRepository
 	ShareLinks      *supabaserepo.ShareLinkRepository
 	Documents       *supabaserepo.DocumentRepository
@@ -120,6 +121,7 @@ func NewRegistry(dbs *databases.Registry) *Registry {
 		TaskLogs:        supabaserepo.NewTaskLogRepository(dbs.Supabase),
 		Notes:           supabaserepo.NewNoteRepository(dbs.Supabase),
 		NoteVersions:    supabaserepo.NewNoteVersionRepository(dbs.Supabase),
+		Vault:           supabaserepo.NewVaultRepository(dbs.Supabase),
 		SharedTaskLists: supabaserepo.NewSharedTaskListRepository(dbs.Supabase),
 		ShareLinks:      supabaserepo.NewShareLinkRepository(dbs.Supabase),
 		Documents:       supabaserepo.NewDocumentRepository(dbs.Supabase),

@@ -1,6 +1,8 @@
 package httpserver
 
 import (
+	"os"
+
 	"github.com/gin-gonic/gin"
 
 	"life-base-api/app/internal/handlers"
@@ -22,6 +24,7 @@ func NewRouter(hdlrs *handlers.Registry, jwksURL, issuer string, allowedOrigins 
 
 	setupRoutes(engine, hdlrs, jwksURL, issuer, auditWriter)
 	setupPublicRoutes(engine, hdlrs)
+	setupInternalRoutes(engine, hdlrs)
 
 	return &Router{engine: engine}
 }
@@ -41,6 +44,18 @@ func setupPublicRoutes(engine *gin.Engine, hdlrs *handlers.Registry) {
 	// "/shared/" above (task lists) to avoid a route collision, and shorter
 	// to match the "shortener" link these are meant to read as.
 	public.GET("/s/:token", hdlrs.ShareLink.PublicResolve)
+}
+
+// setupInternalRoutes configures the service-token protected routes used by
+// the homelab vault sync worker (docs/NOTES_SYNC.md). They sit outside the
+// JWT-authenticated /v1 group; when VAULT_SYNC_TOKEN is unset they answer 404.
+func setupInternalRoutes(engine *gin.Engine, hdlrs *handlers.Registry) {
+	internal := engine.Group("/v1/internal")
+	internal.Use(middleware.VaultSyncAuth(os.Getenv("VAULT_SYNC_TOKEN")))
+	internal.POST("/notes/upsert", hdlrs.Vault.Upsert)
+	internal.GET("/notes/pending", hdlrs.Vault.Pending)
+	internal.POST("/notes/ack", hdlrs.Vault.Ack)
+	internal.POST("/notes/sync-done", hdlrs.Vault.SyncDone)
 }
 
 // setupRoutes configures all versioned routes for the application.
@@ -341,6 +356,15 @@ func setupNoteRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	notes.DELETE("/:id", hdlrs.Note.Delete)
 	notes.GET("/:id/versions", hdlrs.Note.ListVersions)
 	notes.POST("/:id/checklist/:index/task", hdlrs.NoteTaskLink.CreateTask)
+
+	// Vault sync (git <-> app), sensitive flag, search and backlinks.
+	notes.POST("/sync-request", hdlrs.Vault.RequestSync)
+	notes.GET("/sync-status", hdlrs.Vault.SyncStatus)
+	notes.GET("/search", hdlrs.Vault.Search)
+	notes.GET("/lookup", hdlrs.Vault.Lookup)
+	notes.PATCH("/:id/sensitive", hdlrs.Vault.SetSensitive)
+	notes.GET("/:id/backlinks", hdlrs.Vault.Backlinks)
+	notes.POST("/:id/resolve-conflict", hdlrs.Vault.ResolveConflict)
 }
 
 func setupEnvelopeRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
