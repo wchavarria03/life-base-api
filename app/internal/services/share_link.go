@@ -221,6 +221,11 @@ func (s *ShareLinkService) Resolve(ctx context.Context, token string) (*models.S
 		"last_viewed_at": now.Format(time.RFC3339),
 	})
 
+	return s.resolveResource(ctx, link)
+}
+
+// resolveResource builds the public projection for the link's resource type.
+func (s *ShareLinkService) resolveResource(ctx context.Context, link *models.ShareLink) (*models.SharedResource, error) {
 	switch link.ResourceType {
 	case models.ShareResourceNote:
 		note, err := s.notes.FindByID(ctx, link.ResourceID)
@@ -228,67 +233,75 @@ func (s *ShareLinkService) Resolve(ctx context.Context, token string) (*models.S
 			return nil, ErrShareLinkNotFound
 		}
 		return s.noteResource(ctx, note), nil
-
 	case models.ShareResourceBike:
-		bike, err := s.bikes.FindByID(ctx, link.ResourceID)
-		if err != nil || bike == nil {
-			return nil, ErrShareLinkNotFound
-		}
-		comps, err := s.components.ListByBikeID(ctx, link.ResourceID)
-		if err != nil {
-			comps = nil // best-effort — a bike with no visible components is still a valid share
-		}
-		views := make([]models.SharedComponentView, 0, len(comps))
-		for _, c := range comps {
-			views = append(views, models.SharedComponentView{
-				Name: c.Name, Brand: c.Brand, Model: c.Model, IsActive: c.IsActive,
-			})
-		}
-		return &models.SharedResource{
-			ResourceType: models.ShareResourceBike,
-			Bike: &models.SharedBikeView{
-				Name: bike.Name, Type: bike.Type, Model: bike.Model, Mileage: bike.Mileage,
-				Components: views,
-			},
-		}, nil
-
+		return s.resolveBike(ctx, link.ResourceID)
 	case models.ShareResourceMedicalProfile:
-		profile, err := s.medicalProfiles.FindByID(ctx, link.ResourceID)
-		if err != nil || profile == nil {
-			return nil, ErrShareLinkNotFound
-		}
-		records, err := s.medicalRecords.ListByProfile(ctx, link.ResourceID)
-		if err != nil {
-			records = nil // best-effort — a profile with no visible records is still a valid share
-		}
-		summaries := make([]models.SharedMedicalRecordSummary, 0, len(records))
-		for _, r := range records {
-			summaries = append(summaries, models.SharedMedicalRecordSummary{
-				Title: r.Title, RecordType: r.RecordType, RecordDate: r.RecordDate,
-			})
-		}
-		return &models.SharedResource{
-			ResourceType:   models.ShareResourceMedicalProfile,
-			MedicalProfile: &models.SharedMedicalProfileView{Name: profile.Name, Records: summaries},
-		}, nil
-
+		return s.resolveMedicalProfile(ctx, link.ResourceID)
 	case models.ShareResourceMedicalRecord:
-		record, err := s.medicalRecords.FindByID(ctx, link.ResourceID)
-		if err != nil || record == nil {
-			return nil, ErrShareLinkNotFound
-		}
-		return &models.SharedResource{
-			ResourceType: models.ShareResourceMedicalRecord,
-			MedicalRecord: &models.SharedMedicalRecordView{
-				Title: record.Title, RecordType: record.RecordType, RecordDate: record.RecordDate,
-				Attributes: record.Attributes, Notes: record.Notes,
-				DoctorName: record.DoctorName, Recommendations: record.Recommendations,
-			},
-		}, nil
-
+		return s.resolveMedicalRecord(ctx, link.ResourceID)
 	default:
 		return nil, ErrShareLinkNotFound
 	}
+}
+
+func (s *ShareLinkService) resolveBike(ctx context.Context, id string) (*models.SharedResource, error) {
+	bike, err := s.bikes.FindByID(ctx, id)
+	if err != nil || bike == nil {
+		return nil, ErrShareLinkNotFound
+	}
+	comps, err := s.components.ListByBikeID(ctx, id)
+	if err != nil {
+		comps = nil // best-effort — a bike with no visible components is still a valid share
+	}
+	views := make([]models.SharedComponentView, 0, len(comps))
+	for _, c := range comps {
+		views = append(views, models.SharedComponentView{
+			Name: c.Name, Brand: c.Brand, Model: c.Model, IsActive: c.IsActive,
+		})
+	}
+	return &models.SharedResource{
+		ResourceType: models.ShareResourceBike,
+		Bike: &models.SharedBikeView{
+			Name: bike.Name, Type: bike.Type, Model: bike.Model, Mileage: bike.Mileage,
+			Components: views,
+		},
+	}, nil
+}
+
+func (s *ShareLinkService) resolveMedicalProfile(ctx context.Context, id string) (*models.SharedResource, error) {
+	profile, err := s.medicalProfiles.FindByID(ctx, id)
+	if err != nil || profile == nil {
+		return nil, ErrShareLinkNotFound
+	}
+	records, err := s.medicalRecords.ListByProfile(ctx, id)
+	if err != nil {
+		records = nil // best-effort — a profile with no visible records is still a valid share
+	}
+	summaries := make([]models.SharedMedicalRecordSummary, 0, len(records))
+	for _, r := range records {
+		summaries = append(summaries, models.SharedMedicalRecordSummary{
+			Title: r.Title, RecordType: r.RecordType, RecordDate: r.RecordDate,
+		})
+	}
+	return &models.SharedResource{
+		ResourceType:   models.ShareResourceMedicalProfile,
+		MedicalProfile: &models.SharedMedicalProfileView{Name: profile.Name, Records: summaries},
+	}, nil
+}
+
+func (s *ShareLinkService) resolveMedicalRecord(ctx context.Context, id string) (*models.SharedResource, error) {
+	record, err := s.medicalRecords.FindByID(ctx, id)
+	if err != nil || record == nil {
+		return nil, ErrShareLinkNotFound
+	}
+	return &models.SharedResource{
+		ResourceType: models.ShareResourceMedicalRecord,
+		MedicalRecord: &models.SharedMedicalRecordView{
+			Title: record.Title, RecordType: record.RecordType, RecordDate: record.RecordDate,
+			Attributes: record.Attributes, Notes: record.Notes,
+			DoctorName: record.DoctorName, Recommendations: record.Recommendations,
+		},
+	}, nil
 }
 
 func generateShortShareToken() (string, error) {
