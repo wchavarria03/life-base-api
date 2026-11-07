@@ -188,13 +188,9 @@ additions").
   `git worktree add ~/personal/notes-ai -b ai/chore/<slug>-<YYYY-MM-DD> main`.
   The main checkout is auto-committed to `main` by `notes-autosync` every ~5
   minutes after you stop editing, so any unreviewed AI change left there would
-  land on `main`. Before writing anything, run `git -C ~/personal/notes branch
-  --show-current` is irrelevant: check that your working directory is the
-  `notes-ai` worktree. If you are in the main checkout, stop and ask.
+  land on `main`. Before writing anything, confirm the working directory is the
+  `notes-ai` worktree; if you are in the main checkout, stop and ask.
 - Do not create or edit `.notes-autosync-ignore` or the `sensitive` file
   declarations without being asked: `#+filetags: :sensitive:` / `:SENSITIVE: t`
   mark a note as sensitive for sharing and offline caching.
 ```
-
-(Tidy the middle sentence before applying - it is wordy by design so the intent
-is unambiguous.)
