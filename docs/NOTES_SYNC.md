@@ -194,3 +194,30 @@ additions").
   declarations without being asked: `#+filetags: :sensitive:` / `:SENSITIVE: t`
   mark a note as sensitive for sharing and offline caching.
 ```
+
+## Open items (not built)
+
+Mapping to HUB_PLAN_V2 Phase D, honest status:
+
+* **D1**: schema, links table, search, parser/renderer, sensitive flag + toggle:
+  written, unrun. "Tests that flagged notes are excluded from ... offline
+  cache and any future subtree/collection share": only the share-creation
+  guard exists (no tests against a live DB; Go unit tests cover the pure rules).
+* **D2**: internal endpoints + worker + NixOS draft written, unrun. The rate
+  limit is a single global in-memory counter (240/min), not per-IP.
+* **D3**: autosync script (tested against local repos), plist, README, patch
+  text written. The vault-side `.gitignore`/`CLAUDE.md` changes are proposals.
+  **Attachments are not built**: the worker only syncs `.org`/`.md`; nothing
+  copies `attachments/` to a bucket and no endpoint serves images, so the
+  frontend's image placeholder shows "image not available yet" unless
+  `VITE_ATTACHMENTS_BASE_URL` points at something that serves the files.
+  Uploading images from the PWA (worker writes them into `attachments/`) is
+  also not built.
+* **D4**: search, backlinks, source badge, conflict resolver, Sync button,
+  `pending_write` on edit, on-demand embeds (org only; the markdown renderer is
+  a custom line renderer with no image support, left unchanged): done.
+  **Not done**: graph view, PWA offline cache (so "never prefetch sensitive
+  notes" has nothing to enforce yet), in-app image upload.
+* **D5**: see `SHARING_HARDENING.md`. Shared-note image serving, the snapshot /
+  read-only-role resolver, token hashing and the public-route rate limit are
+  open.
