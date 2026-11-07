@@ -68,6 +68,7 @@ func setupRoutes(engine *gin.Engine, hdlrs *handlers.Registry, jwksURL, issuer s
 	v1.Use(middleware.Auth(jwksURL, issuer))
 	v1.Use(middleware.RateLimit())
 	v1.Use(middleware.AuditLog(auditWriter))
+	v1.Use(middleware.FeatureGate(hdlrs.Admin.Gate()))
 
 	v1.GET("/me", hdlrs.Me.GetMe)
 	v1.GET("/preferences", hdlrs.Preferences.Get)
@@ -116,6 +117,8 @@ func setupAdminRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	admin.PATCH("/users/:id/role", hdlrs.Admin.SetMemberRole)
 	admin.GET("/page-access", hdlrs.Admin.ListPageAccess)
 	admin.PUT("/page-access", hdlrs.Admin.SetPageAccess)
+	admin.GET("/users/:id/page-access", hdlrs.Admin.ListUserPageAccess)
+	admin.PUT("/users/:id/page-access", hdlrs.Admin.SetUserPageAccess)
 	admin.GET("/audit-log", hdlrs.AuditLog.List)
 }
 

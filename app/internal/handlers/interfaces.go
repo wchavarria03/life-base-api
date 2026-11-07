@@ -229,7 +229,10 @@ type AdminManager interface {
 	SetMemberRole(ctx context.Context, userID, role string) error
 	ListPageAccess(ctx context.Context) ([]*models.PageAccessEntry, error)
 	SetPageAccess(ctx context.Context, entry *models.PageAccessEntry) error
-	AllowedPageKeys(ctx context.Context, role string) ([]string, error)
+	ListUserPageAccess(ctx context.Context, userID string) ([]*models.UserPageAccessEntry, error)
+	SetUserPageAccess(ctx context.Context, userID, pageKey string, allowed *bool) error
+	AllowedPageKeys(ctx context.Context, userID, role string) ([]string, error)
+	PageAllowedAny(ctx context.Context, userID, role string, keys []string) (bool, error)
 }
 
 // CaptionManager manages the caption template library.

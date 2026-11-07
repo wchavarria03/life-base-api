@@ -18,7 +18,7 @@ func (h *MeHandler) GetMe(c *gin.Context) {
 	userID := auth.UserIDFromContext(ctx)
 	role := auth.RoleFromContext(ctx)
 
-	pageKeys, err := h.admin.AllowedPageKeys(ctx, role)
+	pageKeys, err := h.admin.AllowedPageKeys(ctx, userID, role)
 	if err != nil {
 		internalError(c, err)
 		return

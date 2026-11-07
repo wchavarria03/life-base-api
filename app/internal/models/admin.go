@@ -14,3 +14,10 @@ type PageAccessEntry struct {
 	PageKey string `json:"page_key"`
 	Allowed bool   `json:"allowed"`
 }
+
+// UserPageAccessEntry is a per-account override of the role page matrix.
+type UserPageAccessEntry struct {
+	UserID  string `json:"user_id"`
+	PageKey string `json:"page_key"`
+	Allowed bool   `json:"allowed"`
+}

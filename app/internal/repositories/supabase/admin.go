@@ -129,3 +129,26 @@ func (r *AdminRepository) SetPageAccess(ctx context.Context, entry *models.PageA
 		"resolution=merge-duplicates,return=representation")
 	return err
 }
+
+// ListUserPageAccess returns the per-account overrides for userID.
+func (r *AdminRepository) ListUserPageAccess(ctx context.Context, userID string) ([]*models.UserPageAccessEntry, error) {
+	q := url.Values{}
+	q.Set("user_id", "eq."+userID)
+	return databases.Get[[]*models.UserPageAccessEntry](ctx, r.client, "/rest/v1/user_page_access", q)
+}
+
+// SetUserPageAccess upserts one per-account override.
+func (r *AdminRepository) SetUserPageAccess(ctx context.Context, entry *models.UserPageAccessEntry) error {
+	_, err := databases.Post[[]*models.UserPageAccessEntry](ctx, r.client,
+		"/rest/v1/user_page_access?on_conflict=user_id,page_key", entry,
+		"resolution=merge-duplicates,return=representation")
+	return err
+}
+
+// DeleteUserPageAccess removes an override so the account follows its role again.
+func (r *AdminRepository) DeleteUserPageAccess(ctx context.Context, userID, pageKey string) error {
+	q := url.Values{}
+	q.Set("user_id", "eq."+userID)
+	q.Set("page_key", "eq."+pageKey)
+	return databases.Delete(ctx, r.client, "/rest/v1/user_page_access", q)
+}
