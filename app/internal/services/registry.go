@@ -120,7 +120,7 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 	r.Note.SetTaskSync(r.NoteTaskLink)
 	r.Task.SetNoteSync(r.NoteTaskLink)
 	r.SharedTaskList = NewSharedTaskListService(repos.SharedTaskLists, r.Task, sharedTaskLists)
-	r.Document = NewDocumentService(repos.Documents, repos.Storage)
+	r.Document = NewDocumentService(repos.Documents, repos.DocumentLinks, repos.Storage, os.Getenv("DOCUMENT_URL_SECRET"))
 	r.HouseTimer = NewHouseTimerService(repos.HouseTimers, push, expoPush, HouseTimerConfig{
 		VAPIDPublicKey:  digest.VAPIDPublicKey,
 		VAPIDPrivateKey: digest.VAPIDPrivateKey,
@@ -135,6 +135,7 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 	r.MedicalAttributeDef = NewMedicalAttributeDefService(repos.MedicalAttributeDefs)
 	r.MedicalMedication = NewMedicalMedicationService(repos.MedicalMedications)
 	r.ShareLink = NewShareLinkService(repos.ShareLinks, r.Note, r.Bike, r.Component, r.MedicalProfile, r.MedicalRecord, r.AuditLog)
+	r.ShareLink.SetDocuments(r.Document)
 	// The vault is single-user: the worker acts as VAULT_SYNC_USER_ID.
 	r.Vault = NewVaultService(repos.Vault, repos.NoteVersions, r.Note, os.Getenv("VAULT_SYNC_USER_ID"))
 

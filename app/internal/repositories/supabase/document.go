@@ -3,6 +3,7 @@ package supabase
 import (
 	"context"
 	"net/url"
+	"strings"
 
 	"life-base-api/app/internal/databases"
 	"life-base-api/app/internal/models"
@@ -41,4 +42,15 @@ func (r *DocumentRepository) Create(ctx context.Context, input models.DocumentIn
 // Delete removes a document row (RLS-scoped).
 func (r *DocumentRepository) Delete(ctx context.Context, id string) error {
 	return databases.Delete(ctx, r.client, "/rest/v1/documents", databases.EqID(id))
+}
+
+// ListByIDs returns the documents with the given ids (RLS-scoped), newest first.
+func (r *DocumentRepository) ListByIDs(ctx context.Context, ids []string) ([]*models.Document, error) {
+	if len(ids) == 0 {
+		return []*models.Document{}, nil
+	}
+	return databases.Get[[]*models.Document](ctx, r.client, "/rest/v1/documents", url.Values{
+		"id":    []string{"in.(" + strings.Join(ids, ",") + ")"},
+		"order": []string{"created_at.desc"},
+	})
 }

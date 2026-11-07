@@ -74,6 +74,8 @@ type SharedNoteView struct {
 	Content       *string `json:"content,omitempty"`
 	ContentFormat string  `json:"content_format,omitempty"`
 	RenderedHTML  string  `json:"rendered_html,omitempty"`
+	// Attachments lists only non-sensitive documents linked to the note.
+	Attachments []SharedAttachmentView `json:"attachments,omitempty"`
 }
 
 // SharedMedicalRecordSummary is one record's public, read-only listing
