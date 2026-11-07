@@ -496,6 +496,53 @@ func (s *VaultService) Backlinks(ctx context.Context, id string) ([]models.Backl
 	return out, nil
 }
 
+// Graph returns all live notes and the resolved links between them. Links
+// whose target is not (yet) a known note are dropped, as are self-links and
+// duplicates.
+func (s *VaultService) Graph(ctx context.Context) (*models.NoteGraph, error) {
+	nodes, err := s.repo.ListGraphNodes(ctx)
+	if err != nil {
+		return nil, err
+	}
+	links, err := s.repo.ListGraphLinks(ctx)
+	if err != nil {
+		return nil, err
+	}
+	g := &models.NoteGraph{Nodes: make([]models.GraphNode, 0, len(nodes)), Edges: []models.GraphEdge{}}
+	byID := make(map[string]bool, len(nodes))
+	byOrg := make(map[string]string, len(nodes))
+	for _, n := range nodes {
+		g.Nodes = append(g.Nodes, *n)
+		byID[n.ID] = true
+		if n.OrgID != nil && *n.OrgID != "" {
+			byOrg[*n.OrgID] = n.ID
+		}
+	}
+	g.Edges = graphEdges(links, byID, byOrg)
+	return g, nil
+}
+
+// graphEdges resolves link rows to deduplicated note-to-note edges.
+func graphEdges(links []*models.GraphLinkRow, byID map[string]bool, byOrg map[string]string) []models.GraphEdge {
+	edges := []models.GraphEdge{}
+	seen := map[string]bool{}
+	for _, l := range links {
+		var target string
+		if l.ToNoteID != nil {
+			target = *l.ToNoteID
+		} else {
+			target = byOrg[l.ToOrgID]
+		}
+		key := l.FromNoteID + ">" + target
+		if target == "" || target == l.FromNoteID || !byID[l.FromNoteID] || !byID[target] || seen[key] {
+			continue
+		}
+		seen[key] = true
+		edges = append(edges, models.GraphEdge{Source: l.FromNoteID, Target: target})
+	}
+	return edges
+}
+
 // Search runs full-text search over the caller's notes.
 func (s *VaultService) Search(ctx context.Context, q string, limit int) ([]*models.NoteSearchHit, error) {
 	q = strings.TrimSpace(q)

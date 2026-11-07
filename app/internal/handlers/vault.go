@@ -26,6 +26,7 @@ type VaultManager interface {
 	SyncStatus(ctx context.Context) (*models.VaultSyncState, error)
 	SetSensitive(ctx context.Context, id string, value bool) (*models.Note, error)
 	Backlinks(ctx context.Context, id string) ([]models.Backlink, error)
+	Graph(ctx context.Context) (*models.NoteGraph, error)
 	Search(ctx context.Context, q string, limit int) ([]*models.NoteSearchHit, error)
 	LookupByOrgID(ctx context.Context, orgID string) (*models.NoteRef, error)
 	ResolveConflict(ctx context.Context, id, keep string) (*models.Note, error)
@@ -175,6 +176,16 @@ func (h *VaultHandler) Backlinks(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, links)
+}
+
+// Graph handles GET /v1/notes/graph.
+func (h *VaultHandler) Graph(c *gin.Context) {
+	g, err := h.svc.Graph(c.Request.Context())
+	if err != nil {
+		vaultError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, g)
 }
 
 // Search handles GET /v1/notes/search?q=&limit=.
