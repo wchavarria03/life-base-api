@@ -131,9 +131,15 @@ type DogManager interface {
 // DocumentManager is the subset of DocumentService the handler needs.
 type DocumentManager interface {
 	List(ctx context.Context) ([]*models.Document, error)
-	Upload(ctx context.Context, file io.Reader, title, fileName, contentType string, category *string) (*models.Document, error)
+	Upload(ctx context.Context, file io.Reader, title, fileName, contentType string, category *string, sensitive bool) (*models.Document, error)
 	Download(ctx context.Context, id string) (*models.Document, []byte, error)
 	Delete(ctx context.Context, id string) error
+	AddLink(ctx context.Context, documentID, entityType, entityID string) (*models.DocumentLink, error)
+	ListLinks(ctx context.Context, documentID string) ([]*models.DocumentLink, error)
+	RemoveLink(ctx context.Context, documentID, linkID string) error
+	ListByEntity(ctx context.Context, entityType, entityID string) ([]*models.Document, error)
+	SignedURL(ctx context.Context, id string) (*models.SignedDocumentURL, error)
+	DownloadSigned(ctx context.Context, id, exp, sig string) (*models.Document, []byte, error)
 }
 
 // MedicalProfileManager is the subset of MedicalProfileService the handler needs.

@@ -40,6 +40,7 @@ type ShareLinkService struct {
 	medicalProfiles *MedicalProfileService
 	medicalRecords  *MedicalRecordService
 	audit           *AuditLogService
+	docs            *DocumentService
 }
 
 // NewShareLinkService constructs a ShareLinkService.
@@ -226,7 +227,7 @@ func (s *ShareLinkService) Resolve(ctx context.Context, token string) (*models.S
 		if err != nil || note == nil || note.DeletedAt != nil {
 			return nil, ErrShareLinkNotFound
 		}
-		return &models.SharedResource{ResourceType: models.ShareResourceNote, Note: sharedNoteView(note)}, nil
+		return s.noteResource(ctx, note), nil
 
 	case models.ShareResourceBike:
 		bike, err := s.bikes.FindByID(ctx, link.ResourceID)
@@ -315,4 +316,18 @@ func sharedNoteView(note *models.Note) *models.SharedNoteView {
 		view.RenderedHTML = vault.RenderOrg(*note.Content, vault.RenderOptions{Share: true})
 	}
 	return view
+}
+
+// SetDocuments wires the document service so shared notes can list their
+// non-sensitive attachments.
+func (s *ShareLinkService) SetDocuments(docs *DocumentService) { s.docs = docs }
+
+// noteResource builds the public resource for a shared note, including its
+// non-sensitive attachments. Sensitive documents are never exposed.
+func (s *ShareLinkService) noteResource(ctx context.Context, note *models.Note) *models.SharedResource {
+	view := sharedNoteView(note)
+	if s.docs != nil {
+		view.Attachments = s.docs.shareableAttachments(ctx, note.ID)
+	}
+	return &models.SharedResource{ResourceType: models.ShareResourceNote, Note: view}
 }

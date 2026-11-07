@@ -18,12 +18,15 @@ const documentsBucket = "documents"
 // download, delete.
 type DocumentService struct {
 	repo    *supabaserepo.DocumentRepository
+	links   *supabaserepo.DocumentLinkRepository
 	storage *supabaserepo.StorageRepository
+	// signingSecret keys the HMAC of signed document URLs; empty disables them.
+	signingSecret []byte
 }
 
 // NewDocumentService constructs a DocumentService.
-func NewDocumentService(repo *supabaserepo.DocumentRepository, storage *supabaserepo.StorageRepository) *DocumentService {
-	return &DocumentService{repo: repo, storage: storage}
+func NewDocumentService(repo *supabaserepo.DocumentRepository, links *supabaserepo.DocumentLinkRepository, storage *supabaserepo.StorageRepository, signingSecret string) *DocumentService {
+	return &DocumentService{repo: repo, links: links, storage: storage, signingSecret: []byte(signingSecret)}
 }
 
 // List returns every document the caller owns.
@@ -33,7 +36,7 @@ func (s *DocumentService) List(ctx context.Context) ([]*models.Document, error) 
 
 // Upload stores file in the private documents bucket and records its
 // metadata.
-func (s *DocumentService) Upload(ctx context.Context, file io.Reader, title, fileName, contentType string, category *string) (*models.Document, error) {
+func (s *DocumentService) Upload(ctx context.Context, file io.Reader, title, fileName, contentType string, category *string, sensitive bool) (*models.Document, error) {
 	userID := auth.UserIDFromContext(ctx)
 	if userID == "" {
 		return nil, fmt.Errorf("no authenticated user")
@@ -60,6 +63,7 @@ func (s *DocumentService) Upload(ctx context.Context, file io.Reader, title, fil
 		ContentType: contentType,
 		FileSize:    int64(len(data)),
 		StoragePath: path,
+		Sensitive:   sensitive,
 	})
 }
 

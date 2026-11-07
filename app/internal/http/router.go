@@ -44,6 +44,10 @@ func setupPublicRoutes(engine *gin.Engine, hdlrs *handlers.Registry) {
 	// "/shared/" above (task lists) to avoid a route collision, and shorter
 	// to match the "shortener" link these are meant to read as.
 	public.GET("/s/:token", hdlrs.ShareLink.PublicResolve)
+
+	// Short-lived HMAC-signed document URLs (attachments in <img> tags and
+	// shared notes); the signature is the credential.
+	public.GET("/documents/:id", hdlrs.Document.PublicDownload)
 }
 
 // setupInternalRoutes configures the service-token protected routes used by
@@ -302,7 +306,12 @@ func setupDocumentRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	docs := rg.Group("/documents")
 	docs.GET("", hdlrs.Document.List)
 	docs.POST("", hdlrs.Document.Upload)
+	docs.GET("/by-entity", hdlrs.Document.ByEntity)
 	docs.GET("/:id/download", hdlrs.Document.Download)
+	docs.GET("/:id/signed-url", hdlrs.Document.SignedURL)
+	docs.GET("/:id/links", hdlrs.Document.ListLinks)
+	docs.POST("/:id/links", hdlrs.Document.AddLink)
+	docs.DELETE("/:id/links/:linkId", hdlrs.Document.RemoveLink)
 	docs.DELETE("/:id", hdlrs.Document.Delete)
 }
 
