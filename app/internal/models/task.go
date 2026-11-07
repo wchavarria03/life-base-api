@@ -85,6 +85,7 @@ type Task struct {
 	AssignedChildID   *string      `json:"assigned_child_id,omitempty"`
 	CoinValue         *int         `json:"coin_value,omitempty"`
 	PenaltyAppliedAt  *time.Time   `json:"penalty_applied_at,omitempty"`
+	NoteID            *string      `json:"note_id,omitempty"`
 	CreatedAt         time.Time    `json:"created_at,omitempty"`
 	UpdatedAt         time.Time    `json:"updated_at,omitempty"`
 }
@@ -109,6 +110,7 @@ type TaskInput struct {
 	LeadTimeDays    *int         `json:"lead_time_days,omitempty"`
 	AssignedChildID *string      `json:"assigned_child_id,omitempty"`
 	CoinValue       *int         `json:"coin_value,omitempty"`
+	NoteID          *string      `json:"note_id,omitempty"`
 }
 
 // TaskWithStatus enriches Task with a derived status field.

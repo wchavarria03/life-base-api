@@ -13,6 +13,7 @@ type TaskRepository interface {
 	List(ctx context.Context, category *models.TaskCategory) ([]*models.Task, error)
 	ListByUserAndCategory(ctx context.Context, userID string, category models.TaskCategory) ([]*models.Task, error)
 	FindByID(ctx context.Context, id string) (*models.Task, error)
+	ListByNote(ctx context.Context, noteID string) ([]*models.Task, error)
 	Create(ctx context.Context, input models.TaskInput) (*models.Task, error)
 	Update(ctx context.Context, id string, fields map[string]any) (*models.Task, error)
 	Delete(ctx context.Context, id string) error
@@ -21,6 +22,10 @@ type TaskRepository interface {
 type TaskService struct {
 	tasks TaskRepository
 	logs  TaskLogRepository
+
+	// noteSync ticks the linked checklist line when a note-linked task is
+	// completed; nil until the registry wires it (see note_task_link.go).
+	noteSync TaskNoteSyncer
 }
 
 func NewTaskService(tasks TaskRepository) *TaskService {
@@ -31,6 +36,19 @@ func (s *TaskService) List(ctx context.Context, category *models.TaskCategory) (
 	tasks, err := s.tasks.List(ctx, category)
 	if err != nil {
 		return nil, fmt.Errorf("list tasks: %w", err)
+	}
+	result := make([]models.TaskWithStatus, 0, len(tasks))
+	for _, t := range tasks {
+		result = append(result, withTaskStatus(t))
+	}
+	return result, nil
+}
+
+// ListByNote returns the tasks linked to a note, with derived status.
+func (s *TaskService) ListByNote(ctx context.Context, noteID string) ([]models.TaskWithStatus, error) {
+	tasks, err := s.tasks.ListByNote(ctx, noteID)
+	if err != nil {
+		return nil, fmt.Errorf("list tasks by note: %w", err)
 	}
 	result := make([]models.TaskWithStatus, 0, len(tasks))
 	for _, t := range tasks {
@@ -152,6 +170,19 @@ func (s *TaskService) CompleteWith(ctx context.Context, id string, opts models.T
 		performedAt = time.Now().Format(taskDateLayout)
 	}
 
+	done, err := s.complete(ctx, id, opts, performedAt)
+	if err != nil {
+		return nil, err
+	}
+	// Best-effort Notes <-> TODO sync: tick the checklist line this task
+	// came from. Failures are logged inside the hook, never returned.
+	if done != nil && done.NoteID != nil && done.CompletedAt != nil && s.noteSync != nil {
+		s.noteSync.TickNoteChecklist(ctx, done)
+	}
+	return done, nil
+}
+
+func (s *TaskService) complete(ctx context.Context, id string, opts models.TaskCompletion, performedAt string) (*models.Task, error) {
 	task, err := s.tasks.FindByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("find task: %w", err)

@@ -42,6 +42,7 @@ type Registry struct {
 	TaskList            *TaskListService
 	TaskLog             *TaskLogService
 	Note                *NoteService
+	NoteTaskLink        *NoteTaskLinkService
 	SharedTaskList      *SharedTaskListService
 	ShareLink           *ShareLinkService
 	Document            *DocumentService
@@ -110,6 +111,9 @@ func NewRegistry(repos *repositories.Registry, userID string, social SocialConfi
 		TaskLog:  NewTaskLogService(repos.TaskLogs),
 		Note:     NewNoteService(repos.Notes, repos.NoteVersions),
 	}
+	r.NoteTaskLink = NewNoteTaskLinkService(r.Note, r.Task)
+	r.Note.SetTaskSync(r.NoteTaskLink)
+	r.Task.SetNoteSync(r.NoteTaskLink)
 	r.SharedTaskList = NewSharedTaskListService(repos.SharedTaskLists, r.Task, sharedTaskLists)
 	r.Document = NewDocumentService(repos.Documents, repos.Storage)
 	r.HouseTimer = NewHouseTimerService(repos.HouseTimers, push, expoPush, HouseTimerConfig{

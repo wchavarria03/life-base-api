@@ -26,6 +26,15 @@ func (r *TaskRepository) List(ctx context.Context, category *models.TaskCategory
 	return databases.Get[[]*models.Task](ctx, r.client, "/rest/v1/tasks", params, tasksSchema)
 }
 
+// ListByNote returns the tasks linked to noteID (tasks.tasks.note_id).
+func (r *TaskRepository) ListByNote(ctx context.Context, noteID string) ([]*models.Task, error) {
+	params := url.Values{
+		"note_id": []string{"eq." + noteID},
+		"order":   []string{"created_at.asc"},
+	}
+	return databases.Get[[]*models.Task](ctx, r.client, "/rest/v1/tasks", params, tasksSchema)
+}
+
 // ListByUserAndCategory returns userID's tasks in category, explicitly
 // filtered (rather than relying on RLS) because this backs the public
 // /public/shared/:token route: that path has no user JWT, so requests go

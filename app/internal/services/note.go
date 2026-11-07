@@ -20,6 +20,10 @@ type NoteRepository interface {
 type NoteService struct {
 	notes    NoteRepository
 	versions *supabaserepo.NoteVersionRepository
+
+	// taskSync completes linked tasks when a checklist line gets ticked;
+	// nil until the registry wires it (see note_task_link.go).
+	taskSync NoteTaskSyncer
 }
 
 // NewNoteService constructs a NoteService.
@@ -71,7 +75,12 @@ func (s *NoteService) Update(ctx context.Context, id string, fields map[string]a
 			return nil, fmt.Errorf("archive note version: %w", err)
 		}
 	}
-	return s.notes.Update(ctx, id, fields)
+	updated, err := s.notes.Update(ctx, id, fields)
+	if err != nil {
+		return nil, err
+	}
+	s.syncLinkedTasks(ctx, id, current, fields)
+	return updated, nil
 }
 
 // ListVersions returns a note's archived prior versions, newest first.

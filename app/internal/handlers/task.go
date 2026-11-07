@@ -13,6 +13,7 @@ import (
 
 type TaskManager interface {
 	List(ctx context.Context, category *models.TaskCategory) ([]models.TaskWithStatus, error)
+	ListByNote(ctx context.Context, noteID string) ([]models.TaskWithStatus, error)
 	Create(ctx context.Context, input models.TaskInput) (*models.Task, error)
 	Update(ctx context.Context, id string, fields map[string]any) (*models.Task, error)
 	Delete(ctx context.Context, id string) error
@@ -37,6 +38,15 @@ func NewTaskHandler(svc TaskManager, completer TaskCompleter) *TaskHandler {
 }
 
 func (h *TaskHandler) List(c *gin.Context) {
+	if noteID := c.Query("note_id"); noteID != "" {
+		linked, err := h.svc.ListByNote(c.Request.Context(), noteID)
+		if err != nil {
+			internalError(c, err)
+			return
+		}
+		c.JSON(http.StatusOK, linked)
+		return
+	}
 	var category *models.TaskCategory
 	if v := c.Query("category"); v != "" {
 		cat := models.TaskCategory(v)

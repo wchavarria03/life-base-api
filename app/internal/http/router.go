@@ -340,6 +340,7 @@ func setupNoteRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
 	notes.PATCH("/:id", hdlrs.Note.Update)
 	notes.DELETE("/:id", hdlrs.Note.Delete)
 	notes.GET("/:id/versions", hdlrs.Note.ListVersions)
+	notes.POST("/:id/checklist/:index/task", hdlrs.NoteTaskLink.CreateTask)
 }
 
 func setupEnvelopeRoutes(rg *gin.RouterGroup, hdlrs *handlers.Registry) {
