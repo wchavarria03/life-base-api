@@ -75,137 +75,162 @@ func ValidOrgID(s string) bool {
 func ParseOrg(src string) *Doc {
 	src = strings.ReplaceAll(src, "\r\n", "\n")
 	src = strings.ReplaceAll(src, "\r", "\n")
-	lines := strings.Split(src, "\n")
 
-	doc := &Doc{}
-	seenHeading := false
-	var para []string
-
-	flushPara := func() {
-		if len(para) > 0 {
-			doc.Blocks = append(doc.Blocks, Block{Kind: BlockParagraph, Text: strings.Join(para, " ")})
-			para = nil
-		}
+	p := &orgParser{lines: strings.Split(src, "\n"), doc: &Doc{}}
+	for p.i < len(p.lines) {
+		p.step()
 	}
+	p.flushPara()
 
-	i := 0
-	for i < len(lines) {
-		line := lines[i]
-		trimmed := strings.TrimSpace(line)
-		lower := strings.ToLower(trimmed)
-
-		switch {
-		case trimmed == "":
-			flushPara()
-			i++
-
-		case strings.HasPrefix(lower, "#+begin_"):
-			flushPara()
-			// The "#+begin_" prefix is ASCII, so slicing trimmed by its length
-			// is safe even if the rest of the line has multi-byte characters.
-			name := trimmed[len("#+begin_"):]
-			kind := strings.ToLower(name)
-			rest := ""
-			if sp := strings.IndexAny(name, " \t"); sp >= 0 {
-				kind = strings.ToLower(name[:sp])
-				rest = strings.TrimSpace(name[sp:])
-			}
-			j := i + 1
-			var body []string
-			for j < len(lines) && !strings.HasPrefix(strings.ToLower(strings.TrimSpace(lines[j])), "#+end_") {
-				body = append(body, lines[j])
-				j++
-			}
-			switch kind {
-			case "src":
-				lang := rest
-				if sp := strings.IndexAny(lang, " \t"); sp >= 0 {
-					lang = lang[:sp]
-				}
-				doc.Blocks = append(doc.Blocks, Block{Kind: BlockSrc, Lang: lang, Lines: body})
-			case "example":
-				doc.Blocks = append(doc.Blocks, Block{Kind: BlockExample, Lines: body})
-			case "quote":
-				doc.Blocks = append(doc.Blocks, Block{Kind: BlockQuote, Lines: body})
-			default:
-				// export, comment, html, ... : dropped entirely. This is what
-				// keeps raw HTML from ever being passed through.
-			}
-			i = j + 1
-
-		case strings.HasPrefix(lower, "#+"):
-			flushPara()
-			parseKeyword(doc, trimmed)
-			i++
-
-		case trimmed == "#" || strings.HasPrefix(trimmed, "# "):
-			// comment line
-			flushPara()
-			i++
-
-		case drawerRe.MatchString(trimmed):
-			end := findDrawerEnd(lines, i+1)
-			if end < 0 {
-				para = append(para, trimmed)
-				i++
-				break
-			}
-			flushPara()
-			if strings.EqualFold(trimmed, ":PROPERTIES:") && !seenHeading {
-				parseFileProperties(doc, lines[i+1:end])
-			}
-			i = end + 1
-
-		default:
-			if m := headingRe.FindStringSubmatch(line); m != nil {
-				flushPara()
-				seenHeading = true
-				title := headingTagsRe.ReplaceAllString(m[2], "")
-				doc.Blocks = append(doc.Blocks, Block{Kind: BlockHeading, Level: len(m[1]), Text: strings.TrimSpace(title)})
-				i++
-				break
-			}
-			if ruleRe.MatchString(line) {
-				flushPara()
-				doc.Blocks = append(doc.Blocks, Block{Kind: BlockRule})
-				i++
-				break
-			}
-			if strings.HasPrefix(trimmed, "|") {
-				flushPara()
-				j := i
-				var rows []string
-				for j < len(lines) && strings.HasPrefix(strings.TrimSpace(lines[j]), "|") {
-					rows = append(rows, strings.TrimSpace(lines[j]))
-					j++
-				}
-				doc.Blocks = append(doc.Blocks, Block{Kind: BlockTable, Lines: rows})
-				i = j
-				break
-			}
-			if item, ok := parseListItem(line); ok {
-				flushPara()
-				items, next := collectList(lines, i, item)
-				doc.Blocks = append(doc.Blocks, Block{Kind: BlockList, Items: items})
-				i = next
-				break
-			}
-			para = append(para, trimmed)
-			i++
-		}
-	}
-	flushPara()
-
-	collectLinks(doc)
-	if doc.Title == "" {
-		for _, b := range doc.Blocks {
+	collectLinks(p.doc)
+	if p.doc.Title == "" {
+		for _, b := range p.doc.Blocks {
 			if b.Kind == BlockHeading {
-				doc.Title = b.Text
+				p.doc.Title = b.Text
 				break
 			}
 		}
 	}
-	return doc
+	return p.doc
+}
+
+// orgParser is the line-oriented state of one ParseOrg run.
+type orgParser struct {
+	lines       []string
+	doc         *Doc
+	para        []string
+	seenHeading bool
+	i           int // index of the next unread line
+}
+
+func (p *orgParser) flushPara() {
+	if len(p.para) > 0 {
+		p.doc.Blocks = append(p.doc.Blocks, Block{Kind: BlockParagraph, Text: strings.Join(p.para, " ")})
+		p.para = nil
+	}
+}
+
+// step consumes at least one line.
+func (p *orgParser) step() {
+	line := p.lines[p.i]
+	trimmed := strings.TrimSpace(line)
+	lower := strings.ToLower(trimmed)
+
+	switch {
+	case trimmed == "":
+		p.flushPara()
+		p.i++
+	case strings.HasPrefix(lower, "#+begin_"):
+		p.flushPara()
+		p.parseBlock(trimmed)
+	case strings.HasPrefix(lower, "#+"):
+		p.flushPara()
+		parseKeyword(p.doc, trimmed)
+		p.i++
+	case trimmed == "#" || strings.HasPrefix(trimmed, "# "):
+		// comment line
+		p.flushPara()
+		p.i++
+	case drawerRe.MatchString(trimmed):
+		p.parseDrawer(trimmed)
+	default:
+		p.parseOther(line, trimmed)
+	}
+}
+
+// parseBlock handles a #+begin_X ... #+end_X block starting at p.i.
+func (p *orgParser) parseBlock(trimmed string) {
+	// The "#+begin_" prefix is ASCII, so slicing trimmed by its length
+	// is safe even if the rest of the line has multi-byte characters.
+	name := trimmed[len("#+begin_"):]
+	kind := strings.ToLower(name)
+	rest := ""
+	if sp := strings.IndexAny(name, " \t"); sp >= 0 {
+		kind = strings.ToLower(name[:sp])
+		rest = strings.TrimSpace(name[sp:])
+	}
+	j := p.i + 1
+	var body []string
+	for j < len(p.lines) && !strings.HasPrefix(strings.ToLower(strings.TrimSpace(p.lines[j])), "#+end_") {
+		body = append(body, p.lines[j])
+		j++
+	}
+	switch kind {
+	case "src":
+		lang := rest
+		if sp := strings.IndexAny(lang, " \t"); sp >= 0 {
+			lang = lang[:sp]
+		}
+		p.doc.Blocks = append(p.doc.Blocks, Block{Kind: BlockSrc, Lang: lang, Lines: body})
+	case "example":
+		p.doc.Blocks = append(p.doc.Blocks, Block{Kind: BlockExample, Lines: body})
+	case "quote":
+		p.doc.Blocks = append(p.doc.Blocks, Block{Kind: BlockQuote, Lines: body})
+	default:
+		// export, comment, html, ... : dropped entirely. This is what
+		// keeps raw HTML from ever being passed through.
+	}
+	p.i = j + 1
+}
+
+// parseDrawer handles a :NAME: ... :END: drawer starting at p.i. An
+// unterminated drawer is treated as ordinary paragraph text.
+func (p *orgParser) parseDrawer(trimmed string) {
+	end := findDrawerEnd(p.lines, p.i+1)
+	if end < 0 {
+		p.para = append(p.para, trimmed)
+		p.i++
+		return
+	}
+	p.flushPara()
+	if strings.EqualFold(trimmed, ":PROPERTIES:") && !p.seenHeading {
+		parseFileProperties(p.doc, p.lines[p.i+1:end])
+	}
+	p.i = end + 1
+}
+
+// parseOther handles headings, rules, tables, lists and plain paragraph lines.
+func (p *orgParser) parseOther(line, trimmed string) {
+	if m := headingRe.FindStringSubmatch(line); m != nil {
+		p.flushPara()
+		p.seenHeading = true
+		title := headingTagsRe.ReplaceAllString(m[2], "")
+		p.doc.Blocks = append(p.doc.Blocks, Block{Kind: BlockHeading, Level: len(m[1]), Text: strings.TrimSpace(title)})
+		p.i++
+		return
+	}
+	if ruleRe.MatchString(line) {
+		p.flushPara()
+		p.doc.Blocks = append(p.doc.Blocks, Block{Kind: BlockRule})
+		p.i++
+		return
+	}
+	if strings.HasPrefix(trimmed, "|") {
+		p.parseTable()
+		return
+	}
+	if item, ok := parseListItem(line); ok {
+		p.flushPara()
+		items, next := collectList(p.lines, p.i, item)
+		p.doc.Blocks = append(p.doc.Blocks, Block{Kind: BlockList, Items: items})
+		p.i = next
+		return
+	}
+	p.para = append(p.para, trimmed)
+	p.i++
+}
+
+// parseTable consumes consecutive |-prefixed lines starting at p.i.
+func (p *orgParser) parseTable() {
+	p.flushPara()
+	j := p.i
+	var rows []string
+	for j < len(p.lines) && strings.HasPrefix(strings.TrimSpace(p.lines[j]), "|") {
+		rows = append(rows, strings.TrimSpace(p.lines[j]))
+		j++
+	}
+	p.doc.Blocks = append(p.doc.Blocks, Block{Kind: BlockTable, Lines: rows})
+	p.i = j
 }
 
 func parseKeyword(doc *Doc, trimmed string) {

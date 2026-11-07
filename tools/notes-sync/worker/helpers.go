@@ -15,7 +15,7 @@ import (
 // This file holds the pure helpers (no I/O beyond path resolution) so they
 // can be unit tested. The path rules deliberately mirror
 // app/internal/vault/paths.go: the API validates again, this is the
-// worker's own first line of defence (it also decides what gets written to
+// worker's own first line of defense (it also decides what gets written to
 // disk, which the API cannot see).
 
 const (
@@ -27,6 +27,26 @@ var noteExts = map[string]bool{".org": true, ".md": true}
 
 // validNotePath rejects anything that is not a plain, relative .org/.md path.
 func validNotePath(p string) error {
+	if err := validPathShape(p); err != nil {
+		return err
+	}
+	for _, seg := range strings.Split(p, "/") {
+		if seg == "" || seg == "." || seg == ".." {
+			return fmt.Errorf("bad segment %q", seg)
+		}
+		if strings.HasPrefix(seg, ".") {
+			return fmt.Errorf("hidden segment %q", seg)
+		}
+	}
+	if !noteExts[strings.ToLower(path.Ext(p))] {
+		return errors.New("extension not allowed")
+	}
+	return nil
+}
+
+// validPathShape rejects empty, oversized, non-UTF-8, absolute and otherwise
+// malformed path strings.
+func validPathShape(p string) error {
 	switch {
 	case p == "":
 		return errors.New("empty path")
@@ -47,17 +67,6 @@ func validNotePath(p string) error {
 		if r < 0x20 || r == 0x7f {
 			return errors.New("control character in path")
 		}
-	}
-	for _, seg := range strings.Split(p, "/") {
-		if seg == "" || seg == "." || seg == ".." {
-			return fmt.Errorf("bad segment %q", seg)
-		}
-		if strings.HasPrefix(seg, ".") {
-			return fmt.Errorf("hidden segment %q", seg)
-		}
-	}
-	if !noteExts[strings.ToLower(path.Ext(p))] {
-		return errors.New("extension not allowed")
 	}
 	return nil
 }
@@ -220,7 +229,7 @@ func validCommit(c string) bool {
 		return false
 	}
 	for _, r := range c {
-		if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f')) {
+		if (r < '0' || r > '9') && (r < 'a' || r > 'f') {
 			return false
 		}
 	}

@@ -191,7 +191,7 @@ func TestRenderHTML(t *testing.T) {
 			absent:   []string{"secret-id", "PROPERTIES"},
 		},
 		{
-			name:     "javascript link neutralised",
+			name:     "javascript link neutralized",
 			src:      "[[javascript:alert(1)][click]]",
 			contains: []string{"click"},
 			absent:   []string{"href", "javascript"},

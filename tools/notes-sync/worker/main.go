@@ -106,12 +106,19 @@ type worker struct {
 }
 
 func main() {
+	os.Exit(run())
+}
+
+// run is main's body so deferred cleanup runs before the process exits with
+// a non-zero code (log.Fatal inside main would skip the defers).
+func run() int {
 	once := flag.Bool("once", false, "run a single sync cycle and exit")
 	flag.Parse()
 
 	cfg, err := loadConfig()
 	if err != nil {
-		log.Fatalf("config: %v", err)
+		log.Printf("config: %v", err)
+		return 1
 	}
 	w := &worker{cfg: cfg, http: &http.Client{Timeout: 60 * time.Second}}
 
@@ -120,11 +127,13 @@ func main() {
 
 	if *once {
 		if err := w.cycle(ctx); err != nil {
-			log.Fatalf("cycle failed: %v", err)
+			log.Printf("cycle failed: %v", err)
+			return 1
 		}
-		return
+		return 0
 	}
 	w.daemon(ctx)
+	return 0
 }
 
 // daemon runs a cycle at start, whenever the trigger file changes (checked
@@ -172,7 +181,7 @@ func (w *worker) triggerMTime() time.Time {
 
 func (w *worker) gitBytes(ctx context.Context, args ...string) ([]byte, error) {
 	full := append([]string{"-C", w.cfg.RepoPath, "-c", "user.name=" + w.cfg.GitName, "-c", "user.email=" + w.cfg.GitEmail}, args...)
-	cmd := exec.CommandContext(ctx, "git", full...)
+	cmd := exec.CommandContext(ctx, "git", full...) //nolint:gosec // fixed "git" binary, no shell; args are internal constants plus validated work-tree paths
 	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -193,7 +202,7 @@ func (w *worker) head(ctx context.Context) (string, error) {
 }
 
 func (w *worker) readState() string {
-	b, err := os.ReadFile(w.cfg.StateFile)
+	b, err := os.ReadFile(w.cfg.StateFile) //nolint:gosec // StateFile comes from operator config (env), not request input
 	if err != nil {
 		return ""
 	}
@@ -205,7 +214,7 @@ func (w *worker) readState() string {
 }
 
 func (w *worker) writeState(commit string) error {
-	return os.WriteFile(w.cfg.StateFile, []byte(commit+"\n"), 0o644)
+	return os.WriteFile(w.cfg.StateFile, []byte(commit+"\n"), 0o600)
 }
 
 // refresh makes the work tree an exact mirror of the remote branch. Any
@@ -269,7 +278,7 @@ func (w *worker) api(ctx context.Context, method, path string, body, out any) er
 	if err != nil {
 		return fmt.Errorf("%s %s: %w", method, path, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	data, err := io.ReadAll(io.LimitReader(resp.Body, 16<<20))
 	if err != nil {
 		return err
@@ -392,7 +401,7 @@ func (w *worker) pushChanges(ctx context.Context, head string) (bool, error) {
 		if err != nil || !fi.Mode().IsRegular() {
 			continue // vanished or not a regular file (symlink, dir)
 		}
-		data, err := os.ReadFile(full)
+		data, err := os.ReadFile(full) //nolint:gosec // full comes from safeJoin: confined to the work tree and checked to be a regular file
 		if err != nil {
 			log.Printf("skip %q: %v", c.Path, err)
 			continue
@@ -436,7 +445,7 @@ func (w *worker) writeBack(ctx context.Context, notes []pendingNote) (string, er
 			log.Printf("refusing pending note %s: content too large", n.ID)
 			continue
 		}
-		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(full), 0o750); err != nil {
 			return "", err
 		}
 		if err := writeFileAtomic(full, []byte(n.Content)); err != nil {
@@ -508,17 +517,19 @@ func writeFileAtomic(path string, data []byte) error {
 		return err
 	}
 	tmpName := tmp.Name()
+	cleanup := func() { _ = os.Remove(tmpName) }
 	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		os.Remove(tmpName)
+		_ = tmp.Close()
+		cleanup()
 		return err
 	}
 	if err := tmp.Close(); err != nil {
-		os.Remove(tmpName)
+		cleanup()
 		return err
 	}
-	if err := os.Chmod(tmpName, 0o644); err != nil {
-		os.Remove(tmpName)
+	// Note files are intentionally 0644, matching a normal git checkout.
+	if err := os.Chmod(tmpName, 0o644); err != nil { //nolint:gosec // notes are meant to be world-readable like any git work-tree file
+		cleanup()
 		return err
 	}
 	return os.Rename(tmpName, path)

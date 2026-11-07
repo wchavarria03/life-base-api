@@ -29,8 +29,6 @@ const (
 var (
 	// ErrVaultDisabled means VAULT_SYNC_USER_ID is not configured.
 	ErrVaultDisabled = errors.New("vault sync is not configured")
-	// ErrNoteNotFound (declared in note_task_link.go) is also returned here
-	// when a note id does not exist for the caller.
 	// ErrSensitiveDeclared is returned when the app tries to un-flag a note
 	// whose file declares itself sensitive.
 	ErrSensitiveDeclared = errors.New("sensitive flag is declared inside the file; remove it there first")
@@ -115,6 +113,15 @@ type vaultItemError struct{ msg string }
 
 func (e *vaultItemError) Error() string { return e.msg }
 
+// vaultIncoming is one validated, parsed upsert item.
+type vaultIncoming struct {
+	item      models.VaultUpsertItem
+	format    string
+	meta      vault.Meta
+	orgID     string
+	sensitive bool
+}
+
 func (s *VaultService) upsertOne(ctx context.Context, item models.VaultUpsertItem) (string, string, error) {
 	if err := vault.ValidateNotePath(item.VaultPath); err != nil {
 		return "", "", &vaultItemError{msg: "invalid vault_path"}
@@ -134,6 +141,23 @@ func (s *VaultService) upsertOne(ctx context.Context, item models.VaultUpsertIte
 		return "", "", &vaultItemError{msg: "content too large"}
 	}
 
+	in := newVaultIncoming(item, existing)
+	switch {
+	case existing == nil:
+		return s.createFromVault(ctx, in)
+	case existing.PendingWrite && existing.DeletedAt == nil:
+		// The app has an edit the worker has not written yet.
+		return s.reconcilePending(ctx, existing, in)
+	case existing.Content != nil && *existing.Content == item.Content && existing.DeletedAt == nil && existing.Sensitive == in.sensitive:
+		return s.touchUnchanged(ctx, existing, item.Commit)
+	default:
+		return s.overwriteFromVault(ctx, existing, in)
+	}
+}
+
+// newVaultIncoming parses an upsert item and resolves its org id and
+// sensitive flag (the user's in-app override wins over the path default).
+func newVaultIncoming(item models.VaultUpsertItem, existing *models.Note) vaultIncoming {
 	format := vault.FormatForPath(item.VaultPath)
 	meta := vault.ParseNote(format, item.Content, item.VaultPath)
 	orgID := meta.OrgID
@@ -144,92 +168,102 @@ func (s *VaultService) upsertOne(ctx context.Context, item models.VaultUpsertIte
 	if existing != nil {
 		override = existing.SensitiveOverride
 	}
-	sensitive := vault.ResolveSensitive(meta.Sensitive, vault.IsSensitivePath(item.VaultPath), override)
-
-	if existing == nil {
-		row := map[string]any{
-			"user_id":        s.userID,
-			"title":          meta.Title,
-			"content":        item.Content,
-			"source":         "vault",
-			"vault_path":     item.VaultPath,
-			"content_format": format,
-			"sensitive":      sensitive,
-		}
-		if orgID != "" {
-			row["org_id"] = orgID
-		}
-		if item.Commit != "" {
-			row["vault_commit"] = item.Commit
-		}
-		created, err := s.repo.CreateNote(ctx, row)
-		if err != nil || created == nil {
-			return "", "", fmt.Errorf("create note: %w", err)
-		}
-		if err := s.saveLinks(ctx, created.ID, orgID, meta.Links); err != nil {
-			return "", "", err
-		}
-		return "created", created.ID, nil
+	return vaultIncoming{
+		item:      item,
+		format:    format,
+		meta:      meta,
+		orgID:     orgID,
+		sensitive: vault.ResolveSensitive(meta.Sensitive, vault.IsSensitivePath(item.VaultPath), override),
 	}
+}
 
-	sameContent := existing.Content != nil && *existing.Content == item.Content
-
-	// The app has an edit the worker has not written yet.
-	if existing.PendingWrite && existing.DeletedAt == nil {
-		if sameContent {
-			// The vault already has exactly our version (e.g. the echo of a
-			// commit the worker just pushed): nothing to reconcile.
-			fields := map[string]any{"pending_write": false, "conflict": false}
-			if item.Commit != "" {
-				fields["vault_commit"] = item.Commit
-			}
-			if _, err := s.repo.UpdateNote(ctx, existing.ID, fields); err != nil {
-				return "", "", fmt.Errorf("clear pending: %w", err)
-			}
-			return "unchanged", existing.ID, nil
-		}
-		// Never overwrite the app edit: keep both versions and flag it.
-		incoming := item.Content
-		if err := s.archive(ctx, existing.ID, vaultConflictPrefix+meta.Title, &incoming); err != nil {
-			return "", "", fmt.Errorf("archive vault version: %w", err)
-		}
-		if _, err := s.repo.UpdateNote(ctx, existing.ID, map[string]any{"conflict": true}); err != nil {
-			return "", "", fmt.Errorf("flag conflict: %w", err)
-		}
-		return "conflict", existing.ID, nil
+// createFromVault inserts a note that exists in the vault but not yet in the app.
+func (s *VaultService) createFromVault(ctx context.Context, in vaultIncoming) (string, string, error) {
+	row := map[string]any{
+		"user_id":        s.userID,
+		"title":          in.meta.Title,
+		"content":        in.item.Content,
+		"source":         "vault",
+		"vault_path":     in.item.VaultPath,
+		"content_format": in.format,
+		"sensitive":      in.sensitive,
 	}
+	if in.orgID != "" {
+		row["org_id"] = in.orgID
+	}
+	if in.item.Commit != "" {
+		row["vault_commit"] = in.item.Commit
+	}
+	created, err := s.repo.CreateNote(ctx, row)
+	if err != nil || created == nil {
+		return "", "", fmt.Errorf("create note: %w", err)
+	}
+	if err := s.saveLinks(ctx, created.ID, in.orgID, in.meta.Links); err != nil {
+		return "", "", err
+	}
+	return "created", created.ID, nil
+}
 
-	if sameContent && existing.DeletedAt == nil && existing.Sensitive == sensitive {
-		if item.Commit != "" && (existing.VaultCommit == nil || *existing.VaultCommit != item.Commit) {
-			if _, err := s.repo.UpdateNote(ctx, existing.ID, map[string]any{"vault_commit": item.Commit}); err != nil {
-				return "", "", fmt.Errorf("update commit: %w", err)
-			}
+// reconcilePending handles an incoming vault version of a note that has an
+// unwritten app edit: identical content clears the pending flag, anything else
+// keeps both versions and flags a conflict (the app edit is never overwritten).
+func (s *VaultService) reconcilePending(ctx context.Context, existing *models.Note, in vaultIncoming) (string, string, error) {
+	if existing.Content != nil && *existing.Content == in.item.Content {
+		// The vault already has exactly our version (e.g. the echo of a
+		// commit the worker just pushed): nothing to reconcile.
+		fields := map[string]any{"pending_write": false, "conflict": false}
+		if in.item.Commit != "" {
+			fields["vault_commit"] = in.item.Commit
+		}
+		if _, err := s.repo.UpdateNote(ctx, existing.ID, fields); err != nil {
+			return "", "", fmt.Errorf("clear pending: %w", err)
 		}
 		return "unchanged", existing.ID, nil
 	}
+	incoming := in.item.Content
+	if err := s.archive(ctx, existing.ID, vaultConflictPrefix+in.meta.Title, &incoming); err != nil {
+		return "", "", fmt.Errorf("archive vault version: %w", err)
+	}
+	if _, err := s.repo.UpdateNote(ctx, existing.ID, map[string]any{"conflict": true}); err != nil {
+		return "", "", fmt.Errorf("flag conflict: %w", err)
+	}
+	return "conflict", existing.ID, nil
+}
 
+// touchUnchanged records the commit for a note whose content did not change.
+func (s *VaultService) touchUnchanged(ctx context.Context, existing *models.Note, commit string) (string, string, error) {
+	if commit != "" && (existing.VaultCommit == nil || *existing.VaultCommit != commit) {
+		if _, err := s.repo.UpdateNote(ctx, existing.ID, map[string]any{"vault_commit": commit}); err != nil {
+			return "", "", fmt.Errorf("update commit: %w", err)
+		}
+	}
+	return "unchanged", existing.ID, nil
+}
+
+// overwriteFromVault replaces an existing app note with the vault version.
+func (s *VaultService) overwriteFromVault(ctx context.Context, existing *models.Note, in vaultIncoming) (string, string, error) {
 	fields := map[string]any{
-		"title":          meta.Title,
-		"content":        item.Content,
+		"title":          in.meta.Title,
+		"content":        in.item.Content,
 		"source":         "vault",
-		"content_format": format,
-		"sensitive":      sensitive,
+		"content_format": in.format,
+		"sensitive":      in.sensitive,
 		"deleted_at":     nil,
 		"pending_write":  false,
 		"conflict":       false,
 	}
-	if orgID != "" {
-		fields["org_id"] = orgID
+	if in.orgID != "" {
+		fields["org_id"] = in.orgID
 	} else {
 		fields["org_id"] = nil
 	}
-	if item.Commit != "" {
-		fields["vault_commit"] = item.Commit
+	if in.item.Commit != "" {
+		fields["vault_commit"] = in.item.Commit
 	}
 	if _, err := s.repo.UpdateNote(ctx, existing.ID, fields); err != nil {
 		return "", "", fmt.Errorf("update note: %w", err)
 	}
-	if err := s.saveLinks(ctx, existing.ID, orgID, meta.Links); err != nil {
+	if err := s.saveLinks(ctx, existing.ID, in.orgID, in.meta.Links); err != nil {
 		return "", "", err
 	}
 	return "updated", existing.ID, nil
@@ -302,7 +336,7 @@ func (s *VaultService) Pending(ctx context.Context) (*models.VaultPendingRespons
 	}
 	out := &models.VaultPendingResponse{Notes: []models.VaultPendingNote{}}
 	for _, n := range notes {
-		// Defence in depth: never hand the worker a path it should not write.
+		// Defense in depth: never hand the worker a path it should not write.
 		if n.VaultPath == nil || vault.ValidateNotePath(*n.VaultPath) != nil {
 			continue
 		}
@@ -358,7 +392,7 @@ func (s *VaultService) Ack(ctx context.Context, req models.VaultAckRequest) erro
 	return err
 }
 
-// SyncDone records the commit the worker last fully synchronised.
+// SyncDone records the commit the worker last fully synchronized.
 func (s *VaultService) SyncDone(ctx context.Context, commit string) error {
 	if s.userID == "" {
 		return ErrVaultDisabled

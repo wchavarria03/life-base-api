@@ -235,8 +235,7 @@ func (r *renderer) inline(s string, depth int) string {
 				plainStart = i
 				continue
 			}
-		case c == 'h' && (strings.HasPrefix(s[i:], "http://") || strings.HasPrefix(s[i:], "https://")) &&
-			(i == 0 || strings.ContainsRune(" \t\n({\"'", rune(s[i-1]))):
+		case bareURLAt(s, i):
 			end := urlEnd(s, i)
 			flush(i)
 			b.WriteString(r.link(s[i:end], ""))
@@ -246,13 +245,7 @@ func (r *renderer) inline(s string, depth int) string {
 		case emphasisTag(c) != "" && depth < maxInlineDepth:
 			if end := emphasisEnd(s, i); end > 0 {
 				flush(i)
-				tag := emphasisTag(c)
-				inner := s[i+1 : end]
-				if c == '=' || c == '~' {
-					b.WriteString("<" + tag + ">" + html.EscapeString(inner) + "</" + tag + ">")
-				} else {
-					b.WriteString("<" + tag + ">" + r.inline(inner, depth+1) + "</" + tag + ">")
-				}
+				b.WriteString(r.emphasisHTML(c, s[i+1:end], depth))
 				i = end + 1
 				plainStart = i
 				continue
@@ -262,6 +255,25 @@ func (r *renderer) inline(s string, depth int) string {
 	}
 	flush(len(s))
 	return b.String()
+}
+
+// bareURLAt reports whether a bare http(s) URL starts at s[i], either at the
+// start of the text or right after a delimiter.
+func bareURLAt(s string, i int) bool {
+	if !strings.HasPrefix(s[i:], "http://") && !strings.HasPrefix(s[i:], "https://") {
+		return false
+	}
+	return i == 0 || strings.ContainsRune(" \t\n({\"'", rune(s[i-1]))
+}
+
+// emphasisHTML renders one emphasis span. =verbatim= and ~code~ content is
+// escaped literally; the other markers allow nested inline markup.
+func (r *renderer) emphasisHTML(c byte, inner string, depth int) string {
+	tag := emphasisTag(c)
+	if c == '=' || c == '~' {
+		return "<" + tag + ">" + html.EscapeString(inner) + "</" + tag + ">"
+	}
+	return "<" + tag + ">" + r.inline(inner, depth+1) + "</" + tag + ">"
 }
 
 // urlEnd finds the end of a bare URL starting at s[i], trimming trailing
@@ -322,7 +334,7 @@ func IsVideoURL(u string) bool {
 	return strings.HasSuffix(strings.ToLower(parsed.Path), ".mp4")
 }
 
-// attachmentPath normalises an org file:/attachment: target to a
+// attachmentPath normalizes an org file:/attachment: target to a
 // vault-relative image path, or returns "" if it is not a valid image.
 func attachmentPath(target string) string {
 	t := target
@@ -346,52 +358,67 @@ func attachmentPath(target string) string {
 
 func (r *renderer) link(target, label string) string {
 	target = strings.TrimSpace(target)
-	text := label
 	switch {
 	case strings.HasPrefix(target, "id:"):
-		id := target[3:]
-		if text == "" {
-			text = "note"
-		}
-		if r.opts.Share || !ValidOrgID(id) {
-			return html.EscapeString(text)
-		}
-		return `<a class="lb-note-link" href="/notes?org_id=` + html.EscapeString(id) +
-			`" data-org-id="` + html.EscapeString(id) + `">` + html.EscapeString(text) + `</a>`
-
+		return r.noteLink(target[3:], label)
 	case strings.HasPrefix(target, "file:") || strings.HasPrefix(target, "attachment:"):
-		p := attachmentPath(target)
-		if text == "" {
-			text = path.Base(strings.TrimPrefix(strings.TrimPrefix(target, "file:"), "attachment:"))
-		}
-		if p == "" || r.opts.Share {
-			return html.EscapeString(text)
-		}
-		// Inert placeholder: the frontend creates the <img> only on click.
-		return `<button type="button" class="lb-embed" data-kind="image" data-src="` + html.EscapeString(p) +
-			`">` + html.EscapeString(text) + `</button>`
-
+		return r.imageLink(target, label)
 	case strings.HasPrefix(target, "http://"), strings.HasPrefix(target, "https://"), strings.HasPrefix(target, "mailto:"):
-		if !SafeHref(target) {
-			if text == "" {
-				text = target
-			}
-			return html.EscapeString(text)
-		}
-		if text == "" {
-			text = target
-		}
-		if !r.opts.Share && IsVideoURL(target) {
-			return `<button type="button" class="lb-embed" data-kind="video" data-src="` + html.EscapeString(target) +
-				`">` + html.EscapeString(text) + `</button>`
-		}
-		return `<a href="` + html.EscapeString(target) + `" target="_blank" rel="noopener noreferrer nofollow">` +
-			html.EscapeString(text) + `</a>`
+		return r.webLink(target, label)
 	}
 	// Anything else (heading links, custom ids, other file links, unknown
 	// schemes such as javascript:) is rendered as inert text.
+	text := label
 	if text == "" {
 		text = target
 	}
 	return html.EscapeString(text)
+}
+
+// noteLink renders an org-roam [[id:...]] link. Share mode and malformed ids
+// render plain text.
+func (r *renderer) noteLink(id, label string) string {
+	text := label
+	if text == "" {
+		text = "note"
+	}
+	if r.opts.Share || !ValidOrgID(id) {
+		return html.EscapeString(text)
+	}
+	return `<a class="lb-note-link" href="/notes?org_id=` + html.EscapeString(id) +
+		`" data-org-id="` + html.EscapeString(id) + `">` + html.EscapeString(text) + `</a>`
+}
+
+// imageLink renders a file:/attachment: link as an inert click-to-load image
+// placeholder (plain text in share mode or for an invalid path).
+func (r *renderer) imageLink(target, label string) string {
+	p := attachmentPath(target)
+	text := label
+	if text == "" {
+		text = path.Base(strings.TrimPrefix(strings.TrimPrefix(target, "file:"), "attachment:"))
+	}
+	if p == "" || r.opts.Share {
+		return html.EscapeString(text)
+	}
+	// Inert placeholder: the frontend creates the <img> only on click.
+	return `<button type="button" class="lb-embed" data-kind="image" data-src="` + html.EscapeString(p) +
+		`">` + html.EscapeString(text) + `</button>`
+}
+
+// webLink renders an http(s)/mailto link: unsafe hrefs become plain text,
+// video URLs become inert click-to-load placeholders (outside share mode).
+func (r *renderer) webLink(target, label string) string {
+	text := label
+	if text == "" {
+		text = target
+	}
+	if !SafeHref(target) {
+		return html.EscapeString(text)
+	}
+	if !r.opts.Share && IsVideoURL(target) {
+		return `<button type="button" class="lb-embed" data-kind="video" data-src="` + html.EscapeString(target) +
+			`">` + html.EscapeString(text) + `</button>`
+	}
+	return `<a href="` + html.EscapeString(target) + `" target="_blank" rel="noopener noreferrer nofollow">` +
+		html.EscapeString(text) + `</a>`
 }

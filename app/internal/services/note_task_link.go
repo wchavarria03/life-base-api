@@ -145,32 +145,9 @@ func (s *NoteTaskLinkService) TickNoteChecklist(ctx context.Context, task *model
 // line (snapshotting a note version like any other note update). If the
 // line is already ticked the new task is created already completed.
 func (s *NoteTaskLinkService) CreateTaskFromChecklistItem(ctx context.Context, noteID string, lineIndex int, in models.ChecklistTaskInput) (*models.ChecklistTaskResult, error) {
-	note, err := s.notes.FindByID(ctx, noteID)
+	note, item, err := s.linkableChecklistItem(ctx, noteID, lineIndex)
 	if err != nil {
-		return nil, fmt.Errorf("find note: %w", err)
-	}
-	if note == nil {
-		return nil, ErrNoteNotFound
-	}
-	if note.Content == nil {
-		return nil, fmt.Errorf("note has no checklist")
-	}
-	item, ok := FindChecklistItem(*note.Content, lineIndex)
-	if !ok {
-		return nil, fmt.Errorf("no checklist item on line %d", lineIndex)
-	}
-	if item.TaskID != "" {
-		// A marker whose task was since deleted is stale: allow re-linking.
-		existing, err := s.tasks.FindByID(ctx, item.TaskID)
-		if err != nil {
-			return nil, fmt.Errorf("find linked task: %w", err)
-		}
-		if existing != nil {
-			return nil, fmt.Errorf("checklist item is already linked to a task")
-		}
-	}
-	if item.Text == "" {
-		return nil, fmt.Errorf("checklist item has no text")
+		return nil, err
 	}
 
 	input := models.TaskInput{
@@ -211,6 +188,40 @@ func (s *NoteTaskLinkService) CreateTaskFromChecklistItem(ctx context.Context, n
 		}
 	}
 	return &models.ChecklistTaskResult{Task: task, Note: updatedNote}, nil
+}
+
+// linkableChecklistItem loads the note and the checklist item on lineIndex
+// and checks the item can become a task: it must exist, have text and not
+// already be linked to a live task. The returned note always has content.
+func (s *NoteTaskLinkService) linkableChecklistItem(ctx context.Context, noteID string, lineIndex int) (*models.Note, ChecklistItem, error) {
+	note, err := s.notes.FindByID(ctx, noteID)
+	if err != nil {
+		return nil, ChecklistItem{}, fmt.Errorf("find note: %w", err)
+	}
+	if note == nil {
+		return nil, ChecklistItem{}, ErrNoteNotFound
+	}
+	if note.Content == nil {
+		return nil, ChecklistItem{}, fmt.Errorf("note has no checklist")
+	}
+	item, ok := FindChecklistItem(*note.Content, lineIndex)
+	if !ok {
+		return nil, ChecklistItem{}, fmt.Errorf("no checklist item on line %d", lineIndex)
+	}
+	if item.TaskID != "" {
+		// A marker whose task was since deleted is stale: allow re-linking.
+		existing, err := s.tasks.FindByID(ctx, item.TaskID)
+		if err != nil {
+			return nil, ChecklistItem{}, fmt.Errorf("find linked task: %w", err)
+		}
+		if existing != nil {
+			return nil, ChecklistItem{}, fmt.Errorf("checklist item is already linked to a task")
+		}
+	}
+	if item.Text == "" {
+		return nil, ChecklistItem{}, fmt.Errorf("checklist item has no text")
+	}
+	return note, item, nil
 }
 
 // discardTask removes a just-created task when the note write that was

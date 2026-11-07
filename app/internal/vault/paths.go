@@ -44,6 +44,21 @@ func ValidateAttachmentPath(p string) error {
 }
 
 func validatePath(p string, exts map[string]bool) error {
+	if err := validatePathShape(p); err != nil {
+		return err
+	}
+	if err := validatePathSegments(p); err != nil {
+		return err
+	}
+	if !exts[strings.ToLower(path.Ext(p))] {
+		return fmt.Errorf("%w: extension not allowed", ErrInvalidPath)
+	}
+	return nil
+}
+
+// validatePathShape rejects empty, oversized, non-UTF-8, absolute and
+// otherwise malformed path strings.
+func validatePathShape(p string) error {
 	if p == "" {
 		return fmt.Errorf("%w: empty", ErrInvalidPath)
 	}
@@ -71,6 +86,11 @@ func validatePath(p string, exts map[string]bool) error {
 	if len(p) >= 2 && p[1] == ':' {
 		return fmt.Errorf("%w: drive prefix", ErrInvalidPath)
 	}
+	return nil
+}
+
+// validatePathSegments rejects empty, relative and hidden path segments.
+func validatePathSegments(p string) error {
 	for _, seg := range strings.Split(p, "/") {
 		switch {
 		case seg == "":
@@ -81,9 +101,6 @@ func validatePath(p string, exts map[string]bool) error {
 			// Covers .git, .claude, emacs lock files (.#foo.org) and dotfiles.
 			return fmt.Errorf("%w: hidden segment %q", ErrInvalidPath, seg)
 		}
-	}
-	if !exts[strings.ToLower(path.Ext(p))] {
-		return fmt.Errorf("%w: extension not allowed", ErrInvalidPath)
 	}
 	return nil
 }

@@ -91,55 +91,9 @@ func (s *ShareLinkService) Create(ctx context.Context, resourceType models.Share
 	if expiresAt != nil && expiresAt.Before(time.Now()) {
 		return nil, fmt.Errorf("expires_at must be in the future")
 	}
-	noteSensitive := false
-
-	switch resourceType {
-	case models.ShareResourceNote:
-		note, err := s.notes.FindByID(ctx, resourceID)
-		if err != nil {
-			return nil, fmt.Errorf("find note: %w", err)
-		}
-		if note == nil || note.DeletedAt != nil {
-			return nil, fmt.Errorf("note not found")
-		}
-		if note.Sensitive {
-			noteSensitive = true
-			if !confirmSensitive {
-				return nil, ErrSensitiveConfirmRequired
-			}
-			if expiresAt == nil {
-				return nil, fmt.Errorf("links to sensitive notes must expire (max 7 days)")
-			}
-			if expiresAt.After(time.Now().Add(sensitiveShareMaxTTL + time.Minute)) {
-				return nil, fmt.Errorf("links to sensitive notes can last at most 7 days")
-			}
-		}
-	case models.ShareResourceBike:
-		bike, err := s.bikes.FindByID(ctx, resourceID)
-		if err != nil {
-			return nil, fmt.Errorf("find bike: %w", err)
-		}
-		if bike == nil {
-			return nil, fmt.Errorf("bike not found")
-		}
-	case models.ShareResourceMedicalProfile:
-		profile, err := s.medicalProfiles.FindByID(ctx, resourceID)
-		if err != nil {
-			return nil, fmt.Errorf("find medical profile: %w", err)
-		}
-		if profile == nil {
-			return nil, fmt.Errorf("medical profile not found")
-		}
-	case models.ShareResourceMedicalRecord:
-		record, err := s.medicalRecords.FindByID(ctx, resourceID)
-		if err != nil {
-			return nil, fmt.Errorf("find medical record: %w", err)
-		}
-		if record == nil {
-			return nil, fmt.Errorf("medical record not found")
-		}
-	default:
-		return nil, fmt.Errorf("unsupported resource_type %q", resourceType)
+	noteSensitive, err := s.verifyShareable(ctx, resourceType, resourceID, expiresAt, confirmSensitive)
+	if err != nil {
+		return nil, err
 	}
 
 	token, err := generateShortShareToken()
@@ -175,6 +129,74 @@ func (s *ShareLinkService) Create(ctx context.Context, resourceType models.Share
 	return link, nil
 }
 
+// verifyShareable checks the caller owns the resource (RLS-scoped lookups
+// under the caller's own JWT) and applies the sensitive-note rules. It
+// reports whether the resource is a sensitive-flagged note.
+func (s *ShareLinkService) verifyShareable(ctx context.Context, resourceType models.ShareResourceType, resourceID string, expiresAt *time.Time, confirmSensitive bool) (bool, error) {
+	switch resourceType {
+	case models.ShareResourceNote:
+		return s.verifyShareableNote(ctx, resourceID, expiresAt, confirmSensitive)
+	case models.ShareResourceBike:
+		bike, err := s.bikes.FindByID(ctx, resourceID)
+		if err != nil {
+			return false, fmt.Errorf("find bike: %w", err)
+		}
+		if bike == nil {
+			return false, fmt.Errorf("bike not found")
+		}
+	case models.ShareResourceMedicalProfile:
+		profile, err := s.medicalProfiles.FindByID(ctx, resourceID)
+		if err != nil {
+			return false, fmt.Errorf("find medical profile: %w", err)
+		}
+		if profile == nil {
+			return false, fmt.Errorf("medical profile not found")
+		}
+	case models.ShareResourceMedicalRecord:
+		record, err := s.medicalRecords.FindByID(ctx, resourceID)
+		if err != nil {
+			return false, fmt.Errorf("find medical record: %w", err)
+		}
+		if record == nil {
+			return false, fmt.Errorf("medical record not found")
+		}
+	default:
+		return false, fmt.Errorf("unsupported resource_type %q", resourceType)
+	}
+	return false, nil
+}
+
+// verifyShareableNote is verifyShareable for notes: ownership plus, for
+// sensitive-flagged notes, the confirm + max-expiry guard.
+func (s *ShareLinkService) verifyShareableNote(ctx context.Context, resourceID string, expiresAt *time.Time, confirmSensitive bool) (bool, error) {
+	note, err := s.notes.FindByID(ctx, resourceID)
+	if err != nil {
+		return false, fmt.Errorf("find note: %w", err)
+	}
+	if note == nil || note.DeletedAt != nil {
+		return false, fmt.Errorf("note not found")
+	}
+	if !note.Sensitive {
+		return false, nil
+	}
+	return true, checkSensitiveShare(expiresAt, confirmSensitive)
+}
+
+// checkSensitiveShare enforces the rules for links to sensitive notes: an
+// explicit confirmation and an expiry of at most sensitiveShareMaxTTL.
+func checkSensitiveShare(expiresAt *time.Time, confirmSensitive bool) error {
+	if !confirmSensitive {
+		return ErrSensitiveConfirmRequired
+	}
+	if expiresAt == nil {
+		return fmt.Errorf("links to sensitive notes must expire (max 7 days)")
+	}
+	if expiresAt.After(time.Now().Add(sensitiveShareMaxTTL + time.Minute)) {
+		return fmt.Errorf("links to sensitive notes can last at most 7 days")
+	}
+	return nil
+}
+
 // Revoke soft-deletes a share link (owner-scoped by RLS).
 func (s *ShareLinkService) Revoke(ctx context.Context, id string) error {
 	return s.repo.Update(ctx, id, map[string]any{"revoked": true})
@@ -201,23 +223,10 @@ func (s *ShareLinkService) Resolve(ctx context.Context, token string) (*models.S
 	switch link.ResourceType {
 	case models.ShareResourceNote:
 		note, err := s.notes.FindByID(ctx, link.ResourceID)
-		if err != nil || note == nil {
+		if err != nil || note == nil || note.DeletedAt != nil {
 			return nil, ErrShareLinkNotFound
 		}
-		if note.DeletedAt != nil {
-			return nil, ErrShareLinkNotFound
-		}
-		view := &models.SharedNoteView{Title: note.Title, ContentFormat: note.ContentFormat}
-		if note.ContentFormat == "org" {
-			// Never expose raw org source: render sanitized HTML in share mode
-			// (no note-to-note links, no image embeds).
-			if note.Content != nil {
-				view.RenderedHTML = vault.RenderOrg(*note.Content, vault.RenderOptions{Share: true})
-			}
-		} else {
-			view.Content = note.Content
-		}
-		return &models.SharedResource{ResourceType: models.ShareResourceNote, Note: view}, nil
+		return &models.SharedResource{ResourceType: models.ShareResourceNote, Note: sharedNoteView(note)}, nil
 
 	case models.ShareResourceBike:
 		bike, err := s.bikes.FindByID(ctx, link.ResourceID)
@@ -291,4 +300,19 @@ func generateShortShareToken() (string, error) {
 		out[i] = shareTokenAlphabet[int(b)%len(shareTokenAlphabet)]
 	}
 	return string(out), nil
+}
+
+// sharedNoteView builds the public projection of a note. Org notes are never
+// exposed as raw source: they are rendered to sanitized HTML in share mode
+// (no note-to-note links, no image embeds).
+func sharedNoteView(note *models.Note) *models.SharedNoteView {
+	view := &models.SharedNoteView{Title: note.Title, ContentFormat: note.ContentFormat}
+	if note.ContentFormat != "org" {
+		view.Content = note.Content
+		return view
+	}
+	if note.Content != nil {
+		view.RenderedHTML = vault.RenderOrg(*note.Content, vault.RenderOptions{Share: true})
+	}
+	return view
 }
